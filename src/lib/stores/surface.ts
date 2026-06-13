@@ -14,6 +14,14 @@ import { invoke } from '@tauri-apps/api/core';
 /** Named surfaces the workspace shell can display. Must match Surface enum in app_state.rs. */
 export type Surface = 'chat' | 'history' | 'settings' | 'artifacts';
 
+/** Human-readable labels for each surface — used in status announcements. */
+const SURFACE_LABELS: Record<Surface, string> = {
+	chat: 'Chat',
+	history: 'History',
+	settings: 'Settings',
+	artifacts: 'Artifacts',
+};
+
 function createSurfaceStore() {
 	// Svelte 5 rune: mutable reactive state.
 	let surface = $state<Surface>('chat');
@@ -65,6 +73,15 @@ function createSurfaceStore() {
 		get surface() { return surface; },
 		get loading() { return loading; },
 		get error() { return error; },
+		/**
+		 * Human-readable status message describing the current shell state.
+		 * Used by StatusRegion to announce state changes to assistive technology.
+		 */
+		get statusMessage(): string {
+			if (error) return `Error: ${error}`;
+			if (loading) return 'Loading…';
+			return `${SURFACE_LABELS[surface] ?? surface} surface active`;
+		},
 		hydrate,
 		setSurface
 	};

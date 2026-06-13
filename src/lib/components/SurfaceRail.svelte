@@ -5,8 +5,16 @@
 	 * Each button calls `surfaceStore.setSurface()` which persists the selection
 	 * to the backend through typed IPC. No browser storage is used.
 	 *
-	 * Accessibility: buttons have aria-label and aria-current so keyboard users
-	 * and screen readers can identify the active surface.
+	 * Accessibility – tab-list pattern with roving tabindex:
+	 *   - The rail has role="tablist" so the relationship to the surface panel
+	 *     (tabpanel) is expressed in the ARIA tree.
+	 *   - Only the active button is in the natural tab order (tabindex=0).
+	 *     All others are removed (tabindex=-1). This is the "roving tabindex"
+	 *     pattern recommended by ARIA APG for tab sets.
+	 *   - Arrow Up / Arrow Down moves focus within the rail.
+	 *   - Enter and Space activate the focused item.
+	 *   - aria-selected (not aria-current) is the correct attribute for tabs.
+	 *   - The rail is labelled so screen readers describe it correctly.
 	 */
 	import { surfaceStore, type Surface } from '$lib/stores/surface';
 
@@ -14,51 +22,107 @@
 		{ id: 'chat',      label: 'Chat',      icon: '💬' },
 		{ id: 'history',   label: 'History',   icon: '📋' },
 		{ id: 'settings',  label: 'Settings',  icon: '⚙️' },
-		{ id: 'artifacts', label: 'Artifacts', icon: '📦' }
+		{ id: 'artifacts', label: 'Artifacts', icon: '📦' },
 	];
 
-	// Svelte 5 rune: derive which surface is currently active.
 	let activeSurface = $derived(surfaceStore.surface);
 
-	function handleClick(surface: Surface) {
+	/** The index in `surfaces` of the button that currently has DOM focus. */
+	let focusedIndex = $state(
+		surfaces.findIndex((s) => s.id === activeSurface) || 0
+	);
+
+	/** Button element refs — populated by bind:this in {#each}. */
+	let buttonRefs: Array<HTMLButtonElement | null> = $state(
+		new Array(surfaces.length).fill(null)
+	);
+
+	function activate(surface: Surface) {
 		surfaceStore.setSurface(surface);
+		// Move focus to the main content area so keyboard users land in the panel.
+		const main = document.getElementById('main-content');
+		main?.focus();
 	}
 
-	function handleKeydown(event: KeyboardEvent, surface: Surface) {
-		if (event.key === 'Enter' || event.key === ' ') {
-			event.preventDefault();
-			surfaceStore.setSurface(surface);
+	function moveFocus(delta: -1 | 1) {
+		const next = (focusedIndex + delta + surfaces.length) % surfaces.length;
+		focusedIndex = next;
+		buttonRefs[next]?.focus();
+	}
+
+	function handleKeydown(event: KeyboardEvent, index: number) {
+		switch (event.key) {
+			case 'ArrowDown':
+			case 'ArrowRight':
+				event.preventDefault();
+				moveFocus(1);
+				break;
+			case 'ArrowUp':
+			case 'ArrowLeft':
+				event.preventDefault();
+				moveFocus(-1);
+				break;
+			case 'Enter':
+			case ' ':
+				event.preventDefault();
+				activate(surfaces[index].id);
+				break;
+			case 'Home':
+				event.preventDefault();
+				focusedIndex = 0;
+				buttonRefs[0]?.focus();
+				break;
+			case 'End':
+				event.preventDefault();
+				focusedIndex = surfaces.length - 1;
+				buttonRefs[surfaces.length - 1]?.focus();
+				break;
 		}
+	}
+
+	function handleClick(surface: Surface, index: number) {
+		focusedIndex = index;
+		activate(surface);
 	}
 </script>
 
-{#each surfaces as { id, label, icon }}
-	<button
-		class="rail-button"
-		class:rail-button--active={activeSurface === id}
-		aria-label={label}
-		aria-current={activeSurface === id ? 'page' : undefined}
-		title={label}
-		onclick={() => handleClick(id)}
-		onkeydown={(e) => handleKeydown(e, id)}
-		type="button"
-	>
-		<span class="rail-button__icon" aria-hidden="true">{icon}</span>
-		<span class="rail-button__label">{label}</span>
-	</button>
-{/each}
+<div
+	role="tablist"
+	aria-label="Workspace surfaces"
+	aria-orientation="vertical"
+>
+	{#each surfaces as { id, label, icon }, index}
+		<button
+			bind:this={buttonRefs[index]}
+			class="rail-button"
+			class:rail-button--active={activeSurface === id}
+			role="tab"
+			id="tab-{id}"
+			aria-label={label}
+			aria-selected={activeSurface === id}
+			aria-controls="surface-panel"
+			tabindex={focusedIndex === index ? 0 : -1}
+			onclick={() => handleClick(id, index)}
+			onkeydown={(e) => handleKeydown(e, index)}
+			type="button"
+		>
+			<span class="rail-button__icon" aria-hidden="true">{icon}</span>
+			<span class="rail-button__label">{label}</span>
+		</button>
+	{/each}
 
-{#if surfaceStore.loading}
-	<div class="rail-status" aria-live="polite" aria-label="Loading surface preferences">
-		<span aria-hidden="true">…</span>
-	</div>
-{/if}
+	{#if surfaceStore.loading}
+		<div class="rail-status" aria-live="polite" aria-label="Loading surface preferences">
+			<span aria-hidden="true">…</span>
+		</div>
+	{/if}
 
-{#if surfaceStore.error}
-	<div class="rail-status rail-status--error" role="alert" aria-live="assertive">
-		<span class="sr-only">Surface preference error: offline mode</span>
-	</div>
-{/if}
+	{#if surfaceStore.error}
+		<div class="rail-status rail-status--error" role="alert" aria-live="assertive">
+			<span class="sr-only">Surface preference error: offline mode</span>
+		</div>
+	{/if}
+</div>
 
 <style>
 	.rail-button {
