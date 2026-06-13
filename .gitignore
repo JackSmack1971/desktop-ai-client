@@ -1,0 +1,33 @@
+# Node
+node_modules/
+package-lock.json
+
+# SvelteKit generated
+.svelte-kit/
+dist/
+build/
+
+# Rust / Cargo
+target/
+Cargo.lock
+
+# Tauri build output
+src-tauri/gen/
+src-tauri/target/
+
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
