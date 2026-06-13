@@ -38,6 +38,17 @@ impl SqlitePool {
         })
     }
 
+    /// Wrap an already-configured `Connection` in a pool.
+    ///
+    /// Intended for tests that need to prepare an in-memory database with
+    /// specific state (e.g. by running migrations manually) before handing
+    /// it to domain stores. Production code should use `open()`.
+    pub fn from_connection(conn: Connection) -> Self {
+        Self {
+            conn: Mutex::new(conn),
+        }
+    }
+
     /// Execute a closure with exclusive access to the connection.
     pub fn with_conn<F, T>(&self, f: F) -> rusqlite::Result<T>
     where
