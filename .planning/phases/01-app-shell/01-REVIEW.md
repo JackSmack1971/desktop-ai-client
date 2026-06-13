@@ -1,6 +1,6 @@
 ---
 phase: 01-app-shell
-reviewed: 2026-06-13T19:27:12Z
+reviewed: 2026-06-13T00:00:00Z
 depth: standard
 files_reviewed: 27
 files_reviewed_list:
@@ -17,6 +17,7 @@ files_reviewed_list:
   - src-tauri/src/storage/sqlite.rs
   - src-tauri/tauri.conf.json
   - src-tauri/tests/app_shell.rs
+  - src-tauri/permissions/app-shell.toml
   - src/app.html
   - src/lib/components/AppShell.svelte
   - src/lib/components/StatusRegion.svelte
@@ -33,298 +34,298 @@ files_reviewed_list:
   - tests/rust/app_shell.rs
 findings:
   critical: 4
-  warning: 5
-  info: 3
-  total: 12
+  warning: 4
+  info: 2
+  total: 10
 status: issues_found
 ---
 
-# Phase 01: Code Review Report
+# Phase 01: App Shell — Code Review Report
 
-**Reviewed:** 2026-06-13T19:27:12Z
+**Reviewed:** 2026-06-13T00:00:00Z
 **Depth:** standard
 **Files Reviewed:** 27
 **Status:** issues_found
 
 ## Summary
 
-This phase delivers the backend-owned shell preference persistence layer (Rust/Tauri) and the Svelte 5 frontend scaffold. The architecture boundary between frontend and backend is correctly conceived — no secrets or raw paths leak into the renderer, all surface state round-trips through typed IPC, and the SQLite schema is sound.
+This phase delivers the backend-owned surface-preference persistence layer (Rust/Tauri/SQLite) and the Svelte 5 workspace shell frontend. The core architecture is sound: surface state lives in the backend, IPC is capability-gated with both a permission file and backend-side window-label enforcement, no browser storage is used, and migrations run inside `SqlitePool::open` before the first command handler executes.
 
-However, four blockers prevent the code from shipping correctly:
+Four blockers were identified:
 
-1. `ShellPreferenceStore` and `SqlitePool` are never registered with Tauri's state system in `main.rs`, so both IPC commands will panic at runtime when Tauri tries to inject the unmanaged state.
-2. The IPC commands `get_active_surface` and `set_active_surface` are not listed in the capability file, so they are blocked by Tauri 2's deny-by-default permission system even if the state wiring were fixed.
-3. `get_active_surface` has a correctness bug: it silently skips restoring the persisted surface when the user previously saved `Chat` explicitly, producing the wrong startup state.
-4. The SQLite pool opened by `SqlitePool::open` never runs migrations, so the `shell_preferences` table does not exist when the IPC commands first call `save_active_surface` or `load_active_surface`.
-
-Five warnings cover a migration failure that is silently swallowed, a frontend duplicate `role="application"`, an incorrect `focusedIndex` initializer in SurfaceRail, and two structural gaps.
+1. The Svelte layout renders `AppShell` which duplicates the navigation rail already provided by `WorkspaceShell` — the rail renders twice in the live DOM.
+2. `+layout.svelte` uses the Svelte 4 `<slot />` syntax while the rest of the codebase uses the Svelte 5 `{@render children?.()}` snippet pattern — page content will not project through the layout in strict Svelte 5 mode.
+3. `get_active_surface` has a race condition: concurrent async invocations can both pass the `!hydrated` guard, causing duplicate DB reads and a stale-value return path.
+4. The migration savepoint name is assembled with `format!` string interpolation of migration IDs and SQL, establishing a precedent that will become an injection vector if any future migration introduces dynamic content.
 
 ---
 
 ## Critical Issues
 
-### CR-01: `ShellPreferenceStore` and `SqlitePool` are never managed — both IPC commands panic at runtime
+### CR-01: Double `SurfaceRail` render — `AppShell` in layout wraps `WorkspaceShell` in page
 
-**File:** `src-tauri/src/main.rs:23`
+**File:** `src/routes/+layout.svelte:14` and `src/routes/+page.svelte:22`
 
-**Issue:** `main.rs` calls `.manage(AppState::default())` and nothing else. Both `get_active_surface` and `set_active_surface` declare `store: tauri::State<'_, ShellPreferenceStore>` as a parameter. Tauri 2 panics with an "unmanaged state" error if an IPC command requests a state type that was never registered via `.manage(...)`. A file-backed `SqlitePool` must also be created and wrapped in `Arc` before `ShellPreferenceStore::new(pool)` can be called. Neither object is constructed or registered.
+**Issue:** `+layout.svelte` renders `<AppShell>` which unconditionally renders `<SurfaceRail>` inside a `<nav aria-label="Surface navigation">`. `+page.svelte` renders `<WorkspaceShell>` — also unconditionally rendering `<SurfaceRail>` inside its own `<nav aria-label="Surface navigation">`. Because the SvelteKit layout wraps the page, both `AppShell` and `WorkspaceShell` are live in the DOM simultaneously. The result is:
 
-Additionally, the pool's `open()` method accepts a `PathBuf` for the database file, but there is no code anywhere in `main.rs` or a setup hook that resolves the Tauri `app_data_dir` path and calls `SqlitePool::open`.
+- Two navigation rails visible on screen, each with four buttons.
+- Two independent `focusedIndex` state variables in two `SurfaceRail` component instances. Keyboard arrow-key navigation in one rail has no effect on the other, so focus management is split.
+- Two `role="tablist"` landmarks with the same `aria-label="Workspace surfaces"` — invalid ARIA, screen readers will announce duplicate navigation regions.
+- Both rails call `surfaceStore.setSurface()` on their respective `handleClick`, so the singleton store receives correct updates, but the two `focusedIndex` states diverge.
+- `AppShell` and `WorkspaceShell` both render a root element with `aria-label="Desktop AI Client"`, producing nested duplicate application labels.
 
-**Fix:**
-```rust
-use std::sync::Arc;
-use storage::sqlite::{SqlitePool, ShellPreferenceStore};
-use storage::migrations::run_migrations;
+**Fix:** Remove `<AppShell>` from `+layout.svelte`. The layout's sole responsibility is hydration. `WorkspaceShell` in `+page.svelte` is the complete shell component and should not be wrapped by `AppShell`:
 
-fn main() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
-            // Resolve the per-user data directory and open the SQLite file.
-            let data_dir = app
-                .path()
-                .app_data_dir()
-                .expect("app data dir must be resolvable");
-            std::fs::create_dir_all(&data_dir)?;
-            let db_path = data_dir.join("app.db");
+```svelte
+<!-- src/routes/+layout.svelte — corrected -->
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { surfaceStore } from '$lib/stores/surface';
 
-            let pool = SqlitePool::open(db_path)?;
-            // Run pending migrations immediately after opening.
-            {
-                pool.with_conn(|conn| {
-                    run_migrations(conn, env!("CARGO_PKG_VERSION"))
-                        .map_err(|e| rusqlite::Error::InvalidParameterName(e.to_string()))
-                })?;
-            }
-            let pool = Arc::new(pool);
-            app.manage(ShellPreferenceStore::new(Arc::clone(&pool)));
-            app.manage(pool);
-            Ok(())
-        })
-        .manage(AppState::default())
-        .invoke_handler(tauri::generate_handler![
-            ipc::app_shell::get_active_surface,
-            ipc::app_shell::set_active_surface,
-        ])
-        .run(tauri::generate_context!())
-        .expect("Tauri application failed to start");
-}
+  interface Props {
+    children?: import('svelte').Snippet;
+  }
+  let { children }: Props = $props();
+
+  onMount(() => {
+    surfaceStore.hydrate().catch((e) => console.error('surface hydration failed', e));
+  });
+</script>
+
+{@render children?.()}
 ```
+
+`AppShell.svelte` should then be deleted or explicitly marked as superseded by `WorkspaceShell.svelte`.
 
 ---
 
-### CR-02: IPC commands absent from capability file — blocked by Tauri 2 permission system
+### CR-02: Svelte 4 `<slot />` in `+layout.svelte` — page content will not render in Svelte 5 strict mode
 
-**File:** `src-tauri/capabilities/main.json:6-11`
+**File:** `src/routes/+layout.svelte:16`
 
-**Issue:** Tauri 2 uses a deny-by-default capability system. A command is only invokable from a window if it is listed (directly or via a permission set) in that window's capability JSON. The `main-window` capability grants `core:default`, `opener:default`, `core:app:allow-app-hide`, and `core:window:allow-start-dragging` — none of which cover `get_active_surface` or `set_active_surface`. Calling either command from the frontend will be rejected by Tauri's permission layer before the Rust handler is ever reached.
+**Issue:** `+layout.svelte` uses `<slot />` (the Svelte 4 children-projection API). Every other component in the codebase — `AppShell.svelte`, `SurfacePanel.svelte`, `WorkspaceShell.svelte` — uses the Svelte 5 `{@render children?.()}` snippet pattern with `interface Props { children?: import('svelte').Snippet; }`. Mixing these APIs in the same tree is undefined in Svelte 5: the `<slot />` element is treated as an unknown HTML element (rendered as a literal `<slot>` tag) and the children snippet is never rendered. The practical result is a blank page body — the page route content never appears.
 
-**Fix:** Add the custom commands to the capability's `permissions` array. The conventional Tauri 2 approach is to declare a custom permission set in `src-tauri/permissions/` and reference it here, or to list the commands directly:
-
-```json
-{
-  "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "main-window",
-  "description": "Capability set for the main application window.",
-  "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "opener:default",
-    "core:app:allow-app-hide",
-    "core:window:allow-start-dragging",
-    "allow-get-active-surface",
-    "allow-set-active-surface"
-  ]
-}
-```
-
-The matching permission identifiers must be declared in `src-tauri/permissions/app-shell.toml` (or equivalent) with `[[permission]]` entries that list the commands. Alternatively, if the project uses Tauri's inline `"app:allow-*"` naming convention, confirm the exact identifiers against the generated schema.
+**Fix:** Update `+layout.svelte` to use the Svelte 5 snippet pattern (as shown in CR-01 fix above). This also aligns with the fix for CR-01 by removing the `AppShell` import entirely.
 
 ---
 
-### CR-03: `get_active_surface` skips DB restore when the persisted surface is `Chat`
+### CR-03: Race condition in `get_active_surface` — concurrent calls both pass the `!hydrated` guard
 
-**File:** `src-tauri/src/ipc/app_shell.rs:53-61`
+**File:** `src-tauri/src/ipc/app_shell.rs:44-70`
 
-**Issue:** The startup hydration path reads the in-memory `active_surface` (default `Chat`) and only queries SQLite when `current == Surface::Chat`. But if the user previously saved `Chat` explicitly, `load_active_surface()` returns `Some(Surface::Chat)`, which satisfies `if let Ok(Some(persisted))` — so the in-memory state is redundantly set and the function returns `Chat`. This branch actually does work for `Chat`. The real correctness failure is the inverse: if the persisted value is anything other than `Chat`, but the in-memory state is already non-`Chat` (e.g., a second call after `set_active_surface` wrote `History`), the condition `current == Surface::Chat` is false and the DB is never consulted — this is intentional. However the current logic fails the startup contract silently when the persisted value is `Chat` and the user expects a restored `Chat` session: the function skips into the `Ok(current)` return on line 63 without ever updating in-memory state, meaning the in-memory state remains the struct-level default rather than being confirmed from storage. This is a minor redundancy.
+**Issue:** The function reads `(current, hydrated)` under one lock acquisition (lines 44-49) then releases the lock. If two concurrent async invocations of `get_active_surface` arrive on the Tokio multi-thread runtime before either completes, both observe `hydrated == false` at their respective first lock acquisitions. Both then call `store.load_active_surface()` independently and race to re-acquire the `AppState::shell` mutex. The concrete failure mode:
 
-The more serious correctness defect: if a future refactor changes `Surface::default()` to something other than `Chat`, the guard on line 53 will stop hydrating any previous-session `Chat` preference. The hydration condition is semantically "is this the default value?" but is expressed as a type-equality check against `Surface::Chat`. It should check whether the in-memory state has ever been set from storage (e.g., a `hydrated: bool` flag), not which surface is the default.
+1. Both callers read `hydrated = false` and `current = Chat` (default).
+2. Both call `store.load_active_surface()`, getting back `Some(History)` (hypothetical stored value).
+3. Both enter the `Ok(Some(persisted))` branch.
+4. Caller A acquires the lock, writes `active_surface = History`, sets `hydrated = true`, returns `Ok(History)`.
+5. Caller B acquires the lock, writes `active_surface = History` again (idempotent for this branch), returns `Ok(History)`.
 
-**Fix:** Introduce a `hydrated` flag in `ShellState` and base the branch on it:
+The returned values happen to be correct, but the extra DB read is wasted and — more critically — in the `Ok(None)` branch (no persisted value) the two callers both reach line 64 to set `hydrated = true`. There, `current` was captured as the pre-hydration default. If caller A already completed and `set_active_surface` wrote a value between caller B's first lock release and its second lock acquisition, caller B still returns the stale `current` captured before hydration. The stale return is silent.
+
+**Fix:** Hold the lock for the full hydration sequence — check, DB read, and write — without releasing it in between. Since `store.load_active_surface()` takes a separate internal mutex (`SqlitePool::conn`), document the lock-ordering (shell → sqlite) and ensure no code path acquires these in the opposite order:
 
 ```rust
-// In ShellState:
-pub hydrated: bool,  // false until first DB load completes
+pub async fn get_active_surface(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+    store: tauri::State<'_, ShellPreferenceStore>,
+) -> Result<Surface, ShellError> {
+    assert_main_window(&window)?;
 
-// In get_active_surface:
-let (current, hydrated) = {
-    let shell = state.shell.lock()...?;
-    (shell.active_surface.clone(), shell.hydrated)
-};
+    let mut shell = state.shell.lock().map_err(|e| {
+        ShellError::StorageError(format!("shell state lock poisoned: {e}"))
+    })?;
 
-if !hydrated {
-    if let Ok(Some(persisted)) = store.load_active_surface() {
-        let mut shell = state.shell.lock()...?;
-        shell.active_surface = persisted.clone();
+    if !shell.hydrated {
+        // DB read while holding the shell lock; lock ordering: shell -> sqlite.
+        if let Ok(Some(persisted)) = store.load_active_surface() {
+            shell.active_surface = persisted;
+        }
         shell.hydrated = true;
-        return Ok(persisted);
     }
-    let mut shell = state.shell.lock()...?;
-    shell.hydrated = true;
-}
 
-Ok(current)
+    Ok(shell.active_surface.clone())
+}
 ```
+
+Note: `store.load_active_surface()` calls `SqlitePool::with_conn` which acquires `SqlitePool::conn`'s mutex. The ordering (shell lock held, then sqlite lock acquired) must be consistently maintained across all callers to prevent deadlock.
 
 ---
 
-### CR-04: `SqlitePool::open` does not run migrations — `shell_preferences` table missing on first launch
+### CR-04: SQL injection precedent — migration savepoint name and SQL body assembled via `format!`
 
-**File:** `src-tauri/src/storage/sqlite.rs:25-38`
+**File:** `src-tauri/src/storage/migrations.rs:87-93`
 
-**Issue:** `SqlitePool::open` opens the connection and sets pragmas, but does not call `run_migrations`. The doc-comment says "Applies all pending migrations before returning" (line 22-23), making this a documentation-level contract violation as well as a runtime defect. On first launch, `save_active_surface` will fail with `SqliteFailure` (table not found) and `load_active_surface` will also fail, causing the IPC command to return a `StorageError` to the frontend. The `surface.ts` store catches IPC errors and sets `error` state, so the UI will render in an error state on every first launch.
-
-**Fix:** Either call `run_migrations` inside `open` (simplest, keeps the contract the doc-comment makes), or ensure every call site calls it immediately after `open`. The setup hook in CR-01 shows the latter pattern. If `open` is supposed to handle migrations itself:
+**Issue:** The savepoint name and migration SQL are embedded directly into a format string passed to `conn.execute_batch`:
 
 ```rust
-pub fn open(db_path: PathBuf) -> rusqlite::Result<Self> {
-    let conn = Connection::open(&db_path)?;
-    conn.execute_batch(
-        "PRAGMA journal_mode = WAL;
-         PRAGMA synchronous = NORMAL;
-         PRAGMA foreign_keys = ON;
-         PRAGMA busy_timeout = 5000;",
-    )?;
-    crate::storage::migrations::run_migrations(&conn, env!("CARGO_PKG_VERSION"))?;
-    Ok(Self { conn: Mutex::new(conn) })
-}
+let result = conn.execute_batch(&format!(
+    "SAVEPOINT migration_{id};
+     {sql}
+     RELEASE SAVEPOINT migration_{id};",
+    id = migration.id,
+    sql = migration.sql,
+));
+```
+
+`migration.id` and `migration.sql` are `&'static str` constants today, so this cannot be exploited at runtime in the current codebase. The concern is structural:
+
+1. **Injection precedent**: The pattern teaches future contributors that string interpolation into raw SQL is acceptable. When future migrations add more dynamic content (e.g., table names derived from configuration), this pattern will be copied and become exploitable.
+2. **Savepoint name injection**: SQLite savepoint names must be valid SQL identifiers. If any future migration ID contains `'`, `;`, whitespace, or `--`, the batch would be malformed. The IDs are validated only by convention, not by code.
+3. **SQL body interpolation**: `{sql}` is interpolated with no escaping. If any future migration constructs its SQL from external input (e.g., a plugin name from a config file), this is a direct injection path.
+
+**Fix:** Add an assertion to validate migration IDs before use, and add a code comment explaining why SQL interpolation is acceptable here (static constants only) and must never be extended to dynamic values:
+
+```rust
+// Validate id is a safe SQL identifier before embedding it.
+debug_assert!(
+    migration.id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'),
+    "migration id must be alphanumeric/underscore only: {:?}",
+    migration.id
+);
+// SAFETY: migration.id and migration.sql are &'static str literals defined
+// in MIGRATIONS. Do not generalize this pattern to dynamic values.
+let result = conn.execute_batch(&format!(
+    "SAVEPOINT migration_{id};\n{sql}\nRELEASE SAVEPOINT migration_{id};",
+    id = migration.id,
+    sql = migration.sql,
+));
 ```
 
 ---
 
 ## Warnings
 
-### WR-01: Migration failure after partial write is silently swallowed for `success=false` rows
+### WR-01: Migration 0001 (`schema_migrations`) duplicated — bootstrap inline and in `MIGRATIONS` slice
 
-**File:** `src-tauri/src/storage/migrations.rs:87-109`
+**File:** `src-tauri/src/storage/migrations.rs:28-41` and `60-69`
 
-**Issue:** When a migration fails, the code writes a row with `success = 0` to `schema_migrations` (line 105), then re-raises the error via `result?` (line 109). On the next launch, `run_migrations` queries `SELECT success FROM schema_migrations WHERE id = ?1` and calls `row.get::<_, bool>(0)` (line 77). A `success` value of `0` maps to `false`. The guard then skips the migration because `already_applied = false`, and `if already_applied { continue; }` only skips when `true`. So a failed migration is retried — that is correct. However, the `ON CONFLICT DO UPDATE` on line 100 will overwrite the original `success=0` failure record with the new result, losing the history of which app version first failed. This is a minor auditability loss, not a correctness defect.
+**Issue:** `run_migrations` begins with an inline `CREATE TABLE IF NOT EXISTS schema_migrations` (lines 60-69) to bootstrap the tracking table. Migration `0001` in the `MIGRATIONS` array (lines 28-41) repeats the same DDL with `IF NOT EXISTS`. On first run: the inline creates the table, then the loop reaches `0001`, attempts the same DDL (succeeds as a no-op), marks it as applied (`success = 1`), and increments `applied`. The function reports `applied = 2` for a fresh database, which the test at line 130 asserts against `MIGRATIONS.len()` — correct, but misleading. Migration `0001` did not meaningfully advance the schema; the table was already present from the inline bootstrap.
 
-The actual warning: after a migration's SQL fails (say migration 0002), `result?` on line 109 propagates the error up through `run_migrations`. The caller in `main.rs` does not exist yet (CR-01), but any call site that unwraps this with `.expect(...)` or ignores the error will silently leave the database without the `shell_preferences` table and the app will fail later when it tries to use it.
+More importantly: if migration `0001` is ever marked `success = 0` (e.g., a failed run wrote a bad row), the repair path is confusing — the table exists (created by the inline bootstrap) but `0001` reports failure. A developer diagnosing the incident must understand the dual-creation path to avoid concluding the tracking table is corrupt.
 
-**Fix:** The call site (in `main.rs` setup hook) must propagate or handle the `run_migrations` error, not ignore it. Panic on migration failure at startup is acceptable:
+**Fix:** Remove `Migration { id: "0001", ... }` from `MIGRATIONS`. The inline bootstrap block is the correct and only place to create `schema_migrations`. Renumber the existing `0002` to `0001`. Update the test to assert `applied == 1` (or `MIGRATIONS.len()`) and add a comment explaining why the tracking table is bootstrapped outside the migration loop.
+
+---
+
+### WR-02: `SqlitePool::with_conn` maps mutex-poison to `rusqlite::Error::InvalidParameterName`
+
+**File:** `src-tauri/src/storage/sqlite.rs:61-64`
+
+**Issue:**
 
 ```rust
-run_migrations(conn, env!("CARGO_PKG_VERSION"))
-    .expect("database migration failed — cannot start");
+let conn = self.conn.lock().map_err(|_| {
+    rusqlite::Error::InvalidParameterName("connection mutex poisoned".to_string())
+})?;
 ```
 
+`rusqlite::Error::InvalidParameterName` is semantically a parameter-binding validation error (wrong column count, wrong type). Using it to represent a mutex-poison condition causes callers that match on `rusqlite::Error` to misclassify a fatal concurrency failure as an input validation failure. Call sites in `ShellPreferenceStore::save_active_surface` and `load_active_surface` propagate this up as `ShellError::StorageError("InvalidParameterName: connection mutex poisoned")`, which is an opaque and misleading diagnostic in logs and IPC responses.
+
+**Fix:** Mutex poison after a thread panic is an unrecoverable state. Propagate it as a panic or define a wrapper error:
+
+```rust
+let conn = self.conn.lock().unwrap_or_else(|poisoned| {
+    // A prior thread panicked while holding the connection lock.
+    // The connection state is unknown; propagate the panic.
+    panic!("SQLite connection mutex poisoned: {}", poisoned);
+});
+```
+
+If recovery is required, define a thin error type that can carry both `rusqlite::Error` and `MutexPoisoned` so call sites can match correctly.
+
 ---
 
-### WR-02: Duplicate `role="application"` on the workspace shell hierarchy
-
-**File:** `src/lib/components/WorkspaceShell.svelte:48` and `src/lib/components/AppShell.svelte:21`
-
-**Issue:** `WorkspaceShell.svelte` (line 48) and `AppShell.svelte` (line 21) both render `<div ... role="application">`. At runtime both components are active simultaneously: `+layout.svelte` renders `<AppShell>` which includes a slot, and `+page.svelte` renders `<WorkspaceShell>` inside that slot. This produces nested `role="application"` elements, which is invalid ARIA — an `application` role should contain its own landmark subtree, not nest inside another `application`. Screen readers will announce the landmark twice. The `AppShell` component appears to be a legacy shell that was superseded by `WorkspaceShell` but not removed.
-
-**Fix:** Either remove the `role="application"` from `AppShell.svelte` (it no longer carries the full workspace layout and should defer to `WorkspaceShell`) or, if `AppShell` is intended to be the root shell, remove `role="application"` from `WorkspaceShell.svelte`. Given the layout hierarchy, `AppShell` is the outer container and its `role="application"` should be retained; `WorkspaceShell` should be changed to a neutral container `<div>` without a conflicting landmark role.
-
----
-
-### WR-03: `focusedIndex` initializer in `SurfaceRail` silently defaults to `0` when the active surface is `chat`
+### WR-03: `focusedIndex` initializer in `SurfaceRail` never updates after backend hydration changes `activeSurface`
 
 **File:** `src/lib/components/SurfaceRail.svelte:31-33`
 
-**Issue:**
+**Issue:** `focusedIndex` is initialized once at component mount from `activeSurface`:
+
 ```ts
 let focusedIndex = $state(
-    surfaces.findIndex((s) => s.id === activeSurface) || 0
+    (() => { const idx = surfaces.findIndex((s) => s.id === activeSurface); return idx === -1 ? 0 : idx; })()
 );
 ```
-`Array.findIndex` returns `0` when the active surface is `chat` (the first element, index 0). Because `0` is falsy in JavaScript, the `|| 0` fallback fires for `chat` as well as for "not found" (`-1`). The result is correct (`0` in both cases), but only by coincidence. If `chat` were ever moved to a non-zero position, or if this pattern is copied to another array, the logic silently breaks. Additionally, `findIndex` returning `-1` (surface not found) would also resolve to `0` via the fallback — a case that should be an error, not a silent default.
 
-**Fix:**
+`activeSurface` is `$derived(surfaceStore.surface)`, which is `'chat'` (the default) at component construction time. The `surfaceStore.hydrate()` call in `+layout.svelte`'s `onMount` fires after the component tree is already mounted. When hydration completes and updates `surfaceStore.surface` to, say, `'history'`, `activeSurface` re-derives correctly (so the active-highlight on the buttons updates), but `focusedIndex` is never updated — it remains `0` (Chat). The roving-tabindex pattern gives `tabindex=0` to the Chat button while the History button appears highlighted as active. Keyboard Tab navigation therefore starts on the wrong button.
+
+**Fix:** Update `focusedIndex` reactively when `activeSurface` changes, using `$effect`:
+
 ```ts
-let focusedIndex = $state(
-    Math.max(0, surfaces.findIndex((s) => s.id === activeSurface))
-);
-```
-Or, more defensively:
-```ts
-const idx = surfaces.findIndex((s) => s.id === activeSurface);
-let focusedIndex = $state(idx >= 0 ? idx : 0);
-```
-
----
-
-### WR-04: `surfaceStore.hydrate()` return value is not awaited in the layout — errors are not surfaced
-
-**File:** `src/routes/+layout.svelte:9-11`
-
-**Issue:**
-```ts
-onMount(() => {
-    surfaceStore.hydrate();
-});
-```
-`surfaceStore.hydrate()` returns `Promise<void>`. `onMount` ignores the returned promise — any unhandled rejection is silently dropped. While `hydrate()` itself wraps the await in try/catch and sets `error` state, a regression that throws synchronously before the try block (or a future refactor that moves the try) will be invisible. The convention in Svelte 5 + TypeScript is to await the hydration or to explicitly handle the floating promise.
-
-**Fix:**
-```ts
-onMount(() => {
-    surfaceStore.hydrate().catch((e) => {
-        console.error('[layout] hydrate threw unexpectedly:', e);
-    });
+$effect(() => {
+    const idx = surfaces.findIndex((s) => s.id === activeSurface);
+    if (idx !== -1) focusedIndex = idx;
 });
 ```
 
+This also fixes the IIFE initialization — replace the IIFE with `let focusedIndex = $state(0);` and let the effect set the correct initial value on first run.
+
 ---
 
-### WR-05: `migration_0001` duplicates the bootstrap DDL already executed inline in `run_migrations`
+### WR-04: `surfaceStore.error` exposes raw IPC error objects rendered verbatim in the status bar
 
-**File:** `src-tauri/src/storage/migrations.rs:29-41` and `60-69`
+**File:** `src/lib/stores/surface.ts:45` and `src/lib/components/WorkspaceShell.svelte:65`
 
-**Issue:** `run_migrations` begins with an inline `CREATE TABLE IF NOT EXISTS schema_migrations ...` (lines 60-69) to bootstrap the tracking table. Migration `0001` in the `MIGRATIONS` array (lines 29-41) also creates `schema_migrations` with `IF NOT EXISTS`. On a fresh database both run: the inline creates the table, then migration `0001` attempts the same DDL (harmless due to `IF NOT EXISTS`), then records itself as applied. On the second run, the inline DDL is a no-op, and migration `0001` is detected as already-applied and skipped correctly.
+**Issue:** When a backend IPC call fails, the error is stored as `error = String(e)`. The Tauri IPC layer rejects errors as serialized `ShellError` objects: `{ code: "STORAGE_ERROR", message: "..." }`. `String({ code: "STORAGE_ERROR", message: "..." })` in JavaScript produces `"[object Object]"` — a useless string that is then displayed verbatim in the `StatusRegion` status bar and announced via `aria-live`. When the error is a plain string (e.g., a permission rejection), it is rendered verbatim and may include Tauri-internal error identifiers that mean nothing to the user.
 
-The defect is conceptual: if migration `0001` is ever marked `success=0` (failed on a previous run) and a developer tries to replay it, it will re-execute the DDL against the tracking table that already exists — the `IF NOT EXISTS` prevents data loss, but the developer is now debugging a situation where the tracking table exists yet migration `0001` reports failure. The duplication also makes `applied = MIGRATIONS.len()` on a fresh DB include the tracking table DDL as a "applied" migration, which bloats the count in tests (`migrations_apply_to_fresh_database` asserts `applied == 2`, which happens to be correct but for muddled reasons).
+**Fix:** Normalize IPC errors to user-facing strings at the store boundary:
 
-**Fix:** Remove migration `0001` from the `MIGRATIONS` array. The bootstrap DDL should remain in the inline block (lines 60-69), which handles it before the loop. Start user-facing schema at `0002` (or renumber `0002` to `0001`). Update the test assertion `assert_eq!(applied, MIGRATIONS.len())` to the concrete expected count.
+```typescript
+function normalizeIpcError(e: unknown): string {
+    if (typeof e === 'string') return e;
+    if (e && typeof e === 'object') {
+        const obj = e as Record<string, unknown>;
+        if (typeof obj['message'] === 'string') return obj['message'];
+        if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
+    }
+    return 'An unexpected error occurred.';
+}
+
+// Replace:  error = String(e);
+// With:     error = normalizeIpcError(e);
+```
 
 ---
 
 ## Info
 
-### IN-01: `tests/rust/app_shell.rs` stub file adds noise without function
+### IN-01: `AppShell.svelte` is a dead/superseded component
 
-**File:** `tests/rust/app_shell.rs:1-9`
+**File:** `src/lib/components/AppShell.svelte:1-63`
 
-**Issue:** This file contains only comments directing the reader to `src-tauri/tests/app_shell.rs`. It is not compiled by Cargo (it is outside any crate root), so it contributes nothing to the test run. It will confuse contributors who try to add tests here and wonder why they don't run.
+**Issue:** `AppShell.svelte` provides a side-rail-plus-content-slot layout that is a strict subset of what `WorkspaceShell.svelte` delivers. Once CR-01 is resolved (removing `AppShell` from the layout), `AppShell.svelte` will have no callers. Leaving dead components in the tree causes confusion: future contributors may reach for `AppShell` instead of `WorkspaceShell`, reintroducing the double-rail bug.
 
-**Fix:** Delete the file. The comment directing developers to the correct test location can live in a `docs/testing.md` or in `CLAUDE.md`.
-
----
-
-### IN-02: `SURFACE_LABELS` is defined in two places in the frontend
-
-**File:** `src/lib/stores/surface.ts:18-23` and `src/routes/+page.svelte:10-15` and `src/lib/components/WorkspaceShell.svelte:33-38`
-
-**Issue:** The mapping from `Surface` enum values to human-readable labels is duplicated across three files. All three must be kept in sync when a new surface is added. Currently all three agree, but the duplication is a maintenance hazard.
-
-**Fix:** Export `SURFACE_LABELS` from `surface.ts` and import it in the other two files. The store already has the canonical definition.
+**Fix:** Delete `src/lib/components/AppShell.svelte` after resolving CR-01.
 
 ---
 
-### IN-03: `tauri.conf.json` uses placeholder bundle identifier
+### IN-02: `SURFACE_LABELS` mapping is duplicated across three frontend files
 
-**File:** `src-tauri/tauri.conf.json:3`
+**File:** `src/lib/stores/surface.ts:18-23`, `src/lib/components/WorkspaceShell.svelte:33-38`, `src/routes/+page.svelte:10-15`
 
-**Issue:** `"identifier": "com.example.desktop-ai-client"` uses the `com.example` namespace. This is a scaffold value. On macOS, bundle identifiers in the `com.example` namespace are not permitted in the App Store, and on Windows/Linux they affect update channel resolution and OS-level sandbox identity. This is low-risk for a scaffold phase but needs to be replaced before the app ships to real users.
+**Issue:** The `Surface -> string` label mapping is defined identically in three places. Adding a new surface requires updating all three. Currently all three agree; the duplication is a future maintenance hazard rather than a current bug.
 
-**Fix:** Replace with the project's actual reverse-domain identifier before the first distributable build. Track it as a known pre-release TODO in `.planning/REQUIREMENTS.md` if it is not already there.
+**Fix:** Export `SURFACE_LABELS` from `surface.ts` (where the canonical type is defined) and import it in the other two files:
+
+```typescript
+// surface.ts — add export keyword
+export const SURFACE_LABELS: Record<Surface, string> = {
+    chat: 'Chat',
+    history: 'History',
+    settings: 'Settings',
+    artifacts: 'Artifacts',
+};
+```
+
+```svelte
+<!-- WorkspaceShell.svelte and +page.svelte — remove local definition -->
+import { surfaceStore, type Surface, SURFACE_LABELS } from '$lib/stores/surface';
+```
 
 ---
 
-_Reviewed: 2026-06-13T19:27:12Z_
+_Reviewed: 2026-06-13T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
