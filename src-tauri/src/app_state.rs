@@ -22,6 +22,10 @@ pub struct ShellState {
     /// The last active surface the user was on. Persisted to SQLite and restored
     /// on startup so the shell opens to the same surface after a restart.
     pub active_surface: Surface,
+    /// Whether the shell has been hydrated from SQLite on this session. Starts
+    /// false; set true after the first DB consult so subsequent calls use the
+    /// cached in-memory value instead of re-querying.
+    pub hydrated: bool,
 }
 
 /// Named surfaces the shell can display. Adding a new surface here requires a

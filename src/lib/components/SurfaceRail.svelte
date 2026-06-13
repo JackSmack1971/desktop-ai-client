@@ -29,7 +29,7 @@
 
 	/** The index in `surfaces` of the button that currently has DOM focus. */
 	let focusedIndex = $state(
-		surfaces.findIndex((s) => s.id === activeSurface) || 0
+		(() => { const idx = surfaces.findIndex((s) => s.id === activeSurface); return idx === -1 ? 0 : idx; })()
 	);
 
 	/** Button element refs — populated by bind:this in {#each}. */

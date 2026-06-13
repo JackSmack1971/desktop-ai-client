@@ -18,7 +18,7 @@
 	let { children }: Props = $props();
 </script>
 
-<div class="app-shell" role="application" aria-label="Desktop AI Client">
+<div class="app-shell" aria-label="Desktop AI Client">
 	<!-- Side navigation rail: drives surface switching through typed IPC -->
 	<nav class="app-shell__rail" aria-label="Surface navigation">
 		<SurfaceRail />

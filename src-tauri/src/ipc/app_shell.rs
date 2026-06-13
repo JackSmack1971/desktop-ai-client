@@ -38,26 +38,33 @@ pub async fn get_active_surface(
 ) -> Result<Surface, ShellError> {
     assert_main_window(&window)?;
 
-    // Prefer the in-memory value when already set (avoids a DB read on every
-    // re-render). On first call after launch the store loads from SQLite and
-    // populates the in-memory state.
-    let current = {
+    // Prefer the in-memory value when already hydrated (avoids a DB read on
+    // every re-render). On first call after launch the store loads from SQLite
+    // and populates the in-memory state.
+    let (current, hydrated) = {
         let shell = state.shell.lock().map_err(|e| {
             ShellError::StorageError(format!("shell state lock poisoned: {e}"))
         })?;
-        shell.active_surface.clone()
+        (shell.active_surface.clone(), shell.hydrated)
     };
 
-    // If in-memory surface is still the default (Chat), check persisted value
-    // in case a previous session stored something different.
-    if current == Surface::Chat {
+    // Consult the DB exactly once per session, guarded by an explicit flag
+    // rather than default-value equality (which would fail when Chat is the
+    // persisted value and the user is genuinely on Chat).
+    if !hydrated {
         if let Ok(Some(persisted)) = store.load_active_surface() {
             let mut shell = state.shell.lock().map_err(|e| {
                 ShellError::StorageError(format!("shell state lock poisoned: {e}"))
             })?;
             shell.active_surface = persisted.clone();
+            shell.hydrated = true;
             return Ok(persisted);
         }
+        // No persisted value — DB consulted; mark hydrated so we don't re-query.
+        let mut shell = state.shell.lock().map_err(|e| {
+            ShellError::StorageError(format!("shell state lock poisoned: {e}"))
+        })?;
+        shell.hydrated = true;
     }
 
     Ok(current)
