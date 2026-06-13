@@ -1,98 +1,44 @@
 ---
 phase: 01-app-shell
-verified: 2026-06-13T20:00:00Z
-status: gaps_found
-score: 3/7 must-haves verified
+verified: 2026-06-13T21:30:00Z
+status: human_needed
+score: 7/7 must-haves verified
 overrides_applied: 0
-gaps:
-  - truth: "The app opens into a usable desktop shell instead of a blank scaffold."
-    status: failed
-    reason: |
-      Three compounding blockers prevent the app from launching into a working shell:
-      (1) ShellPreferenceStore and SqlitePool are never registered with Tauri .manage() —
-      both IPC commands will panic at runtime with "unmanaged state".
-      (2) get_active_surface and set_active_surface are absent from capabilities/main.json —
-      Tauri 2's deny-by-default permission system blocks both commands before the Rust
-      handler is ever reached.
-      (3) SqlitePool::open() does not call run_migrations despite the doc-comment claiming
-      it does — on first launch shell_preferences table does not exist.
-    artifacts:
-      - path: "src-tauri/src/main.rs"
-        issue: "Only manages AppState::default(). No .setup() hook, no SqlitePool::open(), no ShellPreferenceStore::new(), no app.manage() for either storage type."
-      - path: "src-tauri/capabilities/main.json"
-        issue: "Permissions array contains only core:default, opener:default, core:app:allow-app-hide, core:window:allow-start-dragging. get_active_surface and set_active_surface are absent."
-      - path: "src-tauri/src/storage/sqlite.rs"
-        issue: "SqlitePool::open() (lines 25-38) sets pragmas and returns but never calls run_migrations. Doc-comment on line 22-24 states 'Applies all pending migrations before returning' — false."
-    missing:
-      - "Add .setup() hook in main.rs that resolves app_data_dir, calls SqlitePool::open(), calls run_migrations, wraps pool in Arc, and registers both SqlitePool and ShellPreferenceStore via app.manage()"
-      - "Add get_active_surface and set_active_surface to capabilities/main.json permissions array (or declare a custom permission set in src-tauri/permissions/ and reference it)"
-      - "Either call run_migrations inside SqlitePool::open() or ensure every call site calls it immediately after open(). The doc-comment contract must match the implementation."
-
-  - truth: "The shell loads a backend-owned active-surface preference on startup."
-    status: failed
-    reason: |
-      Startup hydration requires three things to work in sequence: (1) SqlitePool opened
-      with migrations run so shell_preferences table exists, (2) ShellPreferenceStore managed
-      so Tauri can inject it into get_active_surface, (3) capability grant so the frontend
-      invoke('get_active_surface') is not rejected. All three are broken (CR-01, CR-02, CR-04).
-      The surface.ts store has correct hydration code — the broken layer is entirely in Rust/Tauri.
-    artifacts:
-      - path: "src-tauri/src/main.rs"
-        issue: "ShellPreferenceStore not managed — get_active_surface panics on state injection"
-      - path: "src-tauri/capabilities/main.json"
-        issue: "get_active_surface not in permissions — call rejected by Tauri 2 permission layer"
-      - path: "src-tauri/src/storage/sqlite.rs"
-        issue: "Migrations not run by open() — shell_preferences table absent on first launch"
-    missing:
-      - "Fix main.rs setup hook (see gap 1 above) to register ShellPreferenceStore"
-      - "Add capability permission grant (see gap 1 above)"
-      - "Fix SqlitePool::open() to run migrations (see gap 1 above)"
-
-  - truth: "The active surface survives a restart through backend-owned persistence."
-    status: failed
-    reason: |
-      Persistence requires the IPC write path (set_active_surface) to succeed. CR-01 and CR-02
-      prevent set_active_surface from ever being reached. Even if wiring were fixed, CR-04 means
-      the shell_preferences table does not exist on first launch, so the first save attempt would
-      fail with a SQL 'no such table' error. The hydration guard in get_active_surface (CR-03)
-      also contains a fragile default-value check that would silently fail to restore the Chat
-      surface if Surface::default() changes.
-    artifacts:
-      - path: "src-tauri/src/main.rs"
-        issue: "set_active_surface not reachable — ShellPreferenceStore unmanaged"
-      - path: "src-tauri/capabilities/main.json"
-        issue: "set_active_surface not in permissions — blocked before Rust handler"
-      - path: "src-tauri/src/ipc/app_shell.rs"
-        issue: "Hydration guard 'if current == Surface::Chat' (line 53) is a fragile default-value check — will silently skip DB restore for any future refactor that changes Surface::default()"
-    missing:
-      - "Fix main.rs and capabilities (see gap 1)"
-      - "Fix SqlitePool::open() migrations (see gap 1)"
-      - "Introduce a hydrated: bool flag in ShellState instead of default-value equality check"
-
+re_verification:
+  previous_status: gaps_found
+  previous_score: 3/7
+  gaps_closed:
+    - "The app opens into a usable desktop shell instead of a blank scaffold"
+    - "The shell loads a backend-owned active-surface preference on startup"
+    - "The active surface survives a restart through backend-owned persistence"
+  gaps_remaining: []
+  regressions: []
 human_verification:
-  - test: "Launch the app with npm run dev (after gap fixes) and switch surfaces"
-    expected: "Each surface (Chat, History, Settings, Artifacts) renders correctly, switching is immediate, no console errors from IPC"
-    why_human: "Requires Tauri runtime, visual inspection of shell layout, and DevTools console monitoring"
-  - test: "Keyboard-only navigation across the four surfaces"
-    expected: "Arrow keys move focus within the rail, Enter/Space activate the focused surface and move focus to the panel, Home/End jump to first/last, focus ring visible on each button"
-    why_human: "Requires runtime and keyboard interaction; code design is correct but at/wai-aria behavior can only be confirmed with actual AT or browser keyboard testing"
-  - test: "Screen reader surface announcement on switch"
-    expected: "Switching surface announces the surface name via the aria-live polite region; no duplicate 'application' role announcements from nested AppShell/WorkspaceShell"
-    why_human: "Requires a screen reader (VoiceOver, NVDA, JAWS) to verify AT tree and live region firing"
-  - test: "Restart surface persistence (after gap fixes)"
-    expected: "Switch to Settings surface, quit the app, relaunch — shell opens to Settings, not Chat"
-    why_human: "Requires Tauri runtime and actual process restart to verify SQLite persistence across sessions"
+  - test: "Run npm install && npm run dev and observe the launched app"
+    expected: "App opens into the workspace shell showing the SurfaceRail with four labeled tabs (Chat, History, Settings, Artifacts) and Chat surface as default. No runtime panics, no IPC error messages in the StatusRegion on first launch."
+    why_human: "Requires Tauri runtime (native window), visual inspection, and DevTools console check. Cargo/Rust build verification also deferred to CI."
+  - test: "Keyboard-only surface navigation"
+    expected: "Tab moves to skip-to-content link, then to the rail, then into the panel. Arrow Up/Down move focus between rail tabs. Enter/Space activate the focused tab and move focus to #main-content. Home jumps to Chat tab, End jumps to Artifacts tab. Focus ring (2px blue outline) visible on every focused element."
+    why_human: "ARIA APG keyboard interaction can only be confirmed through actual keyboard use in a running browser/WebView."
+  - test: "Screen reader surface announcements on switch"
+    expected: "Screen reader announces the surface name when focus moves to a tab (via aria-label), announces 'selected' state change (via aria-selected), and announces non-interruptively via StatusRegion's aria-live=polite region. No duplicate 'application' landmark announcements — only WorkspaceShell has role=application."
+    why_human: "AT behavior depends on specific screen reader implementations and browser/WebView combination."
+  - test: "Surface persistence across restarts"
+    expected: "Switch to History surface, quit the app, relaunch — shell opens to History surface confirming SQLite persistence round-trip through the full IPC stack."
+    why_human: "Requires actual process lifecycle (quit + relaunch) and visual inspection of restored state."
   - test: "cargo test --workspace --all-targets"
-    expected: "All 5 integration tests in src-tauri/tests/app_shell.rs pass plus all inline unit tests"
-    why_human: "Cargo/Rust not installed in verification environment; tests are structurally correct but were not executed"
+    expected: "All 5 integration tests in src-tauri/tests/app_shell.rs pass plus all inline unit tests in app_state.rs, storage/sqlite.rs, storage/migrations.rs, and ipc/app_shell.rs. No test failures or panics."
+    why_human: "Cargo/Rust not installed in verification environment. Tests are structurally correct and cover the required behaviors but have not been executed."
 ---
 
 # Phase 01: App Shell Verification Report
 
-**Phase Goal:** Create the runnable desktop shell foundation for Phase 1 by establishing the Tauri v2 + Svelte 5/SvelteKit build stack, wiring the backend bootstrap, and adding backend-owned persistence for the initial active surface. Refine into an accessible, keyboard-navigable workspace switcher with smoke coverage.
-**Verified:** 2026-06-13T20:00:00Z
-**Status:** gaps_found
-**Re-verification:** No — initial verification
+**Phase Goal:** Get the desktop app booting into a usable workspace shell with clear navigation boundaries.
+**Verified:** 2026-06-13T21:30:00Z
+**Status:** human_needed
+**Re-verification:** Yes — after gap closure plan 01-03
+
+All three runtime blockers (CR-01, CR-02, CR-04) and four correctness warnings (CR-03, WR-02, WR-03, WR-04) documented in the previous verification have been closed by plan 01-03. All 7 must-have truths are now verified at the code level. Automated checks pass where runnable (npm run check); cargo build and runtime tests remain deferred to human/CI.
 
 ---
 
@@ -102,15 +48,82 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | The app opens into a usable desktop shell instead of a blank scaffold | FAILED | main.rs manages only AppState::default(); SqlitePool and ShellPreferenceStore are never registered; capabilities/main.json does not grant either IPC command; SqlitePool::open() never runs migrations |
-| 2 | The shell loads a backend-owned active-surface preference on startup | FAILED | Three blockers compound: unmanaged state (CR-01), missing capability grant (CR-02), missing migrations in open() (CR-04) |
-| 3 | Frontend navigation changes the visible surface without exposing raw file paths or secrets | VERIFIED (code) | surface.ts uses typed invoke(), optimistic rollback, no localStorage/sessionStorage; Surface type is a closed enum; IPC commands enforce window label; privacy boundary is correctly designed — but blocked at runtime by CR-01/CR-02 |
-| 4 | The user can switch between chat, history, settings, and artifact surfaces from the shell | VERIFIED (code) | WorkspaceShell, SurfaceRail, SurfacePanel render all four surfaces; routing in +page.svelte is substantive; ARIA tablist/tab/tabpanel wiring is complete |
-| 5 | Focus order and keyboard activation work for the surface switcher | VERIFIED (code) | SurfaceRail implements roving tabindex, Arrow/Home/End/Enter/Space handlers; activate() moves focus to #main-content; focus-visible CSS present |
-| 6 | The active surface survives a restart through backend-owned persistence | FAILED | Depends on set_active_surface working (blocked by CR-01 + CR-02) and shell_preferences table existing (blocked by CR-04) |
-| 7 | Backend smoke tests cover the write/read/restore path for the active surface | VERIFIED (structure) | src-tauri/tests/app_shell.rs has 5 named integration tests covering round-trip, fresh-db hydration, UPSERT overwrite, session restore, and all-surfaces persistence; tests use SqlitePool::from_connection() which bypasses the broken SqlitePool::open() path |
+| 1 | The app opens into a usable desktop shell instead of a blank scaffold | VERIFIED | `main.rs` has `.setup()` hook (line 24) resolving `app_data_dir`, calling `SqlitePool::open()`, and registering both `SqlitePool` and `ShellPreferenceStore` via `app.manage()`. Migrations run inside `open()` at `sqlite.rs:38`. Capability grant in `capabilities/main.json` includes both shell commands. |
+| 2 | The shell loads a backend-owned active-surface preference on startup | VERIFIED | `surface.ts hydrate()` calls `invoke('get_active_surface')` (IPC path now open). `get_active_surface` injects `ShellPreferenceStore` (now managed) and reads from `shell_preferences` table (now created by `run_migrations` inside `open()`). Hydration guard uses explicit `hydrated: bool` flag, not default-value equality. |
+| 3 | Frontend navigation changes the visible surface without exposing raw file paths or secrets | VERIFIED | `surface.ts` uses `invoke()` for both reads and writes; no `localStorage`/`sessionStorage` references; `Surface` type is a closed enum in both Rust and TypeScript. `IPC` commands enforce window label as backend-side defense. No regression from previous verification. |
+| 4 | The user can switch between chat, history, settings, and artifact surfaces from the shell | VERIFIED | `+page.svelte` routes all four surface components via `$derived(surfaceStore.surface)`. `WorkspaceShell` + `SurfaceRail` (tablist/tab) + `SurfacePanel` (tabpanel) are composed correctly. All four named surfaces are reachable. |
+| 5 | Focus order and keyboard activation work for the surface switcher | VERIFIED | `SurfaceRail.svelte` implements roving tabindex (only active button at `tabindex=0`); `handleKeydown` handles ArrowUp/Down/Left/Right, Home, End, Enter, Space; `activate()` calls `document.getElementById('main-content')?.focus()`. `focus-visible` CSS present. |
+| 6 | The active surface survives a restart through backend-owned persistence | VERIFIED | `set_active_surface` IPC path is now open (CR-01 + CR-02 closed). `ShellPreferenceStore.save_active_surface` uses UPSERT. `shell_preferences` table exists after migrations. `get_active_surface` hydration guard correctly reads DB on first call (`!hydrated`) and sets `shell.hydrated = true` on both found and not-found paths. |
+| 7 | Backend smoke tests cover the write/read/restore path for the active surface | VERIFIED | `src-tauri/tests/app_shell.rs` has 5 named integration tests: round-trip, fresh-db hydration, UPSERT overwrite, session restore, all-surfaces persistence. Tests use `SqlitePool::from_connection()` with manually-run migrations, correctly bypassing `open()` for isolated test control. Structure is substantive and covers required behaviors. |
 
-**Score: 3/7 truths verified** (truths 3, 4, 5 verified at code level; truths 1, 2, 6 failed due to runtime wiring blockers; truth 7 verified structurally but not executed)
+**Score: 7/7 truths verified** (all at code level; cargo execution and runtime behavior require human/CI verification)
+
+---
+
+## Gap Closure Verification (Re-verification Focus)
+
+### CR-01 — .setup() hook in main.rs
+
+| Acceptance Criterion | Result |
+|---------------------|--------|
+| `.setup(` closure present | CLOSED — `main.rs:24` |
+| `app.path().app_data_dir()` called | CLOSED — `main.rs:27` |
+| `std::fs::create_dir_all` for first-launch | CLOSED — `main.rs:28` |
+| `SqlitePool::open(db_path)?` inside setup | CLOSED — `main.rs:34` |
+| `app.manage(pool.clone())` registers `SqlitePool` | CLOSED — `main.rs:37` |
+| `app.manage(ShellPreferenceStore::new(pool))` registers store | CLOSED — `main.rs:40` |
+| `use tauri::Manager` imported | CLOSED — `main.rs:14` |
+| `use storage::sqlite::{ShellPreferenceStore, SqlitePool}` imported | CLOSED — `main.rs:13` |
+
+### CR-02 — Capability permissions
+
+| Acceptance Criterion | Result |
+|---------------------|--------|
+| `src-tauri/permissions/app-shell.toml` exists | CLOSED — file present with 2 `[[permission]]` blocks |
+| `allow-get-active-surface` declared with `commands.allow = ["get_active_surface"]` | CLOSED |
+| `allow-set-active-surface` declared with `commands.allow = ["set_active_surface"]` | CLOSED |
+| Both permissions referenced in `capabilities/main.json` | CLOSED — lines 11–12 |
+| Four pre-existing permissions retained | CLOSED — `core:default`, `opener:default`, `core:app:allow-app-hide`, `core:window:allow-start-dragging` all present |
+
+### CR-03 — Explicit hydration flag
+
+| Acceptance Criterion | Result |
+|---------------------|--------|
+| `pub hydrated: bool` on `ShellState` | CLOSED — `app_state.rs:28` |
+| Guard branches on `if !hydrated` (not default-value equality) | CLOSED — `app_shell.rs:54` |
+| `shell.hydrated = true` on DB-found path | CLOSED — `app_shell.rs:60` |
+| `shell.hydrated = true` on DB-not-found path | CLOSED — `app_shell.rs:67` |
+| `current == Surface::Chat` guard removed | CLOSED — `grep -c 'current == Surface::Chat'` returns 0 |
+
+### CR-04 — Migrations inside SqlitePool::open()
+
+| Acceptance Criterion | Result |
+|---------------------|--------|
+| `run_migrations` called inside `open()` body | CLOSED — `sqlite.rs:38` |
+| Call is before `Mutex::new(conn)` | CLOSED — call is on the local `conn` binding at line 38, `Ok(Self { conn: Mutex::new(conn) })` at lines 40-42 |
+| Doc-comment on `open()` accurately states migrations run | CLOSED — lines 22-24 match implementation |
+| `from_connection()` path unchanged | VERIFIED — no migration call in `from_connection()`, preserving test control |
+
+### WR-02 — Nested role="application" removed
+
+| Acceptance Criterion | Result |
+|---------------------|--------|
+| `role="application"` absent from `AppShell.svelte` | CLOSED — line 21 has no `role` attribute; `aria-label="Desktop AI Client"` retained |
+| `role="application"` retained in `WorkspaceShell.svelte` | VERIFIED — `WorkspaceShell.svelte:48` retains `role="application"` as sole owner |
+
+### WR-03 — Falsy index coercion fixed
+
+| Acceptance Criterion | Result |
+|---------------------|--------|
+| `|| 0` pattern removed from `SurfaceRail.svelte` | CLOSED — no `|| 0` present |
+| Explicit `=== -1 ? 0 : idx` ternary used | CLOSED — `SurfaceRail.svelte:32` uses IIFE with explicit not-found check |
+
+### WR-04 — Floating promise handled
+
+| Acceptance Criterion | Result |
+|---------------------|--------|
+| `.catch()` attached to `surfaceStore.hydrate()` in `+layout.svelte` | CLOSED — `+layout.svelte:10` has `.catch((e) => console.error('surface hydration failed', e))` |
+| Bare un-chained `surfaceStore.hydrate()` gone | CLOSED — no bare call without `.catch` |
 
 ---
 
@@ -118,18 +131,20 @@ human_verification:
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `package.json` | Build manifests with dev/build/check scripts | VERIFIED | Scripts present: dev (tauri dev), build (tauri build), check (svelte-kit sync + svelte-check), frontend:dev, frontend:build |
-| `src-tauri/Cargo.toml` | Rust manifest with rusqlite, tokio, serde, tauri 2 | VERIFIED | All dependencies present including rusqlite bundled feature |
-| `src-tauri/src/main.rs` | Thin bootstrap registering IPC commands | STUB | Commands registered in generate_handler! but state management is incomplete — no .setup() hook, SqlitePool and ShellPreferenceStore never created or managed |
-| `src-tauri/src/ipc/app_shell.rs` | Typed get_active_surface and set_active_surface commands | VERIFIED (code) | Commands are substantive and correct in design; window label enforcement present; ShellError serializes with code field; blocked at runtime by missing .manage() calls |
-| `src/routes/+layout.svelte` | Layout that calls surfaceStore.hydrate() on mount | VERIFIED | onMount(() => surfaceStore.hydrate()) present; note: promise is not awaited (WR-04) |
-| `src/lib/components/AppShell.svelte` | Root layout with nav and main landmarks | VERIFIED | role="application", nav, main landmarks present; NOTE: role="application" conflicts with WorkspaceShell.svelte (WR-02) |
-| `src/lib/stores/surface.ts` | Svelte 5 store with IPC hydration and no browser storage | VERIFIED | $state runes, invoke() for both commands, optimistic rollback, no localStorage |
-| `src/lib/components/WorkspaceShell.svelte` | Composed layout with skip link, nav, main, StatusRegion | VERIFIED | All elements present; role="application" duplicates AppShell (WR-02) |
-| `src/lib/components/SurfacePanel.svelte` | tabpanel wrapper for active surface | VERIFIED | role="tabpanel", aria-label={surfaceLabel}, id="surface-panel" |
-| `src/lib/components/StatusRegion.svelte` | aria-live polite status region | VERIFIED | role="status", aria-live="polite", derives announceText from error/loading/message |
-| `src-tauri/tests/app_shell.rs` | Backend integration tests for shell preference persistence | VERIFIED | 5 named tests covering required behaviors; structurally complete |
-| `src-tauri/capabilities/main.json` | Capability grant including shell IPC commands | FAILED | get_active_surface and set_active_surface absent from permissions array |
+| `package.json` | Build manifests with dev/build/check scripts | VERIFIED | dev, build, check, frontend:dev, frontend:build scripts present (no regression) |
+| `src-tauri/Cargo.toml` | Rust manifest with rusqlite, tokio, serde, tauri 2 | VERIFIED | All dependencies present including rusqlite bundled feature (no regression) |
+| `src-tauri/src/main.rs` | Thin bootstrap with .setup() hook registering all managed state | VERIFIED | `.setup()` closes all three runtime blockers; 57-line file with clear module boundaries |
+| `src-tauri/permissions/app-shell.toml` | Two [[permission]] blocks for shell IPC commands | VERIFIED | New file; both identifiers declared with correct `commands.allow` arrays |
+| `src-tauri/capabilities/main.json` | Capability grant including shell IPC commands | VERIFIED | Both shell commands added; four pre-existing permissions retained |
+| `src-tauri/src/app_state.rs` | ShellState with hydrated: bool field | VERIFIED | `pub hydrated: bool` with doc-comment on line 28 |
+| `src-tauri/src/ipc/app_shell.rs` | Typed IPC with hydration guard on explicit flag | VERIFIED | `if !hydrated` guard; `hydrated = true` on both DB paths; no default-value equality |
+| `src-tauri/src/storage/sqlite.rs` | SqlitePool::open() runs migrations | VERIFIED | `run_migrations` called at line 38 inside `open()`; doc-comment matches |
+| `src/routes/+layout.svelte` | Layout with caught hydrate() call | VERIFIED | `.catch()` attached; promise is no longer floating |
+| `src/lib/components/AppShell.svelte` | Root layout without nested role="application" | VERIFIED | `role="application"` removed; `aria-label` retained |
+| `src/lib/components/SurfaceRail.svelte` | Roving tabindex with explicit index check | VERIFIED | IIFE explicit `-1` check; `|| 0` removed |
+| `src/lib/components/WorkspaceShell.svelte` | Composed layout with sole role="application" | VERIFIED | Single `role="application"` at line 48 |
+| `src/lib/stores/surface.ts` | Svelte 5 store with IPC hydration | VERIFIED | No regression; `invoke()` for both commands, optimistic rollback, no browser storage |
+| `src-tauri/tests/app_shell.rs` | 5 integration tests covering persistence round trip | VERIFIED | All 5 tests structurally complete and substantive; not executed (no Cargo) |
 
 ---
 
@@ -137,15 +152,18 @@ human_verification:
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `surface.ts hydrate()` | `get_active_surface` Rust command | `invoke('get_active_surface')` | NOT_WIRED at runtime | Frontend call is correct; blocked by missing capability grant (CR-02) and missing .manage() (CR-01) |
-| `surface.ts setSurface()` | `set_active_surface` Rust command | `invoke('set_active_surface', { surface })` | NOT_WIRED at runtime | Same blockers as above |
-| `ipc/app_shell.rs get_active_surface` | `ShellPreferenceStore` | `tauri::State<'_, ShellPreferenceStore>` | NOT_WIRED | ShellPreferenceStore never registered with .manage(); Tauri 2 will panic on injection |
-| `ipc/app_shell.rs set_active_surface` | `ShellPreferenceStore` | `tauri::State<'_, ShellPreferenceStore>` | NOT_WIRED | Same as above |
-| `ShellPreferenceStore.save_active_surface` | `shell_preferences` SQL table | `INSERT INTO shell_preferences ...` | NOT_WIRED at runtime | Table does not exist — SqlitePool::open() never calls run_migrations (CR-04) |
-| `ShellPreferenceStore.load_active_surface` | `shell_preferences` SQL table | `SELECT active_surface FROM shell_preferences` | NOT_WIRED at runtime | Same — table absent on first launch |
-| `SurfaceRail tab buttons` | `SurfacePanel#surface-panel` | `aria-controls="surface-panel"` | WIRED | aria-controls present on each tab button; panel id matches |
-| `+layout.svelte onMount` | `surfaceStore.hydrate()` | `onMount(() => surfaceStore.hydrate())` | PARTIAL | Call is present but promise is not awaited or .catch()-ed (WR-04) |
-| `+page.svelte` | `WorkspaceShell > SurfacePanel > {surface component}` | `$derived(surfaceStore.surface)` reactive routing | WIRED | All four surface components rendered conditionally; derivation is reactive |
+| `surface.ts hydrate()` | `get_active_surface` Rust command | `invoke('get_active_surface')` | WIRED | Frontend call correct; capability grant added; `ShellPreferenceStore` now managed |
+| `surface.ts setSurface()` | `set_active_surface` Rust command | `invoke('set_active_surface', { surface })` | WIRED | Same as above; optimistic rollback on failure |
+| `main.rs .setup()` | `SqlitePool::open()` + `run_migrations` | `let pool = Arc::new(SqlitePool::open(db_path)?)` | WIRED | Migrations run inside `open()` before return |
+| `main.rs .setup()` | `app.manage(pool.clone())` | `tauri::State<'_, SqlitePool>` | WIRED | Registered at `main.rs:37` |
+| `main.rs .setup()` | `app.manage(ShellPreferenceStore::new(pool))` | `tauri::State<'_, ShellPreferenceStore>` | WIRED | Registered at `main.rs:40` |
+| `capabilities/main.json` | `permissions/app-shell.toml` | `allow-get-active-surface` + `allow-set-active-surface` identifiers | WIRED | Both bare identifiers declared in TOML; referenced in JSON |
+| `ipc/app_shell.rs get_active_surface` | `ShellState.hydrated` | `if !hydrated` guard | WIRED | Explicit flag replaces default-value equality; set on both DB paths |
+| `ShellPreferenceStore.save_active_surface` | `shell_preferences` SQL table | `INSERT INTO shell_preferences ... ON CONFLICT DO UPDATE` | WIRED | Table exists (migrations run); UPSERT correct |
+| `ShellPreferenceStore.load_active_surface` | `shell_preferences` SQL table | `SELECT active_surface FROM shell_preferences WHERE id = 1` | WIRED | Table exists; `QueryReturnedNoRows` returns `Ok(None)` correctly |
+| `SurfaceRail tab buttons` | `SurfacePanel#surface-panel` | `aria-controls="surface-panel"` | WIRED | No regression |
+| `+layout.svelte onMount` | `surfaceStore.hydrate()` | `.catch((e) => console.error(...))` | WIRED | Promise no longer floating |
+| `+page.svelte` | `WorkspaceShell > SurfacePanel > {surface component}` | `$derived(surfaceStore.surface)` | WIRED | All four surfaces routed conditionally; no regression |
 
 ---
 
@@ -153,27 +171,36 @@ human_verification:
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 |----------|--------------|--------|-------------------|--------|
-| `surface.ts` | `surface` ($state) | `invoke('get_active_surface')` in `hydrate()` | No — IPC call blocked at runtime by CR-01 + CR-02; fallback is hardcoded 'chat' | HOLLOW at runtime (falls back to static default) |
-| `StatusRegion.svelte` | `announceText` | `message`, `loading`, `error` props from surfaceStore | Derives from surface.ts state — correctly reactive when store works | STATIC at runtime (shell always shows "Chat surface active" due to fallback) |
-| `SurfaceRail.svelte` | `activeSurface` | `$derived(surfaceStore.surface)` | Reactive from store | STATIC at runtime (always 'chat' fallback) |
+| `surface.ts` | `surface` ($state) | `invoke('get_active_surface')` in `hydrate()` | Yes — IPC path now fully open (managed state + capability grant + migrations) | FLOWING (code-verified; runtime unverified) |
+| `StatusRegion.svelte` | `announceText` | `message`, `loading`, `error` from surfaceStore | Reactive from store; store data flows from real IPC call | FLOWING |
+| `SurfaceRail.svelte` | `activeSurface` | `$derived(surfaceStore.surface)` | Reactive from store | FLOWING |
 
 ---
 
 ## Behavioral Spot-Checks
 
-Step 7b: SKIPPED for Rust/Tauri runtime checks — Tauri desktop app requires a native runtime environment to invoke. `npm run check` was verified passing by executor (275 files, 0 errors, 0 warnings) but not re-run in this environment.
+Step 7b: Partial — Tauri desktop runtime not available.
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Frontend typecheck | `npm run check` | 275 files, 0 errors (executor-reported) | SKIP — not re-runnable without npm environment |
-| Rust unit/integration tests | `cargo test --workspace --all-targets` | NOT RUN by executor | SKIP — Cargo not installed in verification environment |
-| App launches and hydrates | `npm run dev` | NOT RUN by executor | SKIP — requires Tauri desktop runtime |
+| Frontend typecheck | `npm run check` | 0 errors, 0 warnings (executor-reported for plan 01-03) | SKIP — not re-runnable in this environment |
+| Rust unit/integration tests | `cargo test --workspace --all-targets` | NOT RUN | SKIP — Cargo not installed in verification environment |
+| App launches and hydrates | `npm run dev` | NOT RUN | SKIP — requires Tauri desktop runtime |
+| setup() hook pattern present | `grep -c '.setup(' src-tauri/src/main.rs` | 1 (verified by file read) | PASS |
+| run_migrations in open() | `grep -n 'run_migrations' src-tauri/src/storage/sqlite.rs` | line 38 (verified by file read) | PASS |
+| Both IPC commands in capabilities | `capabilities/main.json` permissions array | both present (verified by file read) | PASS |
+| Permission TOML has 2 blocks | `grep -c '^\[\[permission\]\]' permissions/app-shell.toml` | 2 (verified by file read) | PASS |
+| Hydrated flag present | `grep -c 'hydrated: bool' src-tauri/src/app_state.rs` | 1 (verified by file read) | PASS |
+| Old Chat equality guard gone | `grep -c 'current == Surface::Chat' src-tauri/src/ipc/app_shell.rs` | 0 (verified by file read) | PASS |
+| No nested role="application" | `grep -c 'role="application"' src/lib/components/AppShell.svelte` | 0 (verified by file read) | PASS |
+| Falsy coercion removed | `grep -c '\|\| 0' src/lib/components/SurfaceRail.svelte` | 0 (verified by file read) | PASS |
+| Promise catch present | `grep -n '.catch(' src/routes/+layout.svelte` | line 10 (verified by file read) | PASS |
 
 ---
 
 ## Probe Execution
 
-No `scripts/*/tests/probe-*.sh` files were declared in either PLAN or found in the repository.
+No `scripts/*/tests/probe-*.sh` files declared in any PLAN or found in the repository.
 
 ---
 
@@ -181,8 +208,16 @@ No `scripts/*/tests/probe-*.sh` files were declared in either PLAN or found in t
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |-------------|------------|-------------|--------|----------|
-| SHELL-01 | 01-01-PLAN.md | User can launch the desktop app and reach the main workspace | BLOCKED | App cannot launch correctly due to CR-01 (unmanaged state panic), CR-02 (capability missing), CR-04 (no migrations). Frontend scaffold is complete but backend wiring prevents runtime operation. |
-| SHELL-02 | 01-02-PLAN.md | User can navigate between chat, history, settings, and artifact surfaces | PARTIAL | Surface navigation code is complete and accessible (tablist/tab/tabpanel, keyboard, aria-live). Surface switching is blocked at the IPC persistence layer (CR-01, CR-02), but falls back gracefully to frontend-local state in error mode. Visual navigation works; persisted navigation is broken. |
+| SHELL-01 | 01-01-PLAN.md, 01-03-PLAN.md | User can launch the desktop app and reach the main workspace | SATISFIED (code) | Bootstrap wiring complete: `.setup()` hook opens SQLite, runs migrations, manages both storage types. Capability grant unblocks IPC. App can structurally launch into workspace shell. Runtime confirmation deferred to human verification. |
+| SHELL-02 | 01-02-PLAN.md, 01-03-PLAN.md | User can navigate between chat, history, settings, and artifact surfaces | SATISFIED (code) | `WorkspaceShell` + `SurfaceRail` (ARIA tablist/tab) + `SurfacePanel` (tabpanel) implements accessible four-surface navigation. Keyboard (roving tabindex, Arrow/Home/End/Enter/Space) fully wired. Surface preference persists through backend IPC. Runtime confirmation deferred to human verification. |
+
+### Roadmap Success Criteria Coverage
+
+| SC | Text | Status | Evidence |
+|----|------|--------|----------|
+| 1 | The app launches successfully from the desktop shell | SATISFIED (code) | Bootstrap complete; no structural blockers remain |
+| 2 | The user can reach the main workspace and switch between the major surfaces | SATISFIED (code) | All four surfaces reachable via `+page.svelte` routing and `SurfaceRail` |
+| 3 | The shell is organized so backend and frontend boundaries remain explicit | SATISFIED | IPC commands are the sole cross-boundary path; no browser storage; Surface is a closed enum; window label enforced by backend |
 
 ---
 
@@ -190,65 +225,76 @@ No `scripts/*/tests/probe-*.sh` files were declared in either PLAN or found in t
 
 | File | Line | Pattern | Severity | Impact |
 |------|------|---------|----------|--------|
-| `src-tauri/src/main.rs` | 23 | `.manage(AppState::default())` only — ShellPreferenceStore and SqlitePool unmanaged | BLOCKER | Both IPC commands panic at runtime when Tauri attempts to inject unmanaged state |
-| `src-tauri/capabilities/main.json` | 6-11 | `permissions` array missing get_active_surface and set_active_surface | BLOCKER | Tauri 2 deny-by-default system rejects both commands before Rust handler is reached |
-| `src-tauri/src/storage/sqlite.rs` | 25-38 | `SqlitePool::open()` does not call `run_migrations` despite doc-comment contract | BLOCKER | shell_preferences table absent on first launch; save and load both fail with "no such table" |
-| `src-tauri/src/ipc/app_shell.rs` | 53 | `if current == Surface::Chat` hydration guard uses default-value equality instead of hydrated flag | WARNING | Silently fails to restore Chat explicitly if Surface::default() ever changes; semantics are fragile |
-| `src/lib/components/AppShell.svelte` | 21 | `role="application"` duplicated in parent layout | WARNING | AppShell and WorkspaceShell are both active in the DOM hierarchy; nested role="application" is invalid ARIA |
-| `src/lib/components/SurfaceRail.svelte` | 31-32 | `surfaces.findIndex(...) \|\| 0` — falsy coercion treats index 0 (Chat) the same as -1 (not found) | WARNING | Correct by coincidence; breaks if Chat moves from position 0 or pattern is copied |
-| `src/routes/+layout.svelte` | 10 | `surfaceStore.hydrate()` return value not awaited — floating promise | WARNING | Unhandled rejections from synchronous throws before the try block are silently dropped |
+| `src/lib/components/surfaces/ChatSurface.svelte` | — | Placeholder content | INFO | Intentional scaffold — full conversation UI is out-of-scope for Phase 1 per plan 01-01 known stubs |
+| `src/lib/components/surfaces/HistorySurface.svelte` | — | Placeholder content | INFO | Same — intentional scaffold |
+| `src/lib/components/surfaces/SettingsSurface.svelte` | — | Placeholder content | INFO | Same — intentional scaffold |
+| `src/lib/components/surfaces/ArtifactsSurface.svelte` | — | Placeholder content | INFO | Same — intentional scaffold |
+
+No `TBD`, `FIXME`, or `XXX` markers found in any file modified by plans 01-01, 01-02, or 01-03. No blockers.
+
+The four surface scaffold components render placeholder text. This is intentional and documented in plan summaries — they prove shell routing works. Full surface implementations are scoped to later phases (Phase 2+).
 
 ---
 
 ## Human Verification Required
 
-The following items require a runtime environment or assistive technology that cannot be verified programmatically from the source tree. These are contingent on the three blocker gaps being resolved first.
+The following items require a runtime environment or assistive technology that cannot be verified from static code analysis.
 
 ### 1. App Launch and Surface Display
 
-**Test:** After fixing CR-01, CR-02, and CR-04, run `npm install && npm run dev` and observe the launched app.
-**Expected:** App opens into the workspace shell showing the SurfaceRail on the left with four labeled tabs (Chat, History, Settings, Artifacts) and the Chat surface as the default content area. No runtime panics, no IPC error messages in the StatusRegion on first launch.
-**Why human:** Requires Tauri runtime (native window), visual inspection, and DevTools console check.
+**Test:** Run `npm install && npm run dev` (requires Node.js, npm, Rust/Cargo, and Tauri build tools installed) and observe the launched desktop app.
+**Expected:** App opens into the workspace shell showing the SurfaceRail with four labeled tabs (Chat, History, Settings, Artifacts) and Chat as the default surface. No runtime panics, no IPC error messages in the StatusRegion or browser DevTools console. IPC calls to `get_active_surface` succeed rather than being blocked or panicking.
+**Why human:** Requires Tauri native desktop runtime, visual inspection, and DevTools console monitoring.
 
 ### 2. Keyboard-Only Surface Navigation
 
-**Test:** With the app running, close any pointer device and navigate using only Tab, Arrow keys, Enter, Space, Home, End.
+**Test:** With the app running, navigate using only Tab, Arrow keys, Enter, Space, Home, End.
 **Expected:** Tab moves to the skip-to-content link, then to the rail, then into the panel. Arrow Up/Down move focus between rail tabs. Enter/Space activate the focused tab and move focus to `#main-content`. Home jumps to Chat tab, End jumps to Artifacts tab. Focus ring (2px blue outline) visible on every focused element.
 **Why human:** ARIA APG keyboard interaction can only be confirmed through actual keyboard use in a running browser/WebView.
 
 ### 3. Screen Reader Surface Announcements
 
-**Test:** With a screen reader (VoiceOver/macOS, NVDA/Windows, or Orca/Linux) active, switch surfaces using keyboard navigation.
-**Expected:** Screen reader announces the surface name when focus moves to a tab (via aria-label), announces "selected" state change when a tab is activated (via aria-selected), and announces the surface change non-interruptively via the StatusRegion's aria-live="polite" region. No duplicate "application" landmark announcements from the nested AppShell/WorkspaceShell structure.
-**Why human:** AT behavior depends on specific screen reader implementations and browser/WebView combination.
+**Test:** With a screen reader (VoiceOver/macOS, NVDA/Windows, or Orca/Linux) active, switch surfaces via keyboard.
+**Expected:** Screen reader announces the surface name on tab focus (via `aria-label`), announces "selected" state on activation (via `aria-selected`), and announces surface change non-interruptively via the StatusRegion's `aria-live="polite"` region. Only one `role="application"` appears in the AT tree — `WorkspaceShell` only.
+**Why human:** AT behavior depends on specific screen reader and browser/WebView combination.
 
 ### 4. Surface Persistence Across Restarts
 
-**Test:** After fixing all gaps, switch to the History surface, quit the app, relaunch.
-**Expected:** The app opens to the History surface (not Chat), confirming SQLite persistence round-trip through the full IPC stack.
+**Test:** After the app launches successfully (Human Check 1), switch to the History surface, quit the app, relaunch.
+**Expected:** The app opens to the History surface (not Chat), confirming the SQLite persistence round-trip works through the full IPC stack.
 **Why human:** Requires actual process lifecycle (quit + relaunch) and visual inspection of restored state.
 
 ### 5. cargo test Execution
 
 **Test:** In an environment with Rust/Cargo installed, run `cargo test --workspace --all-targets` from the repository root.
-**Expected:** All 5 integration tests in `src-tauri/tests/app_shell.rs` pass, plus all inline unit tests in `app_state.rs`, `storage/sqlite.rs`, `storage/migrations.rs`, and `ipc/app_shell.rs`. No test failures or panics.
-**Why human:** Cargo not installed in verification environment. Tests are structurally correct but were not executed by the executor or this verifier.
+**Expected:** All 5 integration tests in `src-tauri/tests/app_shell.rs` pass plus all inline unit tests in `app_state.rs`, `storage/sqlite.rs`, `storage/migrations.rs`, and `ipc/app_shell.rs`. No test failures or panics.
+**Why human:** Cargo not installed in verification environment. Tests are structurally correct and cover all required behaviors, but have not been executed by any executor or this verifier.
 
 ---
 
-## Gaps Summary
+## Re-verification Summary
 
-Three gaps all stem from the same root cause: **the Tauri builder setup is incomplete**. The executor built correct Rust storage and IPC modules in isolation, and correct frontend components, but failed to wire them together in `main.rs` (the integration point) and failed to grant IPC access in `capabilities/main.json`. A single focused plan that adds a `.setup()` hook to `main.rs` and updates `capabilities/main.json` would close all three blockers simultaneously, and simultaneously fix CR-04 either by calling `run_migrations` inside `setup()` or inside `SqlitePool::open()`.
+**Previous status:** gaps_found (3/7)
+**Current status:** human_needed (7/7)
 
-**Gap 1 (root cause):** `main.rs` has no `.setup()` hook. No path exists from the Tauri app startup to `SqlitePool::open()` → `run_migrations()` → `app.manage(pool)` → `app.manage(store)`. Without this, the entire backend persistence chain is structurally disconnected.
+All three runtime blockers that prevented Phase 1 from achieving its goal have been closed by plan 01-03:
 
-**Gap 2 (access control):** `capabilities/main.json` does not grant the two shell IPC commands. Even if Gap 1 were fixed, the frontend invoke() calls would be rejected by Tauri's permission layer.
+- **CR-01 (setup hook):** `main.rs` now has a complete `.setup()` closure that resolves `app_data_dir`, opens `SqlitePool`, runs migrations, and registers both `SqlitePool` and `ShellPreferenceStore` as managed Tauri state.
+- **CR-02 (capability permissions):** `permissions/app-shell.toml` declares both IPC commands; `capabilities/main.json` grants them while retaining all four pre-existing permissions.
+- **CR-04 (migrations in open()):** `SqlitePool::open()` calls `run_migrations` before wrapping the connection; doc-comment now matches implementation.
 
-**Gap 3 (secondary):** `SqlitePool::open()` doc-comment promises migration but the implementation omits the call. This must be fixed in the same pass as Gap 1, or the setup hook must call `run_migrations` explicitly.
+All four correctness warnings have also been resolved:
+- **CR-03:** `ShellState.hydrated` flag guards DB consult exactly once; old default-value equality removed.
+- **WR-02:** `role="application"` removed from `AppShell.svelte`; sole owner is `WorkspaceShell.svelte`.
+- **WR-03:** Explicit `-1` check replaces falsy `|| 0` coercion in `SurfaceRail.svelte`.
+- **WR-04:** `.catch()` attached to `hydrate()` call in `+layout.svelte`.
 
-The two secondary issues (CR-03 hydration guard fragility, WR-02 duplicate `role="application"`) are correctness risks that should be fixed but do not prevent demo-level operation once the three blockers are resolved.
+No regressions found in the four truths that previously passed (truths 3, 4, 5, 7).
+
+The remaining gap is environmental: the Rust toolchain is not available in this verification environment, so `cargo build`, `cargo test`, and `npm run dev` cannot be executed. All human verification items are contingent on having the full Tauri build environment available.
 
 ---
 
-_Verified: 2026-06-13T20:00:00Z_
+_Verified: 2026-06-13T21:30:00Z_
 _Verifier: Claude (gsd-verifier)_
+_Re-verification of: 01-VERIFICATION.md (previous status: gaps_found, 2026-06-13T20:00:00Z)_
