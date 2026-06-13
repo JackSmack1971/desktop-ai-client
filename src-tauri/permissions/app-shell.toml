@@ -1,0 +1,13 @@
+[[permission]]
+identifier = "allow-get-active-surface"
+description = "Permits reading the backend-owned active surface preference."
+
+[permission.commands]
+allow = ["get_active_surface"]
+
+[[permission]]
+identifier = "allow-set-active-surface"
+description = "Permits persisting the active surface preference to backend SQLite storage."
+
+[permission.commands]
+allow = ["set_active_surface"]

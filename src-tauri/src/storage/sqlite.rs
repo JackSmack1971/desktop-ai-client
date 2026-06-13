@@ -33,6 +33,10 @@ impl SqlitePool {
              PRAGMA busy_timeout = 5000;",
         )?;
 
+        // Apply all pending migrations so the schema is up to date before
+        // any reads or writes. This fulfills the documented contract above.
+        crate::storage::migrations::run_migrations(&conn, env!("CARGO_PKG_VERSION"))?;
+
         Ok(Self {
             conn: Mutex::new(conn),
         })

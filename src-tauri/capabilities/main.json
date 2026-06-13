@@ -7,6 +7,8 @@
     "core:default",
     "opener:default",
     "core:app:allow-app-hide",
-    "core:window:allow-start-dragging"
+    "core:window:allow-start-dragging",
+    "allow-get-active-surface",
+    "allow-set-active-surface"
   ]
 }
