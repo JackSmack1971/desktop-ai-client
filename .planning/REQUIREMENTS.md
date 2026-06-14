@@ -9,8 +9,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Shell
 
-- [ ] **SHELL-01**: User can launch the desktop app and reach the main workspace
-- [ ] **SHELL-02**: User can navigate between chat, history, settings, and artifact surfaces
+- [x] **SHELL-01**: User can launch the desktop app and reach the main workspace
+- [x] **SHELL-02**: User can navigate between chat, history, settings, and artifact surfaces
 
 ### Routing
 
@@ -66,8 +66,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHELL-01 | Phase 1 | Pending |
-| SHELL-02 | Phase 1 | Pending |
+| SHELL-01 | Phase 1 | Complete |
+| SHELL-02 | Phase 1 | Complete |
 | ROUTE-01 | Phase 2 | Pending |
 | ROUTE-02 | Phase 2 | Pending |
 | HIST-01 | Phase 3 | Pending |
@@ -83,6 +83,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REL-02 | Phase 6 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 15 total
 - Mapped to phases: 15
 - Unmapped: 0 ✓
