@@ -12,7 +12,7 @@ Keep local history, files, and agent state private while safely routing AI infer
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Build a working desktop shell with clear frontend/backend boundaries — Validated in Phase 01: app-shell
 
 ### Active
 
@@ -56,5 +56,9 @@ The codebase map shows the current backend layout and confirms that the applicat
 
 This document will evolve as the implementation moves from scaffold to working product. Update it when requirements are validated, constraints change, or the repo’s architecture drifts beyond the current docs.
 
+## Current State
+
+Phase 01 (app-shell) complete — Tauri v2 + Svelte 5 shell with SQLite persistence, IPC permissions, and keyboard-navigable workspace switcher implemented. Human runtime testing pending (requires cargo/Tauri toolchain). Phase 02 (routing) is next.
+
 ---
-*Last updated: 2026-06-13 after initialization*
+*Last updated: 2026-06-14 after Phase 01 completion*
