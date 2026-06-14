@@ -84,10 +84,17 @@ pub fn run_migrations(conn: &Connection, app_version: &str) -> rusqlite::Result<
 
         // Run the migration in a savepoint (nested transaction) so failures
         // can be rolled back without losing the tracking table state.
+
+        // Validate id is a safe SQL identifier before embedding it.
+        debug_assert!(
+            migration.id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'),
+            "migration id must be alphanumeric/underscore only: {:?}",
+            migration.id
+        );
+        // SAFETY: migration.id and migration.sql are &'static str literals defined
+        // in MIGRATIONS. Do not generalize this pattern to dynamic values.
         let result = conn.execute_batch(&format!(
-            "SAVEPOINT migration_{id};
-             {sql}
-             RELEASE SAVEPOINT migration_{id};",
+            "SAVEPOINT migration_{id};\n{sql}\nRELEASE SAVEPOINT migration_{id};",
             id = migration.id,
             sql = migration.sql,
         ));
