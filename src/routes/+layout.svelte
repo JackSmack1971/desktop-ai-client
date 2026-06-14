@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { surfaceStore } from '$lib/stores/surface';
-	import AppShell from '$lib/components/AppShell.svelte';
+
+	interface Props {
+		children?: import('svelte').Snippet;
+	}
+	let { children }: Props = $props();
 
 	// Hydrate the active surface from backend state on first render.
 	// The store handles the IPC call; it falls back to 'chat' if the call fails
@@ -11,6 +15,4 @@
 	});
 </script>
 
-<AppShell>
-	<slot />
-</AppShell>
+{@render children?.()}
