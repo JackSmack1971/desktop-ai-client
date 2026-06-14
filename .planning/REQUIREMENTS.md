@@ -14,8 +14,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Routing
 
-- [ ] **ROUTE-01**: User can send a prompt through deterministic provider selection
-- [ ] **ROUTE-02**: User can receive streamed assistant output in order, including partial output and cancellation
+- [x] **ROUTE-01**: User can send a prompt through deterministic provider selection
+- [x] **ROUTE-02**: User can receive streamed assistant output in order, including partial output and cancellation
 
 ### History
 
@@ -68,8 +68,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | SHELL-01 | Phase 1 | Complete |
 | SHELL-02 | Phase 1 | Complete |
-| ROUTE-01 | Phase 2 | Pending |
-| ROUTE-02 | Phase 2 | Pending |
+| ROUTE-01 | Phase 2 | Complete |
+| ROUTE-02 | Phase 2 | Complete |
 | HIST-01 | Phase 3 | Pending |
 | HIST-02 | Phase 3 | Pending |
 | HIST-03 | Phase 3 | Pending |
