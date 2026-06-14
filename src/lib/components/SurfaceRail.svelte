@@ -28,9 +28,16 @@
 	let activeSurface = $derived(surfaceStore.surface);
 
 	/** The index in `surfaces` of the button that currently has DOM focus. */
-	let focusedIndex = $state(
-		(() => { const idx = surfaces.findIndex((s) => s.id === activeSurface); return idx === -1 ? 0 : idx; })()
-	);
+	let focusedIndex = $state(0);
+
+	// Reactively update focusedIndex when activeSurface changes (e.g. after
+	// backend hydration completes and surfaceStore.surface is updated).
+	// Without this, the roving-tabindex gives tabindex=0 to the wrong button
+	// when the persisted surface differs from the 'chat' default.
+	$effect(() => {
+		const idx = surfaces.findIndex((s) => s.id === activeSurface);
+		if (idx !== -1) focusedIndex = idx;
+	});
 
 	/** Button element refs — populated by bind:this in {#each}. */
 	let buttonRefs: Array<HTMLButtonElement | null> = $state(
