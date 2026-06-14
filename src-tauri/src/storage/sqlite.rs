@@ -68,6 +68,221 @@ impl SqlitePool {
     }
 }
 
+/// A single row from the `conversations` table.
+///
+/// Serialized to camelCase for IPC responses via `serde::Serialize`.
+/// Raw content (title, model) stays backend-owned — the IPC layer maps this
+/// to typed response DTOs; the renderer never receives raw SQL row data.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ConversationRow {
+    pub id: String,
+    pub title: String,
+    pub model: String,
+    pub status: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// Typed store for conversations.
+///
+/// All reads and writes to the `conversations` table must go through this
+/// store. IPC handlers must not call `with_conn` directly (anti-pattern in
+/// ARCHITECTURE.md).
+pub struct ConversationStore {
+    pool: std::sync::Arc<SqlitePool>,
+}
+
+impl ConversationStore {
+    pub fn new(pool: std::sync::Arc<SqlitePool>) -> Self {
+        Self { pool }
+    }
+
+    /// Insert a new conversation row with `status = 'active'`.
+    pub fn create_conversation(&self, id: &str, title: &str) -> rusqlite::Result<()> {
+        self.pool.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO conversations (id, title) VALUES (?1, ?2)",
+                params![id, title],
+            )?;
+            Ok(())
+        })
+    }
+
+    /// Return all conversations ordered by `updated_at DESC`.
+    pub fn list_conversations(&self) -> rusqlite::Result<Vec<ConversationRow>> {
+        self.pool.with_conn(|conn| {
+            let mut stmt = conn.prepare(
+                "SELECT id, title, model, status, created_at, updated_at
+                 FROM conversations
+                 ORDER BY updated_at DESC",
+            )?;
+            let rows = stmt.query_map([], |row| {
+                Ok(ConversationRow {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    model: row.get(2)?,
+                    status: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                })
+            })?;
+            let mut result = Vec::new();
+            for row in rows {
+                result.push(row?);
+            }
+            Ok(result)
+        })
+    }
+
+    /// Fetch a single conversation by primary key.
+    ///
+    /// Returns `None` when the conversation does not exist.
+    pub fn get_conversation(&self, id: &str) -> rusqlite::Result<Option<ConversationRow>> {
+        self.pool.with_conn(|conn| {
+            match conn.query_row(
+                "SELECT id, title, model, status, created_at, updated_at
+                 FROM conversations WHERE id = ?1",
+                params![id],
+                |row| {
+                    Ok(ConversationRow {
+                        id: row.get(0)?,
+                        title: row.get(1)?,
+                        model: row.get(2)?,
+                        status: row.get(3)?,
+                        created_at: row.get(4)?,
+                        updated_at: row.get(5)?,
+                    })
+                },
+            ) {
+                Ok(row) => Ok(Some(row)),
+                Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+                Err(e) => Err(e),
+            }
+        })
+    }
+
+    /// Mark a conversation complete and record the final model identifier.
+    ///
+    /// Called when `ChatEvent::Done { model }` is received for this conversation.
+    pub fn mark_complete(&self, id: &str, model: &str) -> rusqlite::Result<()> {
+        self.pool.with_conn(|conn| {
+            conn.execute(
+                "UPDATE conversations
+                 SET status = 'complete', model = ?2, updated_at = datetime('now')
+                 WHERE id = ?1",
+                params![id, model],
+            )?;
+            Ok(())
+        })
+    }
+
+    /// Mark a conversation incomplete (cancelled stream).
+    pub fn mark_incomplete(&self, id: &str) -> rusqlite::Result<()> {
+        self.pool.with_conn(|conn| {
+            conn.execute(
+                "UPDATE conversations
+                 SET status = 'incomplete', updated_at = datetime('now')
+                 WHERE id = ?1",
+                params![id],
+            )?;
+            Ok(())
+        })
+    }
+}
+
+/// A single row from the `messages` table.
+///
+/// Serialized to camelCase for IPC responses. Content stays backend-owned;
+/// the IPC layer controls what fields cross the Tauri boundary.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct MessageRow {
+    pub id: String,
+    pub conversation_id: String,
+    pub role: String,
+    pub content: String,
+    pub status: String,
+    pub created_at: String,
+}
+
+/// Typed store for messages.
+///
+/// All reads and writes to the `messages` table must go through this store.
+/// IPC handlers must not call `with_conn` directly.
+pub struct MessageStore {
+    pool: std::sync::Arc<SqlitePool>,
+}
+
+impl MessageStore {
+    pub fn new(pool: std::sync::Arc<SqlitePool>) -> Self {
+        Self { pool }
+    }
+
+    /// Insert a complete message (status = 'complete').
+    pub fn insert_message(
+        &self,
+        id: &str,
+        conversation_id: &str,
+        role: &str,
+        content: &str,
+    ) -> rusqlite::Result<()> {
+        self.pool.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO messages (id, conversation_id, role, content, status)
+                 VALUES (?1, ?2, ?3, ?4, 'complete')",
+                params![id, conversation_id, role, content],
+            )?;
+            Ok(())
+        })
+    }
+
+    /// Insert an incomplete message (status = 'incomplete').
+    ///
+    /// Used when a stream is cancelled before the assistant message finishes.
+    pub fn insert_incomplete_message(
+        &self,
+        id: &str,
+        conversation_id: &str,
+        role: &str,
+        content: &str,
+    ) -> rusqlite::Result<()> {
+        self.pool.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO messages (id, conversation_id, role, content, status)
+                 VALUES (?1, ?2, ?3, ?4, 'incomplete')",
+                params![id, conversation_id, role, content],
+            )?;
+            Ok(())
+        })
+    }
+
+    /// Return all messages for a conversation ordered by `created_at ASC`.
+    pub fn get_messages(&self, conversation_id: &str) -> rusqlite::Result<Vec<MessageRow>> {
+        self.pool.with_conn(|conn| {
+            let mut stmt = conn.prepare(
+                "SELECT id, conversation_id, role, content, status, created_at
+                 FROM messages
+                 WHERE conversation_id = ?1
+                 ORDER BY created_at ASC",
+            )?;
+            let rows = stmt.query_map(params![conversation_id], |row| {
+                Ok(MessageRow {
+                    id: row.get(0)?,
+                    conversation_id: row.get(1)?,
+                    role: row.get(2)?,
+                    content: row.get(3)?,
+                    status: row.get(4)?,
+                    created_at: row.get(5)?,
+                })
+            })?;
+            let mut result = Vec::new();
+            for row in rows {
+                result.push(row?);
+            }
+            Ok(result)
+        })
+    }
+}
+
 /// Typed store for workspace shell preferences.
 ///
 /// Wraps `SqlitePool` with a domain-specific API so IPC command handlers
@@ -126,6 +341,7 @@ impl ShellPreferenceStore {
 mod tests {
     use super::*;
     use crate::app_state::Surface;
+    use crate::storage::migrations::run_migrations;
 
     fn in_memory_pool() -> SqlitePool {
         let conn = Connection::open_in_memory().unwrap();
@@ -137,6 +353,17 @@ mod tests {
         SqlitePool {
             conn: Mutex::new(conn),
         }
+    }
+
+    fn migrated_pool() -> std::sync::Arc<SqlitePool> {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "PRAGMA journal_mode = WAL;
+             PRAGMA foreign_keys = ON;",
+        )
+        .unwrap();
+        run_migrations(&conn, "0.0.0-test").unwrap();
+        std::sync::Arc::new(SqlitePool::from_connection(conn))
     }
 
     #[test]
@@ -173,5 +400,76 @@ mod tests {
             store.load_active_surface().unwrap(),
             Some(Surface::Artifacts)
         );
+    }
+
+    #[test]
+    fn conversation_store_create_list_get_round_trip() {
+        let pool = migrated_pool();
+        let store = ConversationStore::new(pool);
+
+        // Create a conversation.
+        store.create_conversation("conv-a", "First Chat").unwrap();
+
+        // List should return it.
+        let list = store.list_conversations().unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, "conv-a");
+        assert_eq!(list[0].title, "First Chat");
+        assert_eq!(list[0].status, "active");
+
+        // Get by id.
+        let conv = store.get_conversation("conv-a").unwrap();
+        assert!(conv.is_some());
+        assert_eq!(conv.unwrap().title, "First Chat");
+
+        // Get absent id returns None.
+        let absent = store.get_conversation("does-not-exist").unwrap();
+        assert!(absent.is_none());
+    }
+
+    #[test]
+    fn conversation_store_mark_complete_and_incomplete() {
+        let pool = migrated_pool();
+        let store = ConversationStore::new(pool);
+
+        store.create_conversation("conv-b", "Status Chat").unwrap();
+
+        // Mark complete with model.
+        store.mark_complete("conv-b", "claude-sonnet-4-6").unwrap();
+        let conv = store.get_conversation("conv-b").unwrap().unwrap();
+        assert_eq!(conv.status, "complete");
+        assert_eq!(conv.model, "claude-sonnet-4-6");
+
+        // Mark incomplete.
+        store.mark_incomplete("conv-b").unwrap();
+        let conv = store.get_conversation("conv-b").unwrap().unwrap();
+        assert_eq!(conv.status, "incomplete");
+    }
+
+    #[test]
+    fn message_store_insert_and_get_messages_round_trip() {
+        let pool = migrated_pool();
+        let conv_store = ConversationStore::new(pool.clone());
+        let msg_store = MessageStore::new(pool);
+
+        conv_store.create_conversation("conv-c", "Msg Chat").unwrap();
+
+        msg_store
+            .insert_message("msg-1", "conv-c", "user", "Hello")
+            .unwrap();
+        msg_store
+            .insert_message("msg-2", "conv-c", "assistant", "Hi there")
+            .unwrap();
+        msg_store
+            .insert_incomplete_message("msg-3", "conv-c", "assistant", "partial…")
+            .unwrap();
+
+        let messages = msg_store.get_messages("conv-c").unwrap();
+        assert_eq!(messages.len(), 3);
+        assert_eq!(messages[0].role, "user");
+        assert_eq!(messages[0].content, "Hello");
+        assert_eq!(messages[1].content, "Hi there");
+        assert_eq!(messages[1].status, "complete");
+        assert_eq!(messages[2].status, "incomplete");
     }
 }
