@@ -1,20 +1,56 @@
 <script lang="ts">
 	/**
-	 * HistorySurface – conversation history browser.
+	 * HistorySurface — conversation history browser.
 	 *
-	 * Phase 1 scaffold: renders the history surface placeholder.
-	 * Search, pagination, and conversation listing are implemented in later plans.
+	 * Replaces the Phase 1 scaffold with a fully wired surface that composes
+	 * SearchBar and ConversationList, driven by historyStore. Loads history
+	 * on mount via historyStore.load(). Conversation clicks navigate to the
+	 * Chat surface via surfaceStore.setSurface('chat') (D-10).
 	 */
+
+	import { onMount } from 'svelte';
+	import { historyStore } from '$lib/stores/history';
+	import { surfaceStore } from '$lib/stores/surface';
+	import SearchBar from '$lib/components/history/SearchBar.svelte';
+	import ConversationList from '$lib/components/history/ConversationList.svelte';
+
+	onMount(() => {
+		void historyStore.load();
+	});
+
+	function handleQuery(q: string): void {
+		void historyStore.search(q);
+	}
+
+	function handleSelect(id: string): void {
+		historyStore.loadConversation(id);
+		void surfaceStore.setSurface('chat');
+	}
+
+	function handleDelete(id: string): void {
+		void historyStore.deleteConversation(id);
+	}
 </script>
 
 <div class="surface history-surface" role="region" aria-label="History">
 	<header class="surface-header">
 		<h1 class="surface-title">History</h1>
 	</header>
-	<div class="surface-body">
-		<p class="surface-placeholder">
-			History surface — conversation browser ships in a later plan.
-		</p>
+	<div class="surface-body history-body">
+		<div class="search-area">
+			<SearchBar onquery={handleQuery} />
+		</div>
+		{#if historyStore.error}
+			<p class="history-error" role="alert">
+				Could not load history. Check the app connection and try again.
+			</p>
+		{/if}
+		<ConversationList
+			conversations={historyStore.conversations}
+			loading={historyStore.loading}
+			ondelete={handleDelete}
+			onselect={handleSelect}
+		/>
 	</div>
 </div>
 
@@ -41,15 +77,29 @@
 
 	.surface-body {
 		flex: 1 1 auto;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow: auto;
+		overflow: hidden;
 	}
 
-	.surface-placeholder {
-		color: #666;
+	.history-body {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	.search-area {
+		padding: 16px 24px 8px;
+		background: #1a1a1a;
+		border-bottom: 1px solid #2a2a2a;
+		flex: 0 0 auto;
+	}
+
+	.history-error {
+		padding: 8px 16px;
+		color: #cc4444;
 		font-size: 14px;
-		text-align: center;
+		background: #2a1a1a;
+		border-bottom: 1px solid #7a1e1e;
+		margin: 0;
 	}
 </style>
