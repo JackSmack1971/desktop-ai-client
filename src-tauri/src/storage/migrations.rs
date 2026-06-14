@@ -42,6 +42,65 @@ pub static MIGRATIONS: &[Migration] = &[
             );
         ",
     },
+    Migration {
+        id: "0002",
+        description: "Create conversations and messages tables",
+        sql: "
+            CREATE TABLE IF NOT EXISTS conversations (
+              id TEXT PRIMARY KEY,
+              title TEXT NOT NULL,
+              model TEXT NOT NULL DEFAULT '',
+              status TEXT NOT NULL DEFAULT 'active'
+                CHECK (status IN ('active', 'complete', 'incomplete')),
+              created_at TEXT NOT NULL DEFAULT (datetime('now')),
+              updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+            ) STRICT;
+
+            CREATE TABLE IF NOT EXISTS messages (
+              id TEXT PRIMARY KEY,
+              conversation_id TEXT NOT NULL
+                REFERENCES conversations(id) ON DELETE CASCADE,
+              role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+              content TEXT NOT NULL,
+              status TEXT NOT NULL DEFAULT 'complete'
+                CHECK (status IN ('complete', 'incomplete')),
+              created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            ) STRICT;
+
+            CREATE INDEX IF NOT EXISTS idx_messages_conversation_id
+              ON messages(conversation_id);
+        ",
+    },
+    Migration {
+        id: "0003",
+        description: "Create FTS5 external-content table and sync triggers for messages",
+        sql: "
+            CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+              content,
+              conversation_id UNINDEXED,
+              content='messages',
+              content_rowid='rowid',
+              tokenize='unicode61'
+            );
+
+            CREATE TRIGGER IF NOT EXISTS messages_ai AFTER INSERT ON messages BEGIN
+              INSERT INTO messages_fts(rowid, content, conversation_id)
+                VALUES (new.rowid, new.content, new.conversation_id);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS messages_ad AFTER DELETE ON messages BEGIN
+              INSERT INTO messages_fts(messages_fts, rowid, content, conversation_id)
+                VALUES ('delete', old.rowid, old.content, old.conversation_id);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS messages_au AFTER UPDATE ON messages BEGIN
+              INSERT INTO messages_fts(messages_fts, rowid, content, conversation_id)
+                VALUES ('delete', old.rowid, old.content, old.conversation_id);
+              INSERT INTO messages_fts(rowid, content, conversation_id)
+                VALUES (new.rowid, new.content, new.conversation_id);
+            END;
+        ",
+    },
 ];
 
 /// Apply any pending migrations to `conn`.
@@ -163,5 +222,133 @@ mod tests {
             )
             .unwrap();
         assert_eq!(surface, "chat");
+    }
+
+    #[test]
+    fn migrations_count_is_three() {
+        assert_eq!(MIGRATIONS.len(), 3, "expected 3 migrations after phase 3 additions");
+    }
+
+    #[test]
+    fn conversations_and_messages_tables_exist_after_migration() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        // Insert a conversation row.
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-1', 'Test Conversation')",
+            [],
+        )
+        .unwrap();
+
+        // Query it back.
+        let title: String = conn
+            .query_row(
+                "SELECT title FROM conversations WHERE id = 'conv-1'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(title, "Test Conversation");
+
+        // Insert a message row with FK to conversation.
+        conn.execute(
+            "INSERT INTO messages (id, conversation_id, role, content)
+             VALUES ('msg-1', 'conv-1', 'user', 'Hello world')",
+            [],
+        )
+        .unwrap();
+
+        let content: String = conn
+            .query_row(
+                "SELECT content FROM messages WHERE id = 'msg-1'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(content, "Hello world");
+    }
+
+    #[test]
+    fn conversations_status_check_enforced() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        // Valid status should succeed.
+        conn.execute(
+            "INSERT INTO conversations (id, title, status) VALUES ('conv-ok', 'T', 'complete')",
+            [],
+        )
+        .unwrap();
+
+        // Invalid status should be rejected.
+        let bad = conn.execute(
+            "INSERT INTO conversations (id, title, status) VALUES ('conv-bad', 'T', 'invalid')",
+            [],
+        );
+        assert!(bad.is_err(), "conversations.status CHECK constraint should reject 'invalid'");
+    }
+
+    #[test]
+    fn messages_cascade_deletes_with_conversation() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-cascade', 'Cascade Test')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO messages (id, conversation_id, role, content)
+             VALUES ('msg-cascade', 'conv-cascade', 'user', 'cascade me')",
+            [],
+        )
+        .unwrap();
+
+        // Delete the conversation — messages should cascade.
+        conn.execute(
+            "DELETE FROM conversations WHERE id = 'conv-cascade'",
+            [],
+        )
+        .unwrap();
+
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM messages WHERE conversation_id = 'conv-cascade'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 0, "messages should be deleted via ON DELETE CASCADE");
+    }
+
+    #[test]
+    fn fts5_table_and_triggers_exist() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        // Insert a conversation and message — the messages_ai trigger should fire.
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-fts', 'FTS Test')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO messages (id, conversation_id, role, content)
+             VALUES ('msg-fts', 'conv-fts', 'user', 'searchable text content')",
+            [],
+        )
+        .unwrap();
+
+        // Search the FTS5 table directly.
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM messages_fts WHERE messages_fts MATCH 'searchable'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(count > 0, "FTS5 table should contain the inserted message content");
     }
 }
