@@ -419,4 +419,57 @@ mod tests {
         // gate in T-11 will catch it.
         let _ = "D-10 invariant: chat_send has no api_key parameter. Type system enforces this.";
     }
+
+    // --- title_from_messages tests (Phase 3 TDD RED) ---
+
+    #[test]
+    fn title_from_messages_returns_first_user_message_content() {
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: "Hello, how are you?".into(),
+        }];
+        assert_eq!(title_from_messages(&messages), "Hello, how are you?");
+    }
+
+    #[test]
+    fn title_from_messages_truncates_to_60_chars() {
+        let long_content = "a".repeat(70);
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: long_content,
+        }];
+        let title = title_from_messages(&messages);
+        assert_eq!(title.chars().count(), 60);
+        assert_eq!(title, "a".repeat(60));
+    }
+
+    #[test]
+    fn title_from_messages_skips_non_user_messages() {
+        let messages = vec![
+            ChatMessage {
+                role: "assistant".into(),
+                content: "I am an assistant".into(),
+            },
+            ChatMessage {
+                role: "user".into(),
+                content: "My question here".into(),
+            },
+        ];
+        assert_eq!(title_from_messages(&messages), "My question here");
+    }
+
+    #[test]
+    fn title_from_messages_returns_fallback_when_no_user_message() {
+        let messages = vec![ChatMessage {
+            role: "assistant".into(),
+            content: "System response".into(),
+        }];
+        assert_eq!(title_from_messages(&messages), "New conversation");
+    }
+
+    #[test]
+    fn title_from_messages_returns_fallback_for_empty_messages() {
+        let messages: Vec<ChatMessage> = vec![];
+        assert_eq!(title_from_messages(&messages), "New conversation");
+    }
 }
