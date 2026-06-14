@@ -11,9 +11,16 @@
 /// - System prompt is backend-owned and prepended in providers::routing (D-12).
 /// - CancellationToken registry is cleaned up unconditionally after each request
 ///   to prevent HashMap growth (STRIDE T-02-04, Pitfall 5 from RESEARCH.md).
+/// - Conversation title is auto-generated from the first user message (D-03) —
+///   never accepted from IPC.
+/// - Storage writes in spawned task use app_handle.state::<T>() — no State<'_>
+///   lifetime crosses the thread boundary (Pitfall 1).
+/// - Storage write errors are non-fatal: logged via eprintln!, streaming continues
+///   regardless of storage outcome (T-03-13 mitigation).
 use crate::app_state::AppState;
 use crate::providers::openrouter::ProviderMessage;
 use crate::providers::{routing, sse};
+use crate::storage::sqlite::{ConversationStore, MessageStore};
 use secrecy::ExposeSecret;
 use tauri::ipc::Channel;
 use tokio_util::sync::CancellationToken;
@@ -81,6 +88,19 @@ pub enum ChatError {
     RequestNotFound(String),
 }
 
+/// Generate a conversation title from the first user-role message.
+///
+/// Title is backend-owned (D-03) and never accepted from IPC. Takes up to
+/// 60 unicode scalar values from the first message where `role == "user"`.
+/// Returns "New conversation" when no user message is found.
+fn title_from_messages(messages: &[ChatMessage]) -> String {
+    messages
+        .iter()
+        .find(|m| m.role == "user")
+        .map(|m| m.content.chars().take(60).collect())
+        .unwrap_or_else(|| "New conversation".to_string())
+}
+
 /// Enforce that chat commands can only be invoked from the main window.
 /// Backend-side enforcement; capability file is defense-in-depth.
 fn assert_main_window(window: &tauri::Window) -> Result<(), ChatError> {
@@ -100,13 +120,21 @@ fn assert_main_window(window: &tauri::Window) -> Result<(), ChatError> {
 ///
 /// Flow:
 /// 1. Assert main window.
-/// 2. Generate request_id, create CancellationToken.
-/// 3. Register token in active_requests (before spawn, so chat_cancel works).
-/// 4. Retrieve API key from secrets (drop lock before any await).
-/// 5. Send `ChatEvent::Ack` synchronously (D-14).
-/// 6. Resolve model and build provider messages.
-/// 7. Spawn async task: stream → send events → cleanup token.
-/// 8. Return Ok(()) immediately.
+/// 2. Resolve effective conversation_id: use provided id or generate a new UUID.
+/// 3. If new conversation: call ConversationStore::create_conversation with auto-title
+///    derived from first user message (D-03, backend-owned title, never from IPC).
+/// 4. Persist all user messages via MessageStore::insert_message.
+/// 5. Generate request_id, create CancellationToken.
+/// 6. Register token in active_requests (before spawn, so chat_cancel works).
+/// 7. Retrieve API key from secrets (drop lock before any await).
+/// 8. Send `ChatEvent::Ack` synchronously (D-14).
+/// 9. Resolve model and build provider messages.
+/// 10. Spawn async task: stream → collect assistant text → write storage on
+///     terminal event → cleanup token.
+/// 11. Return Ok(()) immediately.
+///
+/// Storage write errors inside the spawned task are non-fatal: logged via
+/// eprintln! and the streaming task continues regardless (T-03-13 mitigation).
 #[tauri::command]
 pub async fn chat_send(
     window: tauri::Window,
@@ -120,9 +148,46 @@ pub async fn chat_send(
     channel: Channel<ChatEvent>,
 ) -> Result<(), ChatError> {
     // D-10: no api_key parameter — credentials come from state only.
-    // conversation_id is accepted per D-11 but storage write is Phase 3.
-    let _ = &conversation_id;
     assert_main_window(&window)?;
+
+    // Resolve effective conversation id (D-11 Phase 2: Option<String>).
+    // When None, create a new conversation row before streaming.
+    // When Some(id), the caller is resuming an existing conversation.
+    let effective_conv_id: String = conversation_id
+        .as_deref()
+        .map(|id| id.to_string())
+        .unwrap_or_else(|| Uuid::new_v4().to_string());
+
+    // Create the conversation row for new conversations (conversation_id == None).
+    // Title is auto-generated from first user message (D-03: backend-owned, never
+    // accepted from IPC). Re-acquire ConversationStore from app_handle so no
+    // State<'_> lifetime escapes this command body (Pitfall 1 prevention).
+    if conversation_id.is_none() {
+        let title = title_from_messages(&messages);
+        let conv_store = app_handle.state::<ConversationStore>();
+        if let Err(e) = conv_store.create_conversation(&effective_conv_id, &title) {
+            eprintln!("[chat] failed to create conversation: {e}");
+        }
+    }
+
+    // Persist all user messages before streaming starts (HIST-01).
+    // Storage errors are non-fatal — streaming must not be blocked by storage
+    // failures (T-03-13 mitigation).
+    {
+        let msg_store = app_handle.state::<MessageStore>();
+        for msg in &messages {
+            if msg.role == "user" {
+                if let Err(e) = msg_store.insert_message(
+                    &Uuid::new_v4().to_string(),
+                    &effective_conv_id,
+                    &msg.role,
+                    &msg.content,
+                ) {
+                    eprintln!("[chat] failed to persist user message: {e}");
+                }
+            }
+        }
+    }
 
     let request_id = Uuid::new_v4().to_string();
     let token = CancellationToken::new();
@@ -173,7 +238,7 @@ pub async fn chat_send(
     // Spawn the streaming task. `tauri::State<'_>` is not `'static`, so we
     // re-acquire state from AppHandle inside the spawn (Pitfall 1).
     tokio::spawn(async move {
-        let result = run_stream(
+        let (result, accumulated_text, done_model) = run_stream(
             &api_key,
             &resolved_model,
             provider_messages,
@@ -184,13 +249,58 @@ pub async fn chat_send(
         )
         .await;
 
-        if let Err(e) = result {
-            // Error from run_stream — send terminal Error event and ignore
-            // channel errors after the terminal event (Pitfall 2).
-            let _ = channel.send(ChatEvent::Error {
-                code: "PROVIDER_ERROR".into(),
-                message: e,
-            });
+        // Write storage based on the terminal event outcome.
+        // Re-acquire stores from app_handle (State<'_> not 'static — Pitfall 1).
+        // Storage errors are non-fatal: log and continue (T-03-13 mitigation).
+        match &result {
+            Ok(()) => {
+                // Stream completed with Done event — persist assistant message
+                // and mark conversation complete with resolved model (D-05).
+                let msg_store = app_handle.state::<MessageStore>();
+                if let Err(e) = msg_store.insert_message(
+                    &Uuid::new_v4().to_string(),
+                    &effective_conv_id,
+                    "assistant",
+                    &accumulated_text,
+                ) {
+                    eprintln!("[chat] failed to persist assistant message: {e}");
+                }
+                let conv_store = app_handle.state::<ConversationStore>();
+                if let Err(e) = conv_store.mark_complete(&effective_conv_id, &done_model) {
+                    eprintln!("[chat] failed to mark conversation complete: {e}");
+                }
+            }
+            Err(ref e) if e == "CANCELLED" => {
+                // User-initiated cancellation — persist partial assistant text
+                // (status='incomplete') and mark conversation incomplete (D-02).
+                let msg_store = app_handle.state::<MessageStore>();
+                if let Err(storage_err) = msg_store.insert_incomplete_message(
+                    &Uuid::new_v4().to_string(),
+                    &effective_conv_id,
+                    "assistant",
+                    &accumulated_text,
+                ) {
+                    eprintln!("[chat] failed to persist partial assistant message: {storage_err}");
+                }
+                let conv_store = app_handle.state::<ConversationStore>();
+                if let Err(storage_err) = conv_store.mark_incomplete(&effective_conv_id) {
+                    eprintln!("[chat] failed to mark conversation incomplete: {storage_err}");
+                }
+                // Terminal CANCELLED event was already sent inside run_stream.
+            }
+            Err(e) => {
+                // Provider or network error — mark conversation incomplete and
+                // send terminal Error event to the frontend (Pitfall 2: ignore
+                // channel errors after terminal event).
+                let conv_store = app_handle.state::<ConversationStore>();
+                if let Err(storage_err) = conv_store.mark_incomplete(&effective_conv_id) {
+                    eprintln!("[chat] failed to mark conversation incomplete on error: {storage_err}");
+                }
+                let _ = channel.send(ChatEvent::Error {
+                    code: "PROVIDER_ERROR".into(),
+                    message: e.clone(),
+                });
+            }
         }
 
         // Unconditional cleanup — prevents HashMap growth (T-02-04 / Pitfall 5).
@@ -237,6 +347,18 @@ pub async fn chat_cancel(
 ///
 /// Races the HTTP connection against the cancellation token so the user
 /// can cancel even before the first byte arrives.
+///
+/// Returns a tuple `(result, accumulated_text, resolved_model)`:
+/// - `result`: `Ok(())` on clean completion; `Err("CANCELLED")` on cancellation;
+///   `Err(msg)` on network/provider failure.
+/// - `accumulated_text`: the full assistant response collected from Delta events.
+///   Available for storage writes after the stream completes.
+/// - `resolved_model`: the model name from the Done event (empty string if the
+///   stream was cancelled or errored before Done was received).
+///
+/// Text accumulation uses `Arc<Mutex<String>>` shared between the SSE callback
+/// closure and the outer function so the final text is accessible after
+/// `drive_sse_stream` returns, without requiring a different stream driver signature.
 async fn run_stream(
     api_key: &secrecy::SecretString,
     model: &str,
@@ -245,7 +367,7 @@ async fn run_stream(
     temperature: Option<f32>,
     channel: &Channel<ChatEvent>,
     cancel_token: CancellationToken,
-) -> Result<(), String> {
+) -> (Result<(), String>, String, String) {
     let client = reqwest::Client::new();
 
     // Race the HTTP request against cancellation.
@@ -258,38 +380,61 @@ async fn run_stream(
             max_completion_tokens,
             temperature,
         ) => {
-            r?
+            match r {
+                Ok(resp) => resp,
+                Err(e) => return (Err(e), String::new(), String::new()),
+            }
         }
         _ = cancel_token.cancelled() => {
             let _ = channel.send(ChatEvent::Error {
                 code: "CANCELLED".into(),
                 message: "Request cancelled by user".into(),
             });
-            return Ok(());
+            // Pre-connection cancellation: treat as Ok with empty text.
+            return (Err("CANCELLED".to_string()), String::new(), String::new());
         }
     };
 
     let channel_for_closure = channel.clone();
 
-    // Drive the SSE stream, dispatching events through the channel.
+    // Shared accumulators for Delta text and Done model.
+    // Arc<Mutex<String>> is needed because drive_sse_stream's callback is
+    // `move` — we cannot use plain mutable references across the closure
+    // boundary. Mutex is std (not tokio) because the callback is synchronous
+    // (no .await inside on_event).
+    let accumulated = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+    let done_model = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+    let accumulated_clone = accumulated.clone();
+    let done_model_clone = done_model.clone();
+
+    // Drive the SSE stream, dispatching events through the channel and
+    // accumulating Delta text for storage writes after completion.
     let result = sse::drive_sse_stream(
         response,
         cancel_token,
         move |event| {
             match event {
-                sse::SseEvent::Delta { text } => {
+                sse::SseEvent::Delta { ref text } => {
+                    // Accumulate assistant text for storage write on completion.
+                    if let Ok(mut acc) = accumulated_clone.lock() {
+                        acc.push_str(text);
+                    }
                     // Ignore send errors mid-stream; the channel is closed if
                     // the frontend navigated away (Pitfall 2).
-                    let _ = channel_for_closure.send(ChatEvent::Delta { text });
+                    let _ = channel_for_closure.send(ChatEvent::Delta { text: text.clone() });
                 }
-                sse::SseEvent::Done { usage, model: done_model } => {
+                sse::SseEvent::Done { usage, model: ref model_name } => {
+                    // Capture the resolved model name for the conversation row.
+                    if let Ok(mut m) = done_model_clone.lock() {
+                        m.clone_from(model_name);
+                    }
                     let token_usage = usage.map(|u| TokenUsage {
                         prompt_tokens: u.prompt_tokens,
                         completion_tokens: u.completion_tokens,
                     });
                     let _ = channel_for_closure.send(ChatEvent::Done {
                         usage: token_usage,
-                        model: done_model,
+                        model: model_name.clone(),
                     });
                 }
                 sse::SseEvent::ProviderError { message } => {
@@ -307,8 +452,12 @@ async fn run_stream(
     )
     .await;
 
+    // Extract accumulated values now that the stream closure has released them.
+    let final_text = accumulated.lock().map(|g| g.clone()).unwrap_or_default();
+    let final_model = done_model.lock().map(|g| g.clone()).unwrap_or_default();
+
     match result {
-        Ok(()) => Ok(()),
+        Ok(()) => (Ok(()), final_text, final_model),
         Err(ref e) if e == "CANCELLED" => {
             // drive_sse_stream returns "CANCELLED" when the token fires mid-stream.
             // Send the terminal CANCELLED event so the frontend listener closes (D-03).
@@ -317,9 +466,10 @@ async fn run_stream(
                 code: "CANCELLED".into(),
                 message: "Request cancelled by user".into(),
             });
-            Ok(()) // cancellation is not an error from the spawn's perspective
+            // Return partial text so the caller can persist it as incomplete.
+            (Err("CANCELLED".to_string()), final_text, final_model)
         }
-        Err(e) => Err(e),
+        Err(e) => (Err(e), final_text, final_model),
     }
 }
 
@@ -418,5 +568,58 @@ mod tests {
         // signature, cargo check will fail with a type mismatch or the grep
         // gate in T-11 will catch it.
         let _ = "D-10 invariant: chat_send has no api_key parameter. Type system enforces this.";
+    }
+
+    // --- title_from_messages tests (Phase 3 TDD RED) ---
+
+    #[test]
+    fn title_from_messages_returns_first_user_message_content() {
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: "Hello, how are you?".into(),
+        }];
+        assert_eq!(title_from_messages(&messages), "Hello, how are you?");
+    }
+
+    #[test]
+    fn title_from_messages_truncates_to_60_chars() {
+        let long_content = "a".repeat(70);
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: long_content,
+        }];
+        let title = title_from_messages(&messages);
+        assert_eq!(title.chars().count(), 60);
+        assert_eq!(title, "a".repeat(60));
+    }
+
+    #[test]
+    fn title_from_messages_skips_non_user_messages() {
+        let messages = vec![
+            ChatMessage {
+                role: "assistant".into(),
+                content: "I am an assistant".into(),
+            },
+            ChatMessage {
+                role: "user".into(),
+                content: "My question here".into(),
+            },
+        ];
+        assert_eq!(title_from_messages(&messages), "My question here");
+    }
+
+    #[test]
+    fn title_from_messages_returns_fallback_when_no_user_message() {
+        let messages = vec![ChatMessage {
+            role: "assistant".into(),
+            content: "System response".into(),
+        }];
+        assert_eq!(title_from_messages(&messages), "New conversation");
+    }
+
+    #[test]
+    fn title_from_messages_returns_fallback_for_empty_messages() {
+        let messages: Vec<ChatMessage> = vec![];
+        assert_eq!(title_from_messages(&messages), "New conversation");
     }
 }
