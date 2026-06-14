@@ -27,11 +27,18 @@
 **Goal:** Persist and search local conversation history with recoverable storage behavior.
 **Mode:** mvp
 **Requirements:** HIST-01, HIST-02, HIST-03
+**Plans:** 4 plans
 **Success Criteria**:
 
 1. Conversations persist across app restarts.
 2. Prior messages are searchable through local history.
 3. Retention and deletion behavior are explicit and testable.
+
+Plans:
+- [ ] 03-01-PLAN.md — SQLite schema migrations (0002, 0003) + typed domain stores (ConversationStore, MessageStore, FtsStore, RetentionStore)
+- [ ] 03-02-PLAN.md — IPC command surface (history_list, history_get, history_delete, history_search) + main.rs registration + capabilities
+- [ ] 03-03-PLAN.md — chat_send storage wiring (conversation persistence, title generation, Done/Cancel terminal writes)
+- [ ] 03-04-PLAN.md — Frontend History surface (historyStore, HistorySurface, SearchBar, ConversationList, ConversationRow)
 
 ## Phase 4: Privacy
 
