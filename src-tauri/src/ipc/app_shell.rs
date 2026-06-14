@@ -30,6 +30,10 @@ pub enum ShellError {
 ///
 /// On startup the frontend calls this to hydrate the shell without
 /// relying on browser storage or local fallbacks.
+///
+/// Lock ordering: shell lock is acquired first, then sqlite lock (inside
+/// `store.load_active_surface()`). All callers must maintain this ordering
+/// to prevent deadlock.
 #[tauri::command]
 pub async fn get_active_surface(
     window: tauri::Window,
@@ -38,36 +42,23 @@ pub async fn get_active_surface(
 ) -> Result<Surface, ShellError> {
     assert_main_window(&window)?;
 
-    // Prefer the in-memory value when already hydrated (avoids a DB read on
-    // every re-render). On first call after launch the store loads from SQLite
-    // and populates the in-memory state.
-    let (current, hydrated) = {
-        let shell = state.shell.lock().map_err(|e| {
-            ShellError::StorageError(format!("shell state lock poisoned: {e}"))
-        })?;
-        (shell.active_surface.clone(), shell.hydrated)
-    };
+    // Hold the shell lock for the entire check-read-write sequence so that
+    // concurrent async invocations cannot both observe hydrated == false and
+    // both issue a DB read, returning a stale value from the second caller.
+    // Lock ordering: shell -> sqlite (ShellPreferenceStore acquires sqlite internally).
+    let mut shell = state.shell.lock().map_err(|e| {
+        ShellError::StorageError(format!("shell state lock poisoned: {e}"))
+    })?;
 
-    // Consult the DB exactly once per session, guarded by an explicit flag
-    // rather than default-value equality (which would fail when Chat is the
-    // persisted value and the user is genuinely on Chat).
-    if !hydrated {
+    if !shell.hydrated {
+        // DB read while holding the shell lock; sqlite lock acquired inside here.
         if let Ok(Some(persisted)) = store.load_active_surface() {
-            let mut shell = state.shell.lock().map_err(|e| {
-                ShellError::StorageError(format!("shell state lock poisoned: {e}"))
-            })?;
-            shell.active_surface = persisted.clone();
-            shell.hydrated = true;
-            return Ok(persisted);
+            shell.active_surface = persisted;
         }
-        // No persisted value — DB consulted; mark hydrated so we don't re-query.
-        let mut shell = state.shell.lock().map_err(|e| {
-            ShellError::StorageError(format!("shell state lock poisoned: {e}"))
-        })?;
         shell.hydrated = true;
     }
 
-    Ok(current)
+    Ok(shell.active_surface.clone())
 }
 
 /// Sets the active surface and persists it to backend-owned SQLite storage.
