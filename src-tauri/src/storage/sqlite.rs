@@ -58,9 +58,12 @@ impl SqlitePool {
     where
         F: FnOnce(&Connection) -> rusqlite::Result<T>,
     {
-        let conn = self.conn.lock().map_err(|_| {
-            rusqlite::Error::InvalidParameterName("connection mutex poisoned".to_string())
-        })?;
+        let conn = self.conn.lock().unwrap_or_else(|poisoned| {
+            // A prior thread panicked while holding the connection lock.
+            // The connection state is unknown; propagate the panic rather than
+            // misrepresenting a fatal concurrency failure as a parameter error.
+            panic!("SQLite connection mutex poisoned: {}", poisoned);
+        });
         f(&conn)
     }
 }
