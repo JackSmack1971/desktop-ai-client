@@ -11,6 +11,10 @@
     "allow-get-active-surface",
     "allow-set-active-surface",
     "allow-chat-send",
-    "allow-chat-cancel"
+    "allow-chat-cancel",
+    "allow-history-list",
+    "allow-history-get",
+    "allow-history-delete",
+    "allow-history-search"
   ]
 }

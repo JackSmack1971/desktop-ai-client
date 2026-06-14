@@ -10,7 +10,9 @@ mod storage;
 mod telemetry;
 
 use app_state::AppState;
-use storage::sqlite::{ShellPreferenceStore, SqlitePool};
+use storage::fts::FtsStore;
+use storage::retention::RetentionStore;
+use storage::sqlite::{ConversationStore, MessageStore, ShellPreferenceStore, SqlitePool};
 use tauri::Manager;
 
 fn main() {
@@ -37,7 +39,14 @@ fn main() {
             app.manage(pool.clone());
 
             // Register ShellPreferenceStore so tauri::State<'_, ShellPreferenceStore> resolves.
-            app.manage(ShellPreferenceStore::new(pool));
+            app.manage(ShellPreferenceStore::new(pool.clone()));
+
+            // Register typed domain stores for conversation history IPC commands.
+            // Each store wraps the same Arc<SqlitePool> so all stores share one connection.
+            app.manage(ConversationStore::new(pool.clone()));
+            app.manage(MessageStore::new(pool.clone()));
+            app.manage(FtsStore::new(pool.clone()));
+            app.manage(RetentionStore::new(pool));
 
             Ok(())
         })
@@ -53,6 +62,10 @@ fn main() {
             ipc::app_shell::set_active_surface,
             ipc::chat::chat_send,
             ipc::chat::chat_cancel,
+            ipc::history::history_list,
+            ipc::history::history_get,
+            ipc::history::history_delete,
+            ipc::history::history_search,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri application failed to start");

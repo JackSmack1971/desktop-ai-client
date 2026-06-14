@@ -1,0 +1,27 @@
+[[permission]]
+identifier = "allow-history-list"
+description = "Permits listing conversation summaries from backend-owned SQLite storage."
+
+[permission.commands]
+allow = ["history_list"]
+
+[[permission]]
+identifier = "allow-history-get"
+description = "Permits fetching a full conversation with messages from backend-owned SQLite storage."
+
+[permission.commands]
+allow = ["history_get"]
+
+[[permission]]
+identifier = "allow-history-delete"
+description = "Permits hard-deleting a conversation and all its messages. Triggers WAL checkpoint."
+
+[permission.commands]
+allow = ["history_delete"]
+
+[[permission]]
+identifier = "allow-history-search"
+description = "Permits searching conversation message content via FTS5 index. Returns snippets only."
+
+[permission.commands]
+allow = ["history_search"]
