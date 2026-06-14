@@ -47,7 +47,8 @@ Exceptions:
 - Search input height: 36px (touch target minimum for keyboard + pointer; aligns to 8pt grid)
 - Conversation row height: 56px minimum (readable at-a-glance density; aligns to 8pt grid)
 - Rail button touch target: 48px × 48px (pre-existing from SurfaceRail.svelte)
-- Message bubble padding: 10px 14px (pre-existing; 10px does not break grid in context of 2px component gap)
+
+**Note on ChatMessage.svelte padding:** `ChatMessage.svelte` (which uses `10px 14px` bubble padding) is not built or owned by Phase 3. The History surface does not render message bubbles directly — it renders conversation rows and search snippets only. That component's padding value is outside this contract's scope and is not declared here.
 
 ---
 
@@ -61,6 +62,8 @@ Exceptions:
 | Micro | 11px | 600 | 1.0 | Status badge text ("Cancelled", "Incomplete") and confirmation destructive labels |
 
 Font stack for all roles: `system-ui, -apple-system, sans-serif`
+
+**Micro vs Label differentiation:** Micro (11px) and Label (12px) differ by only 1px. This is intentional — Micro is used exclusively for status badges and destructive confirmation labels where weight 600 provides the primary visual distinction from Label weight 400. The 1px size difference reinforces the weight difference. If a future phase needs stronger separation, Micro should move to 10px rather than Label moving to 13px.
 
 ---
 
@@ -87,6 +90,14 @@ Accent (`#4a9eff`) reserved for:
 3. Highlighted search match term within snippet text (foreground `#4a9eff` on `#1e4a7a` bg)
 
 Accent is NOT applied to: inactive row text, timestamps, model badges, or general borders.
+
+---
+
+## Focal Points
+
+**Primary focal point (row anchor):** Conversation title — left-aligned, text-primary color, body weight 400 at 14px. The eye anchors to the title first as it carries the most semantic content per row.
+
+**Surface focal point (top of list):** Search bar — positioned at the top of the History surface, spanning full list width. It is the first interactive element in tab order and the primary action entry point for the surface.
 
 ---
 
@@ -135,7 +146,7 @@ These are the new components the executor must build for Phase 3:
 - When results contain snippet, model badge is omitted from that row
 
 ### Delete Flow
-- Delete trigger label: "Delete" (visible text, not icon-only)
+- Delete trigger label: "Delete conversation" (visible text, not icon-only)
 - `aria-label="Delete conversation: {title}"` on the delete button for screen reader disambiguation
 - On delete trigger click: show an inline confirmation within the row (no modal dialog)
   - Confirmation text: "Delete this conversation? This cannot be undone."
@@ -197,7 +208,7 @@ These requirements are mandatory, not optional. The adversarial hardening spec (
 | Empty search heading | No matches found |
 | Empty search body | No conversations matched "{query}". Try different keywords. |
 | Loading state | Loading conversations… |
-| Delete trigger label | Delete |
+| Delete trigger label | Delete conversation |
 | Delete confirmation heading | Delete this conversation? |
 | Delete confirmation body | This cannot be undone. |
 | Delete confirm button | Confirm delete |
