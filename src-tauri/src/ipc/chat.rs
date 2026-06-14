@@ -14,7 +14,6 @@
 use crate::app_state::AppState;
 use crate::providers::openrouter::ProviderMessage;
 use crate::providers::{routing, sse};
-use crate::security::secrets::{self, ProviderId};
 use secrecy::ExposeSecret;
 use tauri::ipc::Channel;
 use tokio_util::sync::CancellationToken;
@@ -121,6 +120,8 @@ pub async fn chat_send(
     channel: Channel<ChatEvent>,
 ) -> Result<(), ChatError> {
     // D-10: no api_key parameter — credentials come from state only.
+    // conversation_id is accepted per D-11 but storage write is Phase 3.
+    let _ = &conversation_id;
     assert_main_window(&window)?;
 
     let request_id = Uuid::new_v4().to_string();
@@ -271,7 +272,7 @@ async fn run_stream(
     let channel_for_closure = channel.clone();
 
     // Drive the SSE stream, dispatching events through the channel.
-    sse::drive_sse_stream(
+    let result = sse::drive_sse_stream(
         response,
         cancel_token,
         move |event| {
@@ -304,24 +305,22 @@ async fn run_stream(
             Ok(())
         },
     )
-    .await
-    .map_err(|e| {
-        if e == "CANCELLED" {
+    .await;
+
+    match result {
+        Ok(()) => Ok(()),
+        Err(ref e) if e == "CANCELLED" => {
             // drive_sse_stream returns "CANCELLED" when the token fires mid-stream.
-            // Send the CANCELLED event and return Ok so the outer spawn doesn't
-            // double-send a PROVIDER_ERROR.
+            // Send the terminal CANCELLED event so the frontend listener closes (D-03).
+            // Ignore channel errors after terminal event (Pitfall 2).
             let _ = channel.send(ChatEvent::Error {
                 code: "CANCELLED".into(),
                 message: "Request cancelled by user".into(),
             });
-            // Convert to an empty Ok by storing locally and returning Ok below.
-            String::new() // sentinel — handled below
-        } else {
-            e
+            Ok(()) // cancellation is not an error from the spawn's perspective
         }
-    })
-    .and_then(|_| Ok(()))
-    .or_else(|e| if e.is_empty() { Ok(()) } else { Err(e) })
+        Err(e) => Err(e),
+    }
 }
 
 #[cfg(test)]
