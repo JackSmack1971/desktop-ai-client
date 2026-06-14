@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::sync::Mutex;
+use tokio_util::sync::CancellationToken;
 
 /// Shared runtime state managed by Tauri's state system.
 ///
@@ -9,11 +11,46 @@ use std::sync::Mutex;
 /// Privacy invariant: AppState must never expose provider credentials, raw file
 /// paths, or prompt content to the frontend. Those values are backend-only and must
 /// not appear in IPC responses.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct AppState {
     /// Shell preferences managed by the backend. The frontend reads and writes
     /// these through typed IPC commands rather than browser storage.
     pub shell: Mutex<ShellState>,
+    /// Per-request cancellation tokens for in-flight streaming chat requests.
+    /// Keyed by `request_id` (UUID string). Cleaned up unconditionally after
+    /// each request completes (success, error, or cancellation).
+    pub active_requests: Mutex<HashMap<String, CancellationToken>>,
+    /// Provider credentials held in-process behind a Mutex.
+    /// Populated from environment variables at startup; never crosses IPC.
+    pub secrets: Mutex<SecretsState>,
+}
+
+/// Provider credential state, backend-owned and never exposed via IPC.
+///
+/// Phase 2: backed by OPENROUTER_API_KEY environment variable.
+/// Phase 4: internals replaced with Stronghold/OS keychain; callers unchanged.
+#[derive(Debug)]
+pub struct SecretsState {
+    pub openrouter_key: Option<secrecy::SecretString>,
+}
+
+impl Default for SecretsState {
+    fn default() -> Self {
+        let key = std::env::var("OPENROUTER_API_KEY")
+            .ok()
+            .map(|v| secrecy::SecretString::new(v.into()));
+        Self { openrouter_key: key }
+    }
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            shell: Mutex::new(ShellState::default()),
+            active_requests: Mutex::new(HashMap::new()),
+            secrets: Mutex::new(SecretsState::default()),
+        }
+    }
 }
 
 /// Workspace shell preferences owned by the backend.
@@ -99,5 +136,12 @@ mod tests {
     fn surface_default_is_chat() {
         let state = ShellState::default();
         assert_eq!(state.active_surface, Surface::Chat);
+    }
+
+    #[test]
+    fn app_state_initializes_active_requests_empty() {
+        let state = AppState::default();
+        let requests = state.active_requests.lock().expect("lock should not be poisoned");
+        assert!(requests.is_empty(), "active_requests must start empty");
     }
 }

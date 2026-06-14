@@ -51,6 +51,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             ipc::app_shell::get_active_surface,
             ipc::app_shell::set_active_surface,
+            ipc::chat::chat_send,
+            ipc::chat::chat_cancel,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri application failed to start");
