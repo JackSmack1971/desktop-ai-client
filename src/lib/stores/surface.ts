@@ -22,6 +22,23 @@ const SURFACE_LABELS: Record<Surface, string> = {
 	artifacts: 'Artifacts',
 };
 
+/**
+ * Normalize an IPC rejection to a user-facing error string.
+ *
+ * Tauri rejects IPC calls with serialized ShellError objects
+ * ({ code, message }) or plain strings. String(e) on an object
+ * produces "[object Object]", which is useless in the status bar.
+ */
+function normalizeIpcError(e: unknown): string {
+    if (typeof e === 'string') return e;
+    if (e && typeof e === 'object') {
+        const obj = e as Record<string, unknown>;
+        if (typeof obj['message'] === 'string') return obj['message'];
+        if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
+    }
+    return 'An unexpected error occurred.';
+}
+
 function createSurfaceStore() {
 	// Svelte 5 rune: mutable reactive state.
 	let surface = $state<Surface>('chat');
@@ -42,7 +59,7 @@ function createSurfaceStore() {
 		} catch (e) {
 			// In development or before backend initializes, fall back gracefully.
 			console.warn('[surface-store] Failed to load active surface from backend:', e);
-			error = String(e);
+			error = normalizeIpcError(e);
 			// Default is already 'chat' from the $state initializer.
 		} finally {
 			loading = false;
@@ -64,7 +81,7 @@ function createSurfaceStore() {
 		} catch (e) {
 			// Roll back the optimistic update if the backend call fails.
 			surface = previous;
-			error = String(e);
+			error = normalizeIpcError(e);
 			console.warn('[surface-store] Failed to persist active surface to backend:', e);
 		}
 	}
