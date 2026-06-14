@@ -10,7 +10,7 @@ mod storage;
 mod telemetry;
 
 use app_state::AppState;
-use storage::sqlite::{ShellPreferenceStore, SqlitePool};
+use storage::sqlite::{ConversationStore, MessageStore, ShellPreferenceStore, SqlitePool};
 use tauri::Manager;
 
 fn main() {
@@ -37,7 +37,13 @@ fn main() {
             app.manage(pool.clone());
 
             // Register ShellPreferenceStore so tauri::State<'_, ShellPreferenceStore> resolves.
-            app.manage(ShellPreferenceStore::new(pool));
+            app.manage(ShellPreferenceStore::new(pool.clone()));
+
+            // Register ConversationStore and MessageStore so chat_send can
+            // re-acquire them via app_handle.state::<T>() inside the spawned
+            // streaming task (Pitfall 1: State<'_> is not 'static).
+            app.manage(ConversationStore::new(pool.clone()));
+            app.manage(MessageStore::new(pool));
 
             Ok(())
         })
