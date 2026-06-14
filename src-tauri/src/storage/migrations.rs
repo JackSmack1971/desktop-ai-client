@@ -25,22 +25,14 @@ pub struct Migration {
 ///
 /// Each migration must have a unique `id`. Adding a migration appends to this
 /// list; never reorder or modify an existing entry after it ships.
+///
+/// Note: the `schema_migrations` tracking table itself is created by the
+/// inline bootstrap in `run_migrations` before this slice is iterated.
+/// It is intentionally absent from this list to avoid a misleading
+/// "applied 2 migrations" count on a fresh database.
 pub static MIGRATIONS: &[Migration] = &[
     Migration {
         id: "0001",
-        description: "Create schema_migrations tracking table",
-        sql: "
-            CREATE TABLE IF NOT EXISTS schema_migrations (
-              id TEXT PRIMARY KEY,
-              description TEXT NOT NULL,
-              app_version TEXT NOT NULL,
-              applied_at TEXT NOT NULL,
-              success INTEGER NOT NULL CHECK (success IN (0, 1))
-            );
-        ",
-    },
-    Migration {
-        id: "0002",
         description: "Create shell_preferences table for backend-owned surface state",
         sql: "
             CREATE TABLE IF NOT EXISTS shell_preferences (
@@ -57,7 +49,10 @@ pub static MIGRATIONS: &[Migration] = &[
 /// Returns the number of migrations applied. Logs the migration ID and
 /// description at info level; does not log SQL or user data.
 pub fn run_migrations(conn: &Connection, app_version: &str) -> rusqlite::Result<usize> {
-    // Ensure the tracking table exists before anything else.
+    // Bootstrap the tracking table before iterating the MIGRATIONS slice.
+    // This table is not listed in MIGRATIONS itself — doing so would produce
+    // a misleading "applied 2" count on a fresh database and create a
+    // confusing dual-creation path that complicates incident diagnosis.
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS schema_migrations (
            id TEXT PRIMARY KEY,
@@ -134,6 +129,8 @@ mod tests {
     fn migrations_apply_to_fresh_database() {
         let conn = fresh_conn();
         let applied = run_migrations(&conn, "0.1.0").unwrap();
+        // schema_migrations is bootstrapped outside the MIGRATIONS slice;
+        // only the domain migrations (currently 1) are counted here.
         assert_eq!(applied, MIGRATIONS.len(), "all migrations should apply on a fresh db");
     }
 
