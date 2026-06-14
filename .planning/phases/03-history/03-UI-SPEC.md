@@ -1,7 +1,8 @@
 ---
 phase: 3
 slug: history
-status: draft
+status: approved
+reviewed_at: 2026-06-14
 shadcn_initialized: false
 preset: none
 created: 2026-06-14
@@ -44,7 +45,7 @@ Declared values (multiples of 4 only):
 | 3xl | 64px | Not currently in use — reserved for page-level spacing |
 
 Exceptions:
-- Search input height: 36px (touch target minimum for keyboard + pointer; aligns to 8pt grid)
+- Search input height: 40px (comfortable touch target; 5 × 8pt = 40px, valid 8pt grid value)
 - Conversation row height: 56px minimum (readable at-a-glance density; aligns to 8pt grid)
 - Rail button touch target: 48px × 48px (pre-existing from SurfaceRail.svelte)
 
