@@ -74,6 +74,19 @@ Plans:
 2. A runaway artifact can be stopped or reloaded without freezing the host UI.
 3. Keyboard and screen-reader paths remain usable for preview workflows.
 
+**Plan Waves:**
+
+- Wave 1: `05-01` - backend artifact contract, persistence, and IPC surface
+- Wave 2: `05-02` - frontend preview surface, reload/stop controls, and chat routing
+- Wave 3: `05-03` - accessibility, fail-closed behavior, and verification
+
+**Cross-cutting constraints:**
+
+- Artifact content is backend-owned until it is sanitized and CSP-wrapped for preview.
+- The preview iframe must never allow scripts or external network access in Phase 5.
+- Reload and stop remain host chrome controls outside the sandboxed iframe.
+- ArtifactReady is emitted only after chat completion and routes through typed frontend state.
+
 ## Phase 6: Release
 
 **Goal:** Make the project release-ready with reviewed command exposure and adversarial evidence.
