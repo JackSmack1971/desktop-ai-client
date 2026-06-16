@@ -46,11 +46,22 @@ Plans:
 **Goal:** Enforce the privacy boundary for secrets, file access, and telemetry.
 **Mode:** mvp
 **Requirements:** SEC-01, SEC-02, SEC-03
+**Plans:** 7 plans
 **Success Criteria**:
 
 1. Ordinary frontend windows cannot read backend-owned secrets.
 2. File access rejects raw frontend path authority.
 3. Logs and telemetry redact sensitive content before persistence or transmission.
+
+Plans:
+
+- [ ] 04-01-PLAN.md — Foundation: Cargo deps (keyring v3, dialog, mime_guess) + AppState.file_tokens + KeyringSecretStore backing
+- [ ] 04-02-PLAN.md — security::redaction (three categories) + security::command_policy (window-label allow-table)
+- [ ] 04-03-PLAN.md — security::file_tokens (mint/resolve/revoke against AppState.file_tokens)
+- [ ] 04-04-PLAN.md — telemetry::audit_log (JSON Lines) + ipc::privacy (set/status/clear commands)
+- [ ] 04-05-PLAN.md — ipc::files (files_open_dialog native picker + files_read_token)
+- [ ] 04-06-PLAN.md — Wiring: main.rs registration + dialog plugin + privacy.toml/files.toml + capabilities
+- [ ] 04-07-PLAN.md — Frontend: privacyStore (settings.ts) + SettingsSurface.svelte credential UI
 
 ## Phase 5: Artifacts
 
