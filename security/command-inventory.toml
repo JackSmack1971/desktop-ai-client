@@ -1,0 +1,222 @@
+schema_version = 1
+reviewed_at = "2026-06-15T23:45:00Z"
+source = "src-tauri/src/main.rs"
+release_capabilities = "security/release-capabilities.toml"
+compiled_allowlist = "TAURI_COMPILED_COMMAND_ALLOWLIST"
+
+[[commands]]
+name = "get_active_surface"
+module = "ipc::app_shell"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "none; returns Surface"
+sensitivity = "low"
+expected_capability = "allow-get-active-surface"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects unknown window label",
+]
+
+[[commands]]
+name = "set_active_surface"
+module = "ipc::app_shell"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "surface: Surface"
+sensitivity = "low"
+expected_capability = "allow-set-active-surface"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects invalid surface value",
+]
+
+[[commands]]
+name = "chat_send"
+module = "ipc::chat"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "messages, model, conversation_id, max_completion_tokens, temperature, attachments, channel"
+sensitivity = "high"
+expected_capability = "allow-chat-send"
+required_negative_tests = [
+  "rejects non-main window",
+  "never accepts api_key",
+  "cancellation path remains typed",
+]
+
+[[commands]]
+name = "chat_cancel"
+module = "ipc::chat"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "request_id: String"
+sensitivity = "low"
+expected_capability = "allow-chat-cancel"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects missing request_id",
+]
+
+[[commands]]
+name = "artifact_get"
+module = "ipc::artifacts"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "artifact_id: String"
+sensitivity = "medium"
+expected_capability = "allow-artifact-get"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects missing artifact id",
+  "refuses empty srcdoc previews",
+]
+
+[[commands]]
+name = "artifact_dismiss"
+module = "ipc::artifacts"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "artifact_id: String"
+sensitivity = "medium"
+expected_capability = "allow-artifact-dismiss"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects unknown artifact id",
+]
+
+[[commands]]
+name = "history_list"
+module = "ipc::history"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "none; returns conversation summaries"
+sensitivity = "high"
+expected_capability = "allow-history-list"
+required_negative_tests = [
+  "rejects non-main window",
+  "does not leak raw SQL",
+]
+
+[[commands]]
+name = "history_get"
+module = "ipc::history"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "id: String"
+sensitivity = "high"
+expected_capability = "allow-history-get"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects unknown conversation id",
+]
+
+[[commands]]
+name = "history_delete"
+module = "ipc::history"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "id: String"
+sensitivity = "high"
+expected_capability = "allow-history-delete"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects unknown conversation id",
+  "keeps WAL checkpoint behavior behind storage layer",
+]
+
+[[commands]]
+name = "history_search"
+module = "ipc::history"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "query: String"
+sensitivity = "high"
+expected_capability = "allow-history-search"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects malformed FTS query",
+]
+
+[[commands]]
+name = "privacy_set_provider_key"
+module = "ipc::privacy"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "provider: String, key: String"
+sensitivity = "high"
+expected_capability = "allow-privacy-set-provider-key"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects unsupported provider",
+  "never logs the raw key",
+]
+
+[[commands]]
+name = "privacy_get_credential_status"
+module = "ipc::privacy"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "provider: String"
+sensitivity = "high"
+expected_capability = "allow-privacy-get-credential-status"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects unsupported provider",
+]
+
+[[commands]]
+name = "privacy_clear_provider_key"
+module = "ipc::privacy"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "provider: String"
+sensitivity = "high"
+expected_capability = "allow-privacy-clear-provider-key"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects unsupported provider",
+  "never logs the raw key",
+]
+
+[[commands]]
+name = "files_open_dialog"
+module = "ipc::files"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "none; returns file token metadata"
+sensitivity = "medium"
+expected_capability = "allow-files-open-dialog"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects cancelled dialog",
+  "returns tokens instead of raw paths",
+]
+
+[[commands]]
+name = "files_read_token"
+module = "ipc::files"
+allowed_windows = ["main"]
+production = true
+debug_only = false
+argument_schema = "token_id: String"
+sensitivity = "medium"
+expected_capability = "allow-files-read-token"
+required_negative_tests = [
+  "rejects non-main window",
+  "rejects invalid token id",
+  "rejects unknown token id",
+]

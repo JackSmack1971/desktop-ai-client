@@ -101,6 +101,30 @@ pub static MIGRATIONS: &[Migration] = &[
             END;
         ",
     },
+    Migration {
+        id: "0004",
+        description: "Create artifacts table for sanitized preview storage",
+        sql: "
+            CREATE TABLE IF NOT EXISTS artifacts (
+              id TEXT PRIMARY KEY,
+              conversation_id TEXT NOT NULL
+                REFERENCES conversations(id) ON DELETE CASCADE,
+              message_id TEXT
+                REFERENCES messages(id) ON DELETE SET NULL,
+              content_type TEXT NOT NULL
+                CHECK (content_type IN ('html', 'svg', 'plain_text', 'code')),
+              language TEXT NOT NULL DEFAULT '',
+              raw_source TEXT NOT NULL,
+              created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            ) STRICT;
+
+            CREATE INDEX IF NOT EXISTS idx_artifacts_conversation_id
+              ON artifacts(conversation_id);
+
+            CREATE INDEX IF NOT EXISTS idx_artifacts_message_id
+              ON artifacts(message_id);
+        ",
+    },
 ];
 
 /// Apply any pending migrations to `conn`.
@@ -189,7 +213,7 @@ mod tests {
         let conn = fresh_conn();
         let applied = run_migrations(&conn, "0.1.0").unwrap();
         // schema_migrations is bootstrapped outside the MIGRATIONS slice;
-        // only the domain migrations (currently 1) are counted here.
+        // only the domain migrations (currently 4) are counted here.
         assert_eq!(applied, MIGRATIONS.len(), "all migrations should apply on a fresh db");
     }
 
@@ -225,8 +249,8 @@ mod tests {
     }
 
     #[test]
-    fn migrations_count_is_three() {
-        assert_eq!(MIGRATIONS.len(), 3, "expected 3 migrations after phase 3 additions");
+    fn migrations_count_is_four() {
+        assert_eq!(MIGRATIONS.len(), 4, "expected 4 migrations after phase 5 additions");
     }
 
     #[test]
@@ -350,5 +374,38 @@ mod tests {
             )
             .unwrap();
         assert!(count > 0, "FTS5 table should contain the inserted message content");
+    }
+
+    #[test]
+    fn artifacts_table_exists_after_migration() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-art', 'Artifact Test')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO messages (id, conversation_id, role, content)
+             VALUES ('msg-art', 'conv-art', 'assistant', '<div>hi</div>')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO artifacts (id, conversation_id, message_id, content_type, language, raw_source)
+             VALUES ('art-1', 'conv-art', 'msg-art', 'html', '', '<div>hi</div>')",
+            [],
+        )
+        .unwrap();
+
+        let content_type: String = conn
+            .query_row(
+                "SELECT content_type FROM artifacts WHERE id = 'art-1'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(content_type, "html");
     }
 }

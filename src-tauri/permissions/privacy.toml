@@ -1,0 +1,20 @@
+[[permission]]
+identifier = "allow-privacy-set-provider-key"
+description = "Permits storing the OpenRouter API key in the backend keychain from the main window."
+
+[permission.commands]
+allow = ["privacy_set_provider_key"]
+
+[[permission]]
+identifier = "allow-privacy-get-credential-status"
+description = "Permits checking whether the OpenRouter API key is configured. Returns status only, never the key value."
+
+[permission.commands]
+allow = ["privacy_get_credential_status"]
+
+[[permission]]
+identifier = "allow-privacy-clear-provider-key"
+description = "Permits clearing the OpenRouter API key from the backend keychain."
+
+[permission.commands]
+allow = ["privacy_clear_provider_key"]

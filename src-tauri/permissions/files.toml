@@ -1,0 +1,13 @@
+[[permission]]
+identifier = "allow-files-open-dialog"
+description = "Permits opening the native file picker and returning only backend-minted tokens plus safe metadata."
+
+[permission.commands]
+allow = ["files_open_dialog"]
+
+[[permission]]
+identifier = "allow-files-read-token"
+description = "Permits resolving an opaque file token to read file contents without accepting a raw path."
+
+[permission.commands]
+allow = ["files_read_token"]

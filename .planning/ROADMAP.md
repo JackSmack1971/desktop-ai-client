@@ -92,8 +92,15 @@ Plans:
 **Goal:** Make the project release-ready with reviewed command exposure and adversarial evidence.
 **Mode:** mvp
 **Requirements:** REL-01, REL-02
+**Plans:** 1 plan
 **Success Criteria**:
 
 1. Command exposure is explicitly inventoried and cross-checked before release.
 2. The release gate includes the expected security, routing, storage, and fixture evidence.
 3. A build alone is not considered complete unless the verification evidence is present.
+
+Plans:
+
+- [x] PLAN.md — reviewed command inventory, deny-by-inventory verifier, and first-pass release evidence bundle
+
+**Execution:** Complete — inventory, verifier, evidence bundle, and release trackers updated on 2026-06-16.

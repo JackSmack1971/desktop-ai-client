@@ -13,6 +13,7 @@
 
 import { chatSend, chatCancel } from '$lib/api/chat';
 import type { ChatEvent } from '$lib/api/chat';
+import { artifactsStore } from '$lib/stores/artifacts';
 
 /** The persisted shape of a single chat message, including streaming state. */
 export type ChatMessageState = {
@@ -127,6 +128,10 @@ function createChatStore() {
 				streamingId = null;
 				requestId = null;
 				loading = false;
+				break;
+			}
+			case 'ArtifactReady': {
+				artifactsStore.receiveArtifact(event);
 				break;
 			}
 		}

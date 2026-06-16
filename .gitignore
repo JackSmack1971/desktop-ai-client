@@ -31,3 +31,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Claude Code ephemeral agent state
+.claude/worktrees/

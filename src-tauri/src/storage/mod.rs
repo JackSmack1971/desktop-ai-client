@@ -9,7 +9,9 @@
 /// - `backup`     – Backup and export helpers (future)
 /// - `fts`        – FTS5 full-text search helpers (future)
 /// - `retention`  – Retention and deletion policy (future)
+/// - `artifacts`  – Artifact preview storage and detection
 pub mod backup;
+pub mod artifacts;
 pub mod fts;
 pub mod migrations;
 pub mod retention;

@@ -4,20 +4,17 @@ Monorepo for the desktop client shell, the Tauri backend, and supporting docs an
 
 ## Intent Layer
 
-Before editing code in a subdirectory, read that directory's `AGENTS.md` first.
+Read the nearest `AGENTS.md` before editing code in a subdirectory.
 
-- `src-tauri/AGENTS.md` - Rust/Tauri backend and its nested backend modules
+- `src-tauri/AGENTS.md` - Rust/Tauri backend and nested backend modules
 
 ## Global Invariants
 
+- Treat `docs/` and `.planning/` as the contract while the app is still scaffolded.
 - Keep privacy boundaries explicit; redact sensitive data before logging or telemetry.
-- Keep command policy, provider routing, storage, and telemetry concerns separated.
-- Treat docs in `docs/` as the source of truth for boundaries and behavior contracts.
+- Keep backend-owned concerns backend-owned: command policy, provider routing, storage, and telemetry stay out of the renderer.
 - Prefer small, local AGENTS nodes when a subsystem has distinct ownership or invariants.
 
-## Project Snapshot
+## Working Rules
 
-- Project: Desktop AI Client
-- Current state: brownfield scaffold with docs-defined architecture and placeholder backend/frontend modules
-- Core value: keep local history and file ownership private while safely routing AI inference and generated artifacts
-- Next step: run `$gsd-plan-phase 1` after project initialization is complete
+- Prefer the smallest correct change, update docs when behavior or boundaries change, and verify with the narrowest meaningful command set.

@@ -1,0 +1,9 @@
+schema_version = 1
+notes = "Release selection is explicit: main-window is the only release capability. No dev-only capability files are currently selected."
+dev_only_capabilities = []
+
+[[selected_capabilities]]
+identifier = "main-window"
+path = "src-tauri/capabilities/main.json"
+windows = ["main"]
+status = "release"

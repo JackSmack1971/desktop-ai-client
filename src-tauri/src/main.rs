@@ -10,6 +10,7 @@ mod storage;
 mod telemetry;
 
 use app_state::AppState;
+use storage::artifacts::ArtifactStore;
 use storage::fts::FtsStore;
 use storage::retention::RetentionStore;
 use storage::sqlite::{ConversationStore, MessageStore, ShellPreferenceStore, SqlitePool};
@@ -20,6 +21,7 @@ fn main() {
         // Register the opener plugin so the app can open external URLs
         // from the backend (not exposed as a raw frontend command).
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         // Bootstrap: open the SQLite database, run pending migrations, and
         // register SqlitePool and ShellPreferenceStore as managed state so
         // IPC command handlers can inject them via tauri::State.
@@ -45,6 +47,7 @@ fn main() {
             // Each store wraps the same Arc<SqlitePool> so all stores share one connection.
             app.manage(ConversationStore::new(pool.clone()));
             app.manage(MessageStore::new(pool.clone()));
+            app.manage(ArtifactStore::new(pool.clone()));
             app.manage(FtsStore::new(pool.clone()));
             app.manage(RetentionStore::new(pool));
 
@@ -62,10 +65,17 @@ fn main() {
             ipc::app_shell::set_active_surface,
             ipc::chat::chat_send,
             ipc::chat::chat_cancel,
+            ipc::artifacts::artifact_get,
+            ipc::artifacts::artifact_dismiss,
             ipc::history::history_list,
             ipc::history::history_get,
             ipc::history::history_delete,
             ipc::history::history_search,
+            ipc::privacy::privacy_set_provider_key,
+            ipc::privacy::privacy_get_credential_status,
+            ipc::privacy::privacy_clear_provider_key,
+            ipc::files::files_open_dialog,
+            ipc::files::files_read_token,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri application failed to start");

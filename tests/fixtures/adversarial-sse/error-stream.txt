@@ -1,0 +1,3 @@
+event: error
+data: {"code":"PROVIDER_ERROR","message":"upstream stream failed"}
+

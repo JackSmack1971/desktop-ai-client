@@ -13,6 +13,8 @@
 
 	import { tick } from 'svelte';
 	import { chatStore } from '$lib/stores/chat';
+	import { artifactsStore } from '$lib/stores/artifacts';
+	import { surfaceStore } from '$lib/stores/surface';
 	import ChatInput from '$lib/components/chat/ChatInput.svelte';
 	import ChatMessage from '$lib/components/chat/ChatMessage.svelte';
 	import StreamingBubble from '$lib/components/chat/StreamingBubble.svelte';
@@ -33,6 +35,10 @@
 
 	function handleSubmit(text: string): void {
 		void chatStore.sendMessage(text);
+	}
+
+	function openArtifactsSurface(): void {
+		void surfaceStore.setSurface('artifacts');
 	}
 </script>
 
@@ -69,6 +75,18 @@
 		<!-- Error display -->
 		{#if chatStore.error}
 			<p class="chat-error" role="alert">{chatStore.error}</p>
+		{/if}
+
+		{#if artifactsStore.hasArtifact}
+			<div class="artifact-ready" role="status" aria-live="polite">
+				<button
+					class="artifact-ready__button"
+					onclick={openArtifactsSurface}
+					type="button"
+				>
+					Artifact ready — View artifact →
+				</button>
+			</div>
 		{/if}
 
 		<!-- Input area with integrated cancel button (D-05) -->
@@ -125,5 +143,31 @@
 		color: #e0a020;
 		background: #2a2a1a;
 		border-top: 1px solid #5a5a2a;
+	}
+
+	.artifact-ready {
+		padding: 8px 16px 0;
+	}
+
+	.artifact-ready__button {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		border: none;
+		background: transparent;
+		color: #4a9eff;
+		padding: 0;
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.artifact-ready__button:hover {
+		text-decoration: underline;
+	}
+
+	.artifact-ready__button:focus-visible {
+		outline: 2px solid #4a9eff;
+		outline-offset: 2px;
 	}
 </style>

@@ -60,12 +60,21 @@ impl FtsStore {
         self.pool.with_conn(|conn| {
             let mut stmt = conn.prepare(
                 "SELECT c.id, c.title, c.model, c.status, c.updated_at,
-                        snippet(messages_fts, 0, '<b>', '</b>', '\u{2026}', 15) AS snippet
-                 FROM messages_fts
-                 JOIN conversations c ON messages_fts.conversation_id = c.id
-                 WHERE messages_fts MATCH ?1
-                 GROUP BY c.id
-                 ORDER BY rank
+                        (
+                            SELECT snippet(messages_fts, 0, '<b>', '</b>', '\u{2026}', 15)
+                            FROM messages_fts
+                            WHERE messages_fts.conversation_id = c.id
+                              AND messages_fts MATCH ?1
+                            LIMIT 1
+                        ) AS snippet
+                 FROM conversations c
+                 WHERE EXISTS (
+                     SELECT 1
+                     FROM messages_fts
+                     WHERE messages_fts.conversation_id = c.id
+                       AND messages_fts MATCH ?1
+                 )
+                 ORDER BY c.updated_at DESC
                  LIMIT 50",
             )?;
 

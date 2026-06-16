@@ -31,14 +31,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Artifacts
 
-- [ ] **ARTF-01**: User can preview generated artifacts in a sandboxed host-controlled surface
-- [ ] **ARTF-02**: User can stop or reload a runaway preview without losing the host UI
-- [ ] **ARTF-03**: Artifact previews remain keyboard accessible and expose usable status feedback
+- [x] **ARTF-01**: User can preview generated artifacts in a sandboxed host-controlled surface
+- [x] **ARTF-02**: User can stop or reload a runaway preview without losing the host UI
+- [x] **ARTF-03**: Artifact previews remain keyboard accessible and expose usable status feedback
 
 ### Release
 
-- [ ] **REL-01**: Builds include a reviewed command inventory and explicit release capability selection
-- [ ] **REL-02**: Release evidence covers security, routing, storage, and adversarial fixtures
+- [x] **REL-01**: Builds include a reviewed command inventory and explicit release capability selection
+- [x] **REL-02**: Release evidence covers security, routing, storage, and adversarial fixtures
 
 ## v2 Requirements
 
@@ -76,18 +76,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-01 | Phase 4 | Pending |
 | SEC-02 | Phase 4 | Pending |
 | SEC-03 | Phase 4 | Pending |
-| ARTF-01 | Phase 5 | Pending |
-| ARTF-02 | Phase 5 | Pending |
-| ARTF-03 | Phase 5 | Pending |
-| REL-01 | Phase 6 | Pending |
-| REL-02 | Phase 6 | Pending |
+| ARTF-01 | Phase 5 | Complete |
+| ARTF-02 | Phase 5 | Complete |
+| ARTF-03 | Phase 5 | Complete |
+| REL-01 | Phase 6 | Complete |
+| REL-02 | Phase 6 | Complete |
+| PLAT-01 | Deferred | Deferred |
+| PLAT-02 | Deferred | Deferred |
 
 **Coverage:**
 
 - v1 requirements: 15 total
 - Mapped to phases: 15
 - Unmapped: 0 ✓
+- v2 requirements: 2 total
+- Deferred: 2
 
 ---
 *Requirements defined: 2026-06-13*
-*Last updated: 2026-06-13 after initial definition*
+*Last updated: 2026-06-16 after Phase 06 completion*

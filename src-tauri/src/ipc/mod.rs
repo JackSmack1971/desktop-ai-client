@@ -11,6 +11,7 @@
 /// - `src-tauri/capabilities/*.json` capability grants
 /// - `security/command-inventory.toml` (reviewed inventory)
 pub mod app_shell;
+pub mod artifacts;
 pub mod chat;
 pub mod files;
 pub mod history;

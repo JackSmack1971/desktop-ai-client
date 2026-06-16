@@ -58,7 +58,7 @@ This document will evolve as the implementation moves from scaffold to working p
 
 ## Current State
 
-Phase 01 (app-shell) complete — Tauri v2 + Svelte 5 shell with SQLite persistence, IPC permissions, and keyboard-navigable workspace switcher implemented. Human runtime testing pending (requires cargo/Tauri toolchain). Phase 02 (routing) is next.
+Phase 06 (release) complete — reviewed command inventory, deny-by-inventory verifier, and first-pass release evidence bundle are implemented and verified. Compilation alone is no longer treated as release-ready.
 
 ---
-*Last updated: 2026-06-14 after Phase 01 completion*
+*Last updated: 2026-06-16 after Phase 06 completion*

@@ -1,0 +1,89 @@
+schema_version = 1
+generated_at = "2026-06-16T04:04:08.634183800+00:00"
+workspace_root = 'C:\workspaces\desktop-ai-client'
+inventory_commands = 15
+inventory_clean = true
+
+[[runs]]
+name = "cargo test"
+command = "cargo test --manifest-path src-tauri/Cargo.toml"
+status = "passed"
+log = "release-evidence/test-runs/cargo-test.log"
+
+[[runs]]
+name = "verify-command-inventory"
+command = "cargo run --manifest-path src-tauri/Cargo.toml --bin verify-command-inventory"
+status = "passed"
+log = "release-evidence/test-runs/verify-command-inventory.log"
+
+[[categories]]
+name = "security checks"
+status = "implemented"
+evidence = ["release-evidence/test-runs/cargo-test.log"]
+note = "covered by the crate test suite"
+
+[[categories]]
+name = "streaming tests"
+status = "implemented"
+evidence = ["release-evidence/test-runs/cargo-test.log"]
+note = "chat streaming unit tests and integration checks"
+
+[[categories]]
+name = "database/storage evidence"
+status = "implemented"
+evidence = ["release-evidence/test-runs/cargo-test.log"]
+note = "SQLite-backed command tests and store unit tests"
+
+[[categories]]
+name = "provider-routed evidence"
+status = "implemented"
+evidence = ["release-evidence/test-runs/cargo-test.log"]
+note = "provider routing and SSE tests"
+
+[[categories]]
+name = "command-inventory verification"
+status = "implemented"
+evidence = ["release-evidence/test-runs/verify-command-inventory.log"]
+note = "deny-by-inventory release gate"
+
+[[categories]]
+name = "artifact sandbox and accessibility evidence"
+status = "partial"
+evidence = ["release-evidence/test-runs/cargo-test.log"]
+note = "current bundle records sandbox-backed tests but still defers dedicated accessibility evidence"
+
+[[categories]]
+name = "adversarial fixture coverage"
+status = "implemented"
+evidence = ["release-evidence/fixtures.toml"]
+note = "source-controlled fixture families listed below"
+
+[[fixture_families]]
+name = "tests/fixtures/adversarial-sse"
+status = "implemented"
+files = ["tests/fixtures/adversarial-sse/error-stream.txt"]
+
+[[fixture_families]]
+name = "tests/fixtures/provider-drift"
+status = "implemented"
+files = ["tests/fixtures/provider-drift/openrouter.json"]
+
+[[fixture_families]]
+name = "tests/fixtures/fts-query-abuse"
+status = "implemented"
+files = ["tests/fixtures/fts-query-abuse/query.txt"]
+
+[[fixture_families]]
+name = "tests/fixtures/srcdoc-escaping"
+status = "implemented"
+files = ["tests/fixtures/srcdoc-escaping/payload.html"]
+
+[[fixture_families]]
+name = "tests/fixtures/wal-recovery"
+status = "implemented"
+files = ["tests/fixtures/wal-recovery/recovery.sql"]
+
+[[fixture_families]]
+name = "tests/fixtures/capability-drift"
+status = "implemented"
+files = ["tests/fixtures/capability-drift/main-window.json"]

@@ -1,6 +1,8 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tokio_util::sync::CancellationToken;
+use uuid::Uuid;
 
 /// Shared runtime state managed by Tauri's state system.
 ///
@@ -23,6 +25,12 @@ pub struct AppState {
     /// Provider credentials held in-process behind a Mutex.
     /// Populated from environment variables at startup; never crosses IPC.
     pub secrets: Mutex<SecretsState>,
+    /// Session-scoped file tokens mapped to backend-owned paths.
+    ///
+    /// This map is in-memory only, never persisted, and dropped on app quit.
+    /// The lock is independent of shell/sqlite ordering and must never be held
+    /// across an await point.
+    pub file_tokens: Mutex<HashMap<Uuid, PathBuf>>,
 }
 
 /// Provider credential state, backend-owned and never exposed via IPC.
@@ -49,6 +57,7 @@ impl Default for AppState {
             shell: Mutex::new(ShellState::default()),
             active_requests: Mutex::new(HashMap::new()),
             secrets: Mutex::new(SecretsState::default()),
+            file_tokens: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -143,5 +152,12 @@ mod tests {
         let state = AppState::default();
         let requests = state.active_requests.lock().expect("lock should not be poisoned");
         assert!(requests.is_empty(), "active_requests must start empty");
+    }
+
+    #[test]
+    fn app_state_initializes_file_tokens_empty() {
+        let state = AppState::default();
+        let file_tokens = state.file_tokens.lock().expect("lock should not be poisoned");
+        assert!(file_tokens.is_empty(), "file_tokens must start empty");
     }
 }

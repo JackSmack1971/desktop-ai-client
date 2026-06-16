@@ -11,6 +11,12 @@
 
 import { Channel, invoke } from '@tauri-apps/api/core';
 
+export type ArtifactContentType =
+	| { type: 'Html' }
+	| { type: 'Svg' }
+	| { type: 'PlainText' }
+	| { type: 'Code'; language: string };
+
 /**
  * Streaming event variants delivered through `Channel<ChatEvent>` from Rust.
  *
@@ -22,7 +28,8 @@ export type ChatEvent =
 	| { type: 'Ack'; request_id: string }
 	| { type: 'Delta'; text: string }
 	| { type: 'Done'; usage?: { prompt_tokens: number; completion_tokens: number }; model: string }
-	| { type: 'Error'; code: string; message: string };
+	| { type: 'Error'; code: string; message: string }
+	| { type: 'ArtifactReady'; artifact_id: string; content_type: ArtifactContentType; preview: string };
 
 /** A message in the conversation history. Role is constrained to the two valid values. */
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
@@ -34,6 +41,7 @@ export type ChatSendParams = {
 	conversationId?: string;
 	maxCompletionTokens?: number;
 	temperature?: number;
+	attachments?: string[];
 	onEvent: (event: ChatEvent) => void;
 };
 
@@ -57,6 +65,7 @@ export async function chatSend(params: ChatSendParams): Promise<void> {
 		conversationId: params.conversationId ?? null,
 		maxCompletionTokens: params.maxCompletionTokens ?? null,
 		temperature: params.temperature ?? null,
+		attachments: params.attachments ?? null,
 		channel,
 	});
 }

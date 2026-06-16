@@ -1,0 +1,20 @@
+{
+  "identifier": "main-window",
+  "expected_permissions": [
+    "allow-get-active-surface",
+    "allow-set-active-surface",
+    "allow-chat-send",
+    "allow-chat-cancel",
+    "allow-artifact-get",
+    "allow-artifact-dismiss",
+    "allow-history-list",
+    "allow-history-get",
+    "allow-history-delete",
+    "allow-history-search",
+    "allow-privacy-set-provider-key",
+    "allow-privacy-get-credential-status",
+    "allow-privacy-clear-provider-key",
+    "allow-files-open-dialog",
+    "allow-files-read-token"
+  ]
+}

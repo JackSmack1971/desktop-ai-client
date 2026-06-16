@@ -1,0 +1,7 @@
+{
+  "provider": "openrouter",
+  "model": "openrouter/moonshotai/kimi-k2",
+  "expected_route": "streaming",
+  "unexpected_route": "local-fallback"
+}
+

@@ -19,6 +19,7 @@ pub struct SseUsage {
 struct SseChunk {
     pub model: Option<String>,
     pub usage: Option<SseUsage>,
+    #[serde(default)]
     pub choices: Vec<SseChoice>,
     pub error: Option<SseChunkError>,
 }

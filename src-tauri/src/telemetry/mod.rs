@@ -1,1 +1,2 @@
-// Scaffold placeholder — telemetry implemented in a later phase.
+pub mod audit_log;
+pub mod release_evidence;

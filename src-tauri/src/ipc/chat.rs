@@ -20,8 +20,13 @@
 use crate::app_state::AppState;
 use crate::providers::openrouter::ProviderMessage;
 use crate::providers::{routing, sse};
+use crate::security::secrets::{self, ProviderId};
+use crate::storage::artifacts::{self, ArtifactContentType, ArtifactStore};
 use crate::storage::sqlite::{ConversationStore, MessageStore};
-use secrecy::ExposeSecret;
+use mime_guess::from_path;
+use std::fs;
+use std::path::Path;
+use tauri::Manager;
 use tauri::ipc::Channel;
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
@@ -67,6 +72,12 @@ pub enum ChatEvent {
     /// Terminal failure or user-initiated cancellation.
     /// `code == "CANCELLED"` signals voluntary abort (D-04).
     Error { code: String, message: String },
+    /// Backend-owned artifact detected after stream completion.
+    ArtifactReady {
+        artifact_id: String,
+        content_type: ArtifactContentType,
+        preview: String,
+    },
 }
 
 /// Errors returned by chat IPC commands to the frontend.
@@ -145,6 +156,7 @@ pub async fn chat_send(
     conversation_id: Option<String>,
     max_completion_tokens: Option<u32>,
     temperature: Option<f32>,
+    attachments: Option<Vec<Uuid>>,
     channel: Channel<ChatEvent>,
 ) -> Result<(), ChatError> {
     // D-10: no api_key parameter — credentials come from state only.
@@ -205,22 +217,8 @@ pub async fn chat_send(
     // Retrieve the API key before spawning — never hold the lock across await
     // (Pitfall 3). We expose-then-rewrap to get an owned SecretString that is
     // `'static` and safe to move into the task (Pitfall 7, RESEARCH Section 4).
-    let api_key = {
-        let secrets = state
-            .secrets
-            .lock()
-            .map_err(|e| ChatError::CredentialError(format!("secrets lock poisoned: {e}")))?;
-        let raw = secrets
-            .openrouter_key
-            .as_ref()
-            .ok_or_else(|| {
-                ChatError::CredentialError("OPENROUTER_API_KEY not configured".into())
-            })?
-            .expose_secret()
-            .to_string();
-        drop(secrets); // release lock before any await
-        secrecy::SecretString::new(raw.into())
-    };
+    let api_key = secrets::get_provider_key(&state, ProviderId::OpenRouter)
+        .map_err(|e| ChatError::CredentialError(e.to_string()))?;
 
     // Send Ack synchronously before the spawn so the frontend has request_id
     // immediately and can call chat_cancel if needed (D-14).
@@ -231,8 +229,17 @@ pub async fn chat_send(
         .map_err(|e| ChatError::ChannelError(e.to_string()))?;
 
     let resolved_model = routing::select_model(model.as_deref());
-    let provider_messages =
+    let mut provider_messages =
         routing::build_provider_messages(routing::DEFAULT_SYSTEM_PROMPT, &messages);
+    if let Some(attachment_context) = resolve_attachments(&state, attachments)? {
+        provider_messages.insert(
+            1,
+            ProviderMessage {
+                role: "system".into(),
+                content: attachment_context,
+            },
+        );
+    }
     let request_id_clone = request_id.clone();
 
     // Spawn the streaming task. `tauri::State<'_>` is not `'static`, so we
@@ -256,9 +263,10 @@ pub async fn chat_send(
             Ok(()) => {
                 // Stream completed with Done event — persist assistant message
                 // and mark conversation complete with resolved model (D-05).
+                let assistant_message_id = Uuid::new_v4().to_string();
                 let msg_store = app_handle.state::<MessageStore>();
                 if let Err(e) = msg_store.insert_message(
-                    &Uuid::new_v4().to_string(),
+                    &assistant_message_id,
                     &effective_conv_id,
                     "assistant",
                     &accumulated_text,
@@ -268,6 +276,33 @@ pub async fn chat_send(
                 let conv_store = app_handle.state::<ConversationStore>();
                 if let Err(e) = conv_store.mark_complete(&effective_conv_id, &done_model) {
                     eprintln!("[chat] failed to mark conversation complete: {e}");
+                }
+
+                if let Some(detected) = artifacts::detect_artifact(&accumulated_text) {
+                    let artifact_store = app_handle.state::<ArtifactStore>();
+                    let artifact_id = Uuid::new_v4().to_string();
+                    if let Err(e) = artifact_store.save_artifact(
+                        &artifact_id,
+                        &effective_conv_id,
+                        Some(&assistant_message_id),
+                        &detected.content_type,
+                        &detected.raw_source,
+                    ) {
+                        eprintln!("[chat] failed to persist artifact: {e}");
+                    } else {
+                        match artifact_store.get_artifact_preview(&artifact_id) {
+                            Ok(preview) => {
+                                let _ = channel.send(ChatEvent::ArtifactReady {
+                                    artifact_id: preview.artifact_id,
+                                    content_type: preview.content_type,
+                                    preview: preview.srcdoc,
+                                });
+                            }
+                            Err(e) => {
+                                eprintln!("[chat] failed to build artifact preview: {e}");
+                            }
+                        }
+                    }
                 }
             }
             Err(ref e) if e == "CANCELLED" => {
@@ -307,7 +342,7 @@ pub async fn chat_send(
         let inner_state = app_handle.state::<AppState>();
         if let Ok(mut requests) = inner_state.active_requests.lock() {
             requests.remove(&request_id_clone);
-        }
+        };
     });
 
     Ok(())
@@ -473,6 +508,54 @@ async fn run_stream(
     }
 }
 
+fn resolve_attachments(
+    state: &tauri::State<'_, AppState>,
+    attachments: Option<Vec<Uuid>>,
+) -> Result<Option<String>, ChatError> {
+    let Some(tokens) = attachments else {
+        return Ok(None);
+    };
+
+    if tokens.is_empty() {
+        return Ok(None);
+    }
+
+    let mut rendered = Vec::new();
+    for token in tokens {
+        let path = crate::security::file_tokens::resolve_token(&state, token)
+            .map_err(|e| ChatError::CredentialError(e.to_string()))?;
+        rendered.push(read_attachment(&path)?);
+    }
+
+    let mut body = String::from("Attached file context:\n");
+    for attachment in rendered {
+        body.push_str("\n---\n");
+        body.push_str(&attachment);
+        body.push('\n');
+    }
+
+    Ok(Some(body))
+}
+
+fn read_attachment(path: &Path) -> Result<String, ChatError> {
+    let mime = from_path(path).first_or_octet_stream();
+    let mime_type = mime.type_().as_str();
+    let mime_subtype = mime.subtype().as_str();
+    let filename = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("attachment");
+
+    let content = if mime_type == "text" || mime_subtype == "json" || mime_subtype == "xml" {
+        fs::read_to_string(path).map_err(|e| ChatError::CredentialError(e.to_string()))?
+    } else {
+        String::from_utf8_lossy(&fs::read(path).map_err(|e| ChatError::CredentialError(e.to_string()))?)
+            .into_owned()
+    };
+
+    Ok(format!("Filename: {filename}\nMIME: {mime}\nContent:\n{content}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -557,6 +640,21 @@ mod tests {
             json.contains(r#""code":"CANCELLED""#),
             "expected code:CANCELLED: {json}"
         );
+    }
+
+    #[test]
+    fn chat_event_artifact_ready_serializes_with_type_field() {
+        let event = ChatEvent::ArtifactReady {
+            artifact_id: "art-1".into(),
+            content_type: ArtifactContentType::Html,
+            preview: "<html></html>".into(),
+        };
+        let json = serde_json::to_string(&event).unwrap();
+        assert!(
+            json.contains(r#""type":"ArtifactReady""#),
+            "expected type:ArtifactReady: {json}"
+        );
+        assert!(json.contains(r#""artifact_id":"art-1""#), "expected artifact_id field: {json}");
     }
 
     // D-10 invariant verified: chat_send signature does not include api_key.

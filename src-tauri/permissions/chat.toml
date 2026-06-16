@@ -1,0 +1,13 @@
+[[permission]]
+identifier = "allow-chat-send"
+description = "Permits submitting a chat prompt and receiving streamed responses through the main window."
+
+[permission.commands]
+allow = ["chat_send"]
+
+[[permission]]
+identifier = "allow-chat-cancel"
+description = "Permits cancelling an in-flight chat stream from the main window."
+
+[permission.commands]
+allow = ["chat_cancel"]

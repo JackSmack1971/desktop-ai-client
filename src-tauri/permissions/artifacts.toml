@@ -1,0 +1,13 @@
+[[permission]]
+identifier = "allow-artifact-get"
+description = "Permits fetching a sanitized artifact preview from the backend."
+
+[permission.commands]
+allow = ["artifact_get"]
+
+[[permission]]
+identifier = "allow-artifact-dismiss"
+description = "Permits dismissing the active artifact preview from the main window."
+
+[permission.commands]
+allow = ["artifact_dismiss"]

@@ -8,8 +8,8 @@ const config = {
 		// Use static adapter for Tauri: outputs files Tauri can serve as frontend dist.
 		adapter: adapter({
 			// Output directory aligns with tauri.conf.json frontendDist: "../dist".
-			pages: '../dist',
-			assets: '../dist',
+			pages: 'dist',
+			assets: 'dist',
 			fallback: 'index.html',
 			precompress: false,
 			strict: true

@@ -1,0 +1,29 @@
+[[fixture_families]]
+name = "tests/fixtures/adversarial-sse"
+status = "implemented"
+files = ["tests/fixtures/adversarial-sse/error-stream.txt"]
+
+[[fixture_families]]
+name = "tests/fixtures/provider-drift"
+status = "implemented"
+files = ["tests/fixtures/provider-drift/openrouter.json"]
+
+[[fixture_families]]
+name = "tests/fixtures/fts-query-abuse"
+status = "implemented"
+files = ["tests/fixtures/fts-query-abuse/query.txt"]
+
+[[fixture_families]]
+name = "tests/fixtures/srcdoc-escaping"
+status = "implemented"
+files = ["tests/fixtures/srcdoc-escaping/payload.html"]
+
+[[fixture_families]]
+name = "tests/fixtures/wal-recovery"
+status = "implemented"
+files = ["tests/fixtures/wal-recovery/recovery.sql"]
+
+[[fixture_families]]
+name = "tests/fixtures/capability-drift"
+status = "implemented"
+files = ["tests/fixtures/capability-drift/main-window.json"]
