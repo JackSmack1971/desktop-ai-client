@@ -7,6 +7,7 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
+import { normalizeIpcError } from '$lib/api/errors';
 
 /**
  * Summary of a single conversation, returned by history_list and history_search.
@@ -19,23 +20,6 @@ export interface ConversationSummary {
 	status: 'active' | 'complete' | 'incomplete';
 	updatedAt: string; // ISO datetime string from Rust (camelCase per backend rule)
 	snippet?: string;  // only present for search results (FTS5 snippet() output)
-}
-
-/**
- * Normalize an IPC rejection to a user-facing error string.
- *
- * Tauri rejects IPC calls with serialized HistoryError objects
- * ({ code, message }) or plain strings. String(e) on an object
- * produces "[object Object]", which is useless in the UI.
- */
-function normalizeIpcError(e: unknown): string {
-	if (typeof e === 'string') return e;
-	if (e && typeof e === 'object') {
-		const obj = e as Record<string, unknown>;
-		if (typeof obj['message'] === 'string') return obj['message'];
-		if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
-	}
-	return 'An unexpected error occurred.';
 }
 
 function createHistoryStore() {

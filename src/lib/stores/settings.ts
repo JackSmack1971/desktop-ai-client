@@ -6,19 +6,10 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
+import { normalizeIpcError } from '$lib/api/errors';
 
 export type CredentialStatus = 'CONFIGURED' | 'MISSING';
 export type ProviderId = 'OpenRouter';
-
-function normalizeIpcError(e: unknown): string {
-	if (typeof e === 'string') return e;
-	if (e && typeof e === 'object') {
-		const obj = e as Record<string, unknown>;
-		if (typeof obj['message'] === 'string') return obj['message'];
-		if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
-	}
-	return 'An unexpected error occurred.';
-}
 
 function createPrivacyStore() {
 	let status = $state<CredentialStatus>('MISSING');
