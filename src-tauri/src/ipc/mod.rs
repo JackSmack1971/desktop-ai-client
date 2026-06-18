@@ -17,4 +17,7 @@ pub mod files;
 pub mod history;
 pub mod inventory;
 pub mod privacy;
+/// Deferred: see the TODO(PLAT-01) comment in `providers.rs`. No command
+/// registered, no capability/permission entry — not part of the active
+/// command surface.
 pub mod providers;
