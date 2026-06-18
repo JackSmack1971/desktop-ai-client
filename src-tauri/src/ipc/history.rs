@@ -8,6 +8,7 @@
 ///
 /// All commands assert the caller is the main window. Typed domain stores
 /// handle all DB access — no raw SQL in this file.
+use crate::security::command_policy;
 use crate::storage::fts::FtsStore;
 use crate::storage::retention::RetentionStore;
 use crate::storage::sqlite::{ConversationStore, MessageStore};
@@ -26,6 +27,19 @@ pub enum HistoryError {
     NotFound(String),
     #[error("unauthorized window: {0}")]
     UnauthorizedWindow(String),
+}
+
+impl From<command_policy::PolicyError> for HistoryError {
+    fn from(value: command_policy::PolicyError) -> Self {
+        match value {
+            command_policy::PolicyError::UnauthorizedWindow(msg) => {
+                HistoryError::UnauthorizedWindow(msg)
+            }
+            command_policy::PolicyError::UnknownCommand(msg) => {
+                HistoryError::UnauthorizedWindow(msg)
+            }
+        }
+    }
 }
 
 /// A single message for inclusion in a `ConversationDetail` response.
@@ -67,20 +81,6 @@ pub struct ConversationDetail {
     pub messages: Vec<MessageSummary>,
 }
 
-/// Enforce that history commands can only be invoked from the main window.
-///
-/// Backend-side enforcement; the capability file is defense-in-depth.
-/// Returns `HistoryError::UnauthorizedWindow` if the label is not "main".
-fn assert_main_window(window: &tauri::Window) -> Result<(), HistoryError> {
-    if window.label() != "main" {
-        return Err(HistoryError::UnauthorizedWindow(format!(
-            "history commands require the main window, got {:?}",
-            window.label()
-        )));
-    }
-    Ok(())
-}
-
 /// Return a list of all conversations ordered by most-recently-updated first.
 ///
 /// Used to populate the history surface on load. The `snippet` field is
@@ -90,7 +90,7 @@ pub async fn history_list(
     window: tauri::Window,
     store: tauri::State<'_, ConversationStore>,
 ) -> Result<Vec<ConversationSummary>, HistoryError> {
-    assert_main_window(&window)?;
+    command_policy::policy_check("history_list", window.label())?;
     store
         .list_conversations()
         .map_err(|e| HistoryError::StorageError(e.to_string()))
@@ -119,7 +119,7 @@ pub async fn history_get(
     conv_store: tauri::State<'_, ConversationStore>,
     msg_store: tauri::State<'_, MessageStore>,
 ) -> Result<ConversationDetail, HistoryError> {
-    assert_main_window(&window)?;
+    command_policy::policy_check("history_get", window.label())?;
 
     let conv = conv_store
         .get_conversation(&id)
@@ -162,7 +162,7 @@ pub async fn history_delete(
     id: String,
     store: tauri::State<'_, RetentionStore>,
 ) -> Result<(), HistoryError> {
-    assert_main_window(&window)?;
+    command_policy::policy_check("history_delete", window.label())?;
     store
         .delete_conversation(&id)
         .map_err(|e| HistoryError::StorageError(e.to_string()))
@@ -181,7 +181,7 @@ pub async fn history_search(
     query: String,
     store: tauri::State<'_, FtsStore>,
 ) -> Result<Vec<ConversationSummary>, HistoryError> {
-    assert_main_window(&window)?;
+    command_policy::policy_check("history_search", window.label())?;
     store
         .search(&query)
         .map_err(|e| HistoryError::StorageError(e.to_string()))
@@ -232,5 +232,18 @@ mod tests {
             json.contains("UNAUTHORIZED_WINDOW"),
             "expected UNAUTHORIZED_WINDOW code in JSON: {json}"
         );
+    }
+
+    #[test]
+    fn policy_check_rejects_non_main_window_for_history_commands() {
+        for command in ["history_list", "history_get", "history_delete", "history_search"] {
+            let err: HistoryError = command_policy::policy_check(command, "evil")
+                .unwrap_err()
+                .into();
+            assert!(
+                matches!(err, HistoryError::UnauthorizedWindow(_)),
+                "command {command} did not reject non-main window"
+            );
+        }
     }
 }

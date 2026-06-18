@@ -20,6 +20,7 @@
 use crate::app_state::AppState;
 use crate::providers::openrouter::ProviderMessage;
 use crate::providers::{routing, sse};
+use crate::security::command_policy;
 use crate::security::secrets::{self, ProviderId};
 use crate::storage::artifacts::{self, ArtifactContentType, ArtifactStore};
 use crate::storage::sqlite::{ConversationStore, MessageStore};
@@ -99,6 +100,19 @@ pub enum ChatError {
     RequestNotFound(String),
 }
 
+impl From<command_policy::PolicyError> for ChatError {
+    fn from(value: command_policy::PolicyError) -> Self {
+        match value {
+            command_policy::PolicyError::UnauthorizedWindow(msg) => {
+                ChatError::UnauthorizedWindow(msg)
+            }
+            command_policy::PolicyError::UnknownCommand(msg) => {
+                ChatError::UnauthorizedWindow(msg)
+            }
+        }
+    }
+}
+
 /// Generate a conversation title from the first user-role message.
 ///
 /// Title is backend-owned (D-03) and never accepted from IPC. Takes up to
@@ -110,18 +124,6 @@ fn title_from_messages(messages: &[ChatMessage]) -> String {
         .find(|m| m.role == "user")
         .map(|m| m.content.chars().take(60).collect())
         .unwrap_or_else(|| "New conversation".to_string())
-}
-
-/// Enforce that chat commands can only be invoked from the main window.
-/// Backend-side enforcement; capability file is defense-in-depth.
-fn assert_main_window(window: &tauri::Window) -> Result<(), ChatError> {
-    if window.label() != "main" {
-        return Err(ChatError::UnauthorizedWindow(format!(
-            "chat commands require the main window, got {:?}",
-            window.label()
-        )));
-    }
-    Ok(())
 }
 
 /// Submit a prompt and stream the response back through a Tauri channel.
@@ -160,7 +162,7 @@ pub async fn chat_send(
     channel: Channel<ChatEvent>,
 ) -> Result<(), ChatError> {
     // D-10: no api_key parameter — credentials come from state only.
-    assert_main_window(&window)?;
+    command_policy::policy_check("chat_send", window.label())?;
 
     // Resolve effective conversation id (D-11 Phase 2: Option<String>).
     // When None, create a new conversation row before streaming.
@@ -366,7 +368,7 @@ pub async fn chat_cancel(
     state: tauri::State<'_, AppState>,
     request_id: String,
 ) -> Result<(), ChatError> {
-    assert_main_window(&window)?;
+    command_policy::policy_check("chat_cancel", window.label())?;
 
     let token = {
         let requests = state
@@ -585,6 +587,19 @@ mod tests {
             json.contains("UNAUTHORIZED_WINDOW"),
             "expected UNAUTHORIZED_WINDOW code: {json}"
         );
+    }
+
+    #[test]
+    fn policy_check_rejects_non_main_window_for_chat_commands() {
+        for command in ["chat_send", "chat_cancel"] {
+            let err: ChatError = command_policy::policy_check(command, "evil")
+                .unwrap_err()
+                .into();
+            assert!(
+                matches!(err, ChatError::UnauthorizedWindow(_)),
+                "command {command} did not reject non-main window"
+            );
+        }
     }
 
     #[test]
