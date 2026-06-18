@@ -1,3 +1,4 @@
+use crate::security::command_policy;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashSet};
 use std::fs;
@@ -99,6 +100,7 @@ pub struct InventoryReport {
     pub permission_identifiers: Vec<String>,
     pub capability_permissions: Vec<String>,
     pub release_capabilities: Vec<String>,
+    pub policy_commands: Vec<String>,
     pub issues: Vec<String>,
 }
 
@@ -116,6 +118,7 @@ impl InventoryReport {
             format!("permission identifiers: {}", self.permission_identifiers.len()),
             format!("capability permissions: {}", self.capability_permissions.len()),
             format!("release capabilities: {}", self.release_capabilities.join(", ")),
+            format!("command_policy::COMMANDS: {}", self.policy_commands.len()),
         ];
 
         if self.issues.is_empty() {
@@ -370,6 +373,7 @@ pub fn verify_inventory(paths: &InventoryPaths) -> Result<InventoryReport, Inven
             .iter()
             .map(|entry| entry.identifier.clone()),
     );
+    let policy_commands = sorted_unique(command_policy::command_names());
 
     let mut issues = Vec::new();
     issues.extend(diff_report(
@@ -377,6 +381,12 @@ pub fn verify_inventory(paths: &InventoryPaths) -> Result<InventoryReport, Inven
         &registered_commands,
         "inventory",
         "registered handler",
+    ));
+    issues.extend(diff_report(
+        &inventory_commands,
+        &policy_commands,
+        "inventory",
+        "command_policy::COMMANDS",
     ));
     issues.extend(diff_report(
         &inventory_commands,
@@ -443,6 +453,7 @@ pub fn verify_inventory(paths: &InventoryPaths) -> Result<InventoryReport, Inven
         permission_identifiers,
         capability_permissions,
         release_capabilities: release_capability_ids,
+        policy_commands,
         issues,
     })
 }
@@ -717,6 +728,22 @@ status = "release"
             .commands
             .iter()
             .all(|command| command.expected_capability == command_permission_name(&command.name)));
+    }
+
+    #[test]
+    fn command_policy_commands_match_real_command_inventory() {
+        let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .to_path_buf();
+        let inventory =
+            load_command_inventory(workspace_root.join("security/command-inventory.toml")).unwrap();
+        let inventory_commands = sorted_unique(inventory.commands.iter().map(|c| c.name.clone()));
+        let policy_commands = sorted_unique(command_policy::command_names());
+        assert_eq!(
+            inventory_commands, policy_commands,
+            "security::command_policy::COMMANDS drifted from security/command-inventory.toml"
+        );
     }
 
     #[test]
