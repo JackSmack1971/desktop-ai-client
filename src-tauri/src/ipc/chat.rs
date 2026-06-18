@@ -229,8 +229,15 @@ pub async fn chat_send(
         .map_err(|e| ChatError::ChannelError(e.to_string()))?;
 
     let resolved_model = routing::select_model(model.as_deref());
+    let routable_messages: Vec<routing::RoutableMessage> = messages
+        .iter()
+        .map(|m| routing::RoutableMessage {
+            role: m.role.clone(),
+            content: m.content.clone(),
+        })
+        .collect();
     let mut provider_messages =
-        routing::build_provider_messages(routing::DEFAULT_SYSTEM_PROMPT, &messages);
+        routing::build_provider_messages(routing::DEFAULT_SYSTEM_PROMPT, &routable_messages);
     if let Some(attachment_context) = resolve_attachments(&state, attachments)? {
         provider_messages.insert(
             1,

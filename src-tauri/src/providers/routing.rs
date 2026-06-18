@@ -3,25 +3,39 @@
 /// Responsibilities:
 /// 1. Select provider — always OpenRouter for Phase 2 (capability-based selection deferred).
 /// 2. Prepend the backend-owned system prompt (per D-12).
-/// 3. Convert `ChatMessage` (IPC type) to `ProviderMessage` (provider type).
+/// 3. Convert `RoutableMessage` (provider-owned type) to `ProviderMessage` (provider type).
 ///
 /// The system prompt is defined here and never accepted from IPC. Any future
 /// user-editable custom instructions must come through a separate settings
 /// command with its own validation surface.
-use crate::ipc::chat::ChatMessage;
+///
+/// `providers` must not depend on `ipc` (see `.planning/codebase/ARCHITECTURE.md`
+/// and `providers/AGENTS.md`), so this module owns its own message type instead
+/// of importing `ipc::chat::ChatMessage`. Callers convert at the IPC boundary.
 use crate::providers::openrouter::{ProviderMessage, DEFAULT_MODEL};
 
 /// Backend-owned default system prompt prepended to every chat request.
 /// Never accepted from the IPC surface (D-12 invariant).
 pub const DEFAULT_SYSTEM_PROMPT: &str = "You are a helpful AI assistant.";
 
-/// Build the provider message list from an IPC message slice.
+/// A single conversation message handed to the routing layer.
+///
+/// Provider-owned counterpart to `ipc::chat::ChatMessage`. Callers at the IPC
+/// boundary convert their wire type into this one so `providers` never
+/// depends on `ipc`.
+#[derive(Debug, Clone)]
+pub struct RoutableMessage {
+    pub role: String,
+    pub content: String,
+}
+
+/// Build the provider message list from a routable message slice.
 ///
 /// Always prepends the backend-owned system prompt as the first message.
-/// Maps each `ChatMessage` to a `ProviderMessage` preserving role and content.
+/// Maps each `RoutableMessage` to a `ProviderMessage` preserving role and content.
 pub fn build_provider_messages(
     system_prompt: &str,
-    messages: &[ChatMessage],
+    messages: &[RoutableMessage],
 ) -> Vec<ProviderMessage> {
     let mut result = Vec::with_capacity(messages.len() + 1);
 
@@ -53,15 +67,15 @@ pub fn select_model(requested: Option<&str>) -> String {
 mod tests {
     use super::*;
 
-    fn user_msg(content: &str) -> ChatMessage {
-        ChatMessage {
+    fn user_msg(content: &str) -> RoutableMessage {
+        RoutableMessage {
             role: "user".into(),
             content: content.into(),
         }
     }
 
-    fn assistant_msg(content: &str) -> ChatMessage {
-        ChatMessage {
+    fn assistant_msg(content: &str) -> RoutableMessage {
+        RoutableMessage {
             role: "assistant".into(),
             content: content.into(),
         }
