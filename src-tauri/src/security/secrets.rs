@@ -7,10 +7,7 @@
 /// Security invariant: the SecretString wrapper redacts the key in
 /// Debug/Display output automatically. Never call .expose_secret() inside
 /// log macros, error format strings, or IPC response fields.
-use crate::app_state::AppState;
 use std::str::FromStr;
-#[cfg(test)]
-use crate::app_state::SecretsState;
 #[cfg(test)]
 use secrecy::ExposeSecret;
 #[cfg(test)]
@@ -207,10 +204,7 @@ pub fn delete_provider_key(provider: &str) -> Result<(), SecretsError> {
 /// The keychain is consulted first. In production, any keychain failure is
 /// treated as `NotConfigured` to fail closed. The env fallback is compiled only
 /// in test/dev builds behind `dev-env-secrets`.
-pub fn get_provider_key(
-    _state: &AppState,
-    provider: ProviderId,
-) -> Result<secrecy::SecretString, SecretsError> {
+pub fn get_provider_key(provider: ProviderId) -> Result<secrecy::SecretString, SecretsError> {
     let label = provider.account_label();
     match read_provider_key(label) {
         Ok(secret) => Ok(secret),
@@ -236,7 +230,7 @@ pub fn get_provider_key(
 }
 
 /// Return the configuration status for a provider without revealing the key.
-pub fn get_credential_status(_state: &AppState, provider: ProviderId) -> CredentialStatus {
+pub fn get_credential_status(provider: ProviderId) -> CredentialStatus {
     let label = provider.account_label();
     match read_provider_key(label) {
         Ok(_) => CredentialStatus::Configured,
@@ -255,20 +249,6 @@ pub fn get_credential_status(_state: &AppState, provider: ProviderId) -> Credent
             CredentialStatus::Missing
         }
         Err(_) => CredentialStatus::Missing,
-    }
-}
-
-/// Helper to construct an AppState with a custom SecretsState for testing.
-#[cfg(test)]
-fn make_state_with_secrets(secrets: SecretsState) -> AppState {
-    use std::path::PathBuf;
-    use std::sync::Mutex;
-    use uuid::Uuid;
-    AppState {
-        shell: Mutex::new(crate::app_state::ShellState::default()),
-        active_requests: Mutex::new(HashMap::new()),
-        secrets: Mutex::new(secrets),
-        file_tokens: Mutex::new(HashMap::<Uuid, PathBuf>::new()),
     }
 }
 
@@ -314,8 +294,7 @@ mod tests {
     fn get_credential_status_returns_missing_when_no_key() {
         let _guard = test_guard();
         reset_test_key_store();
-        let state = make_state_with_secrets(SecretsState { openrouter_key: None });
-        let status = get_credential_status(&state, ProviderId::OpenRouter);
+        let status = get_credential_status(ProviderId::OpenRouter);
         assert!(
             matches!(status, CredentialStatus::Missing),
             "expected Missing when key is None"
@@ -327,10 +306,7 @@ mod tests {
         let _guard = test_guard();
         reset_test_key_store();
         store_provider_key("openrouter", "test-key").expect("store should succeed");
-        let state = make_state_with_secrets(SecretsState {
-            openrouter_key: None,
-        });
-        let status = get_credential_status(&state, ProviderId::OpenRouter);
+        let status = get_credential_status(ProviderId::OpenRouter);
         assert!(
             matches!(status, CredentialStatus::Configured),
             "expected Configured when key is Some"
@@ -341,8 +317,7 @@ mod tests {
     fn get_provider_key_returns_not_configured_when_missing() {
         let _guard = test_guard();
         reset_test_key_store();
-        let state = make_state_with_secrets(SecretsState { openrouter_key: None });
-        let result = get_provider_key(&state, ProviderId::OpenRouter);
+        let result = get_provider_key(ProviderId::OpenRouter);
         assert!(
             matches!(result, Err(SecretsError::NotConfigured(_))),
             "expected NotConfigured error, got: {:?}",

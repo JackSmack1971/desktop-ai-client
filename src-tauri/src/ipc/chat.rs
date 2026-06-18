@@ -217,7 +217,7 @@ pub async fn chat_send(
     // Retrieve the API key before spawning — never hold the lock across await
     // (Pitfall 3). We expose-then-rewrap to get an owned SecretString that is
     // `'static` and safe to move into the task (Pitfall 7, RESEARCH Section 4).
-    let api_key = secrets::get_provider_key(&state, ProviderId::OpenRouter)
+    let api_key = secrets::get_provider_key(ProviderId::OpenRouter)
         .map_err(|e| ChatError::CredentialError(e.to_string()))?;
 
     // Send Ack synchronously before the spawn so the frontend has request_id
