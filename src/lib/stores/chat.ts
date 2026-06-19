@@ -72,12 +72,12 @@ function createChatStore() {
 					loading = false;
 					// Activate the streaming bubble.
 					messages = messages.map((m) =>
-						m.id === streamingId ? { ...m, streaming: true } : m
+						m.id === streamingId ? { ...m, streaming: true } : m,
 					);
 				}
 				// Append delta text to the streaming message.
 				messages = messages.map((m) =>
-					m.id === streamingId ? { ...m, content: m.content + event.text } : m
+					m.id === streamingId ? { ...m, content: m.content + event.text } : m,
 				);
 				break;
 			}
@@ -86,7 +86,7 @@ function createChatStore() {
 				messages = messages.map((m) =>
 					m.id === streamingId
 						? { ...m, streaming: false, status: 'complete' }
-						: m
+						: m,
 				);
 				streamingId = null;
 				requestId = null;
@@ -99,7 +99,7 @@ function createChatStore() {
 					messages = messages.map((m) =>
 						m.id === streamingId
 							? { ...m, streaming: false, status: 'incomplete' }
-							: m
+							: m,
 					);
 				} else {
 					// Provider or channel error.
@@ -107,7 +107,7 @@ function createChatStore() {
 					messages = messages.map((m) =>
 						m.id === streamingId
 							? { ...m, streaming: false, status: 'error' }
-							: m
+							: m,
 					);
 				}
 				streamingId = null;
@@ -135,7 +135,13 @@ function createChatStore() {
 		// Append user message.
 		messages = [
 			...messages,
-			{ id: userId, role: 'user', content, streaming: false, status: 'complete' },
+			{
+				id: userId,
+				role: 'user',
+				content,
+				streaming: false,
+				status: 'complete',
+			},
 		];
 
 		// Insert placeholder assistant message (thinking state per D-05).

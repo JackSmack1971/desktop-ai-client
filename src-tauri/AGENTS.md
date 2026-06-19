@@ -5,6 +5,7 @@ Tauri crate boundary for the desktop backend, build/runtime config, and backend 
 ## Read First
 
 Before editing code here, read:
+
 1. `../AGENTS.md`
 2. `../docs/architecture.md`
 3. `../docs/privacy-boundaries.md`
@@ -32,4 +33,3 @@ Owns the Rust backend crate, Tauri configuration, and migration assets. Does not
 ## Related Context
 
 - Shared backend modules: `src/AGENTS.md`
-

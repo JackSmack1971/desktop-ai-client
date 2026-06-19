@@ -1,4 +1,5 @@
 <!-- refreshed: 2026-06-18 -->
+
 # Architecture
 
 **Analysis Date:** 2026-06-18
@@ -42,23 +43,24 @@
 
 ## Component Responsibilities
 
-| Component | Responsibility | Key Files |
-|-----------|----------------|-----------|
-| IPC surface | 15 typed Tauri commands callable from the renderer; window-label and command-name enforcement | `src-tauri/src/ipc/*.rs` |
-| Command policy | Single authority for "is this command callable from this window" | `src-tauri/src/security/command_policy.rs` |
-| AppState | In-memory runtime state (`ShellState`, active surface, in-flight requests, secrets, file tokens); `Send + Sync` singleton | `src-tauri/src/app_state.rs` |
-| providers | Capability detection, provider routing, OpenRouter transport, SSE streaming | `src-tauri/src/providers/` |
-| security | Secrets store, file-access tokens, redaction, command policy, artifact sandbox | `src-tauri/src/security/` |
-| storage | SQLite pool (WAL), typed domain stores, migration runner, FTS, retention, artifact persistence | `src-tauri/src/storage/` |
-| telemetry | Audit log, release evidence capture (redaction-gated) | `src-tauri/src/telemetry/` |
-| Svelte renderer | UI surfaces (chat, history, settings, artifacts), accessibility, surface navigation | `src/lib/components/`, `src/routes/` |
-| Frontend stores | Typed stores bridging IPC and Svelte 5 reactive state | `src/lib/stores/*.ts` |
+| Component       | Responsibility                                                                                                            | Key Files                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| IPC surface     | 15 typed Tauri commands callable from the renderer; window-label and command-name enforcement                             | `src-tauri/src/ipc/*.rs`                   |
+| Command policy  | Single authority for "is this command callable from this window"                                                          | `src-tauri/src/security/command_policy.rs` |
+| AppState        | In-memory runtime state (`ShellState`, active surface, in-flight requests, secrets, file tokens); `Send + Sync` singleton | `src-tauri/src/app_state.rs`               |
+| providers       | Capability detection, provider routing, OpenRouter transport, SSE streaming                                               | `src-tauri/src/providers/`                 |
+| security        | Secrets store, file-access tokens, redaction, command policy, artifact sandbox                                            | `src-tauri/src/security/`                  |
+| storage         | SQLite pool (WAL), typed domain stores, migration runner, FTS, retention, artifact persistence                            | `src-tauri/src/storage/`                   |
+| telemetry       | Audit log, release evidence capture (redaction-gated)                                                                     | `src-tauri/src/telemetry/`                 |
+| Svelte renderer | UI surfaces (chat, history, settings, artifacts), accessibility, surface navigation                                       | `src/lib/components/`, `src/routes/`       |
+| Frontend stores | Typed stores bridging IPC and Svelte 5 reactive state                                                                     | `src/lib/stores/*.ts`                      |
 
 ## Pattern Overview
 
 **Overall:** Layered Tauri/Svelte desktop client with strict process-boundary privacy enforcement; the IPC command surface is fully implemented (15 registered commands across 7 domains), not a scaffold.
 
 **Key Characteristics:**
+
 - Backend owns all persistence, provider credentials, file authority, and routing decisions
 - Renderer is treated as a potentially hostile surface — no secrets, raw paths, or SQL cross the IPC boundary
 - Every IPC command validates window label and command-name membership through `security::command_policy::policy_check` before doing any work
@@ -68,6 +70,7 @@
 ## Layers
 
 **Renderer Layer:**
+
 - Purpose: Render UI surfaces and mediate user intent into IPC calls
 - Location: `src/`
 - Contains: SvelteKit routes, Svelte 5 components (`ChatSurface`, `HistorySurface`, `SettingsSurface`, `ArtifactsSurface`, plus shared `chat/`, `history/` component groups), typed stores, accessibility helpers
@@ -75,6 +78,7 @@
 - Used by: end user via the Tauri WebView window
 
 **IPC Command Layer:**
+
 - Purpose: Validate and dispatch renderer requests to backend modules
 - Location: `src-tauri/src/ipc/`
 - Contains: `app_shell` (113 lines), `chat` (723 lines — streaming, cancellation, storage wiring, artifact detection), `history` (236 lines), `artifacts` (100 lines), `privacy` (115 lines), `files` (155 lines), `inventory` (726 lines — the cross-source verifier); `providers.rs` is a 1-line unregistered stub
@@ -82,6 +86,7 @@
 - Used by: renderer only, via Tauri `invoke`
 
 **Business Logic Modules:**
+
 - Purpose: Implement backend-owned concerns; each module owns exactly one concern
 - Location: `src-tauri/src/{providers,security,storage,telemetry}/`
 - Contains: `providers::routing` (105 lines), `providers::openrouter` (138 lines), `providers::sse` (278 lines); `security::secrets` (352 lines), `security::command_policy` (91 lines), `security::file_tokens` (82 lines), `security::artifact_sandbox` (314 lines), `security::redaction` (46 lines); `storage::sqlite` (475 lines), `storage::migrations` (411 lines, 4 applied migrations), `storage::fts` (169 lines), `storage::retention` (142 lines), `storage::artifacts` (294 lines); `telemetry::audit_log` (64 lines), `telemetry::release_evidence` (394 lines)
@@ -91,12 +96,14 @@
 - Used by: IPC command layer
 
 **Bootstrap Layer:**
+
 - Purpose: Wire Tauri builder, register managed state, apply migrations, register commands
 - Location: `src-tauri/src/main.rs`, `src-tauri/src/lib.rs`
 - Contains: `tauri::Builder` setup, `SqlitePool::open()`, `AppState::default()`, the `tauri::generate_handler![...]` list (15 commands)
 - Rule: Must stay thin; all real behavior lives in named modules
 
 **Verification Binaries:**
+
 - `src-tauri/src/bin/verify-command-inventory.rs` — runs `ipc::inventory::verify_inventory()` standalone
 - `src-tauri/src/bin/collect-release-evidence.rs` — runs `telemetry::release_evidence::collect_release_evidence`, which calls the same inventory check before bundling evidence
 
@@ -113,6 +120,7 @@
 7. `surfaceStore.surface` reactive rune updates; `SurfaceRail` re-renders
 
 Surface switch (user action):
+
 1. `surfaceStore.setSurface(next)` applies optimistic update to `$state`
 2. `invoke('set_active_surface', { surface: next })` → `ipc::app_shell::set_active_surface`
 3. Backend persists to SQLite first (crash-safe ordering), then updates `AppState.shell` in-memory
@@ -146,33 +154,34 @@ Surface switch (user action):
 
 1. Renderer sets/reads/clears a provider key via `privacy_set_provider_key`, `privacy_get_credential_status`, `privacy_clear_provider_key`
 2. Each command is window-policy gated and delegates to `security::secrets`
-3. Raw API keys never appear in an IPC response — only credential *status* crosses the boundary
+3. Raw API keys never appear in an IPC response — only credential _status_ crosses the boundary
 
 ## Tauri Command Surface
 
 Commands registered in `src-tauri/src/main.rs` via `tauri::generate_handler![]` (15 total):
 
-| Command | Module | Status | Notes |
-|---------|--------|--------|-------|
-| `get_active_surface` | `ipc::app_shell` | Implemented | Returns `Surface` enum; window-label enforced |
-| `set_active_surface` | `ipc::app_shell` | Implemented | Persists to SQLite before updating in-memory |
-| `chat_send` | `ipc::chat` | Implemented | No `api_key` parameter — credentials come from state only |
-| `chat_cancel` | `ipc::chat` | Implemented | Cancels an in-flight stream |
-| `artifact_get` | `ipc::artifacts` | Implemented | Reads a sandboxed artifact |
-| `artifact_dismiss` | `ipc::artifacts` | Implemented | Dismisses a sandboxed artifact |
-| `history_list` | `ipc::history` | Implemented | Lists conversations, most-recently-updated first |
-| `history_get` | `ipc::history` | Implemented | Full conversation + message list |
-| `history_delete` | `ipc::history` | Implemented | Hard delete; idempotent |
-| `history_search` | `ipc::history` | Implemented | FTS5 search with highlighted snippets |
-| `privacy_set_provider_key` | `ipc::privacy` | Implemented | Stores a provider credential |
-| `privacy_get_credential_status` | `ipc::privacy` | Implemented | Returns credential presence, never the raw key |
-| `privacy_clear_provider_key` | `ipc::privacy` | Implemented | Removes a stored credential |
-| `files_open_dialog` | `ipc::files` | Implemented | Opens a native file picker, returns an opaque token |
-| `files_read_token` | `ipc::files` | Implemented | Reads file content via a previously minted token |
+| Command                         | Module           | Status      | Notes                                                     |
+| ------------------------------- | ---------------- | ----------- | --------------------------------------------------------- |
+| `get_active_surface`            | `ipc::app_shell` | Implemented | Returns `Surface` enum; window-label enforced             |
+| `set_active_surface`            | `ipc::app_shell` | Implemented | Persists to SQLite before updating in-memory              |
+| `chat_send`                     | `ipc::chat`      | Implemented | No `api_key` parameter — credentials come from state only |
+| `chat_cancel`                   | `ipc::chat`      | Implemented | Cancels an in-flight stream                               |
+| `artifact_get`                  | `ipc::artifacts` | Implemented | Reads a sandboxed artifact                                |
+| `artifact_dismiss`              | `ipc::artifacts` | Implemented | Dismisses a sandboxed artifact                            |
+| `history_list`                  | `ipc::history`   | Implemented | Lists conversations, most-recently-updated first          |
+| `history_get`                   | `ipc::history`   | Implemented | Full conversation + message list                          |
+| `history_delete`                | `ipc::history`   | Implemented | Hard delete; idempotent                                   |
+| `history_search`                | `ipc::history`   | Implemented | FTS5 search with highlighted snippets                     |
+| `privacy_set_provider_key`      | `ipc::privacy`   | Implemented | Stores a provider credential                              |
+| `privacy_get_credential_status` | `ipc::privacy`   | Implemented | Returns credential presence, never the raw key            |
+| `privacy_clear_provider_key`    | `ipc::privacy`   | Implemented | Removes a stored credential                               |
+| `files_open_dialog`             | `ipc::files`     | Implemented | Opens a native file picker, returns an opaque token       |
+| `files_read_token`              | `ipc::files`     | Implemented | Reads file content via a previously minted token          |
 
 `ipc::providers` (1-line stub) and `ipc::inventory` (726 lines, real implementation) are **not** registered in `generate_handler![]` — `inventory`'s checks run via the `verify-command-inventory` binary and release evidence collection, not as a frontend-callable command. `providers.rs` has no tracked requirement pointing at it; see `CONCERNS.md` for disposition.
 
 **Command registration invariant:** Every command must appear in:
+
 1. `tauri::generate_handler![...]` in `src-tauri/src/main.rs`
 2. A `src-tauri/capabilities/*.json` capability grant
 3. `security/command-inventory.toml` (reviewed inventory — present and reconciled)
@@ -185,6 +194,7 @@ All six are reconciled by `ipc::inventory::verify_inventory()`.
 ## Privacy and Security Boundaries
 
 **What stays backend-owned (never crosses to renderer):**
+
 - Provider API keys and credentials (`security::secrets`)
 - Raw file system paths (`security::file_tokens` — opaque token pattern)
 - Prompt content and conversation payloads in logs or telemetry
@@ -193,6 +203,7 @@ All six are reconciled by `ipc::inventory::verify_inventory()`.
 - `AppState` internals beyond the typed IPC response value
 
 **Renderer enforcement model:**
+
 - Every command validates the caller window label and command name through `security::command_policy::policy_check` (the prior per-module `assert_main_window` duplication has been removed)
 - Tauri capabilities files (`src-tauri/capabilities/`) are defense-in-depth, not sole enforcement
 - `withGlobalTauri: false` in `tauri.conf.json` — frontend must import specific Tauri APIs explicitly
@@ -240,6 +251,7 @@ All six are reconciled by `ipc::inventory::verify_inventory()`.
 **Strategy:** Typed error enums per IPC domain, serialized as structured objects.
 
 **Patterns:**
+
 - IPC errors use `thiserror::Error` + `serde::Serialize` with `#[serde(tag = "code", content = "message", rename_all = "SCREAMING_SNAKE_CASE")]` — see `ShellError` in `src-tauri/src/ipc/app_shell.rs`, `ChatError` in `src-tauri/src/ipc/chat.rs`, `HistoryError` in `src-tauri/src/ipc/history.rs`
 - Each domain error implements `From<security::command_policy::PolicyError>`, mapping both `UnauthorizedWindow` and `UnknownCommand` onto that domain's own `UnauthorizedWindow` variant
 - Frontend normalizes IPC rejections via `normalizeIpcError()` in each store (not yet consolidated — see Anti-Patterns)
@@ -250,8 +262,8 @@ All six are reconciled by `ipc::inventory::verify_inventory()`.
 
 **Logging:** `console.warn` in renderer for non-fatal IPC failures; `telemetry::audit_log` for backend traces — redaction required before persistence.
 **Validation:** Input validated at IPC boundary before any backend module is invoked.
-**Authentication:** Provider credentials held exclusively in `security::secrets`; never in IPC responses, logs, or frontend state — only credential *status* crosses the boundary.
+**Authentication:** Provider credentials held exclusively in `security::secrets`; never in IPC responses, logs, or frontend state — only credential _status_ crosses the boundary.
 
 ---
 
-*Architecture analysis: 2026-06-18*
+_Architecture analysis: 2026-06-18_

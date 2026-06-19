@@ -27,7 +27,11 @@ export type ArtifactContentType =
 export type ChatEvent =
 	| { type: 'Ack'; request_id: string }
 	| { type: 'Delta'; text: string }
-	| { type: 'Done'; usage?: { prompt_tokens: number; completion_tokens: number }; model: string }
+	| {
+			type: 'Done';
+			usage?: { prompt_tokens: number; completion_tokens: number };
+			model: string;
+	  }
 	| { type: 'Error'; code: string; message: string }
 	| {
 			type: 'ArtifactReady';

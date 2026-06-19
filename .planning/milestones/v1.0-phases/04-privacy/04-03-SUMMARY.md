@@ -17,4 +17,3 @@ Implemented the backend file-token authority:
 Verification:
 
 - `cargo test --manifest-path src-tauri/Cargo.toml -- security::file_tokens::tests`
-

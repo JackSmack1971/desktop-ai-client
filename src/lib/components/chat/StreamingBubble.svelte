@@ -26,7 +26,12 @@
 <div class="streaming-bubble" aria-label="Assistant is responding">
 	{#if loading && !hasContent}
 		<!-- Thinking indicator: three animated dots -->
-		<div class="thinking" role="status" aria-label="Thinking…" aria-live="polite">
+		<div
+			class="thinking"
+			role="status"
+			aria-label="Thinking…"
+			aria-live="polite"
+		>
 			<span class="dot" aria-hidden="true"></span>
 			<span class="dot" aria-hidden="true"></span>
 			<span class="dot" aria-hidden="true"></span>
@@ -73,12 +78,24 @@
 		animation: pulse 1.4s ease-in-out infinite;
 	}
 
-	.dot:nth-child(2) { animation-delay: 0.2s; }
-	.dot:nth-child(3) { animation-delay: 0.4s; }
+	.dot:nth-child(2) {
+		animation-delay: 0.2s;
+	}
+	.dot:nth-child(3) {
+		animation-delay: 0.4s;
+	}
 
 	@keyframes pulse {
-		0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-		40% { transform: scale(1); opacity: 1; }
+		0%,
+		80%,
+		100% {
+			transform: scale(0.8);
+			opacity: 0.5;
+		}
+		40% {
+			transform: scale(1);
+			opacity: 1;
+		}
 	}
 
 	.streaming-content {
@@ -98,8 +115,13 @@
 	}
 
 	@keyframes blink {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0; }
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0;
+		}
 	}
 
 	/* Accessible screen reader text */

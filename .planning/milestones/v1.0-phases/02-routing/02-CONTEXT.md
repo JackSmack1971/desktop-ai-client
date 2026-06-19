@@ -63,46 +63,55 @@ This phase does NOT include: full secrets store (Phase 4), conversation persiste
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Phase Scope and Requirements
+
 - `.planning/ROADMAP.md` — Phase 2 goal, success criteria (ROUTE-01, ROUTE-02)
 - `.planning/REQUIREMENTS.md` — ROUTE-01 and ROUTE-02 definitions (the two requirements this phase satisfies)
 
 ### Architecture and Patterns
+
 - `.planning/codebase/ARCHITECTURE.md` — Chat Message data flow (§Data Flow), anti-patterns (§Anti-Patterns), error handling patterns (§Error Handling), IPC command registration invariant (§Tauri Command Surface)
 - `.planning/codebase/INTEGRATIONS.md` — OpenRouter integration plan, Tauri security config, registered vs scaffolded IPC commands
 - `src-tauri/src/ipc/app_shell.rs` — Canonical established patterns: `ShellError` typed error enum, `assert_main_window` window-label enforcement, optimistic-update rollback. **New `ChatError` and `chat_*` commands must follow these patterns.**
 
 ### Provider and Security Constraints
+
 - `docs/provider-routing.md` — Provider routing focus areas: capability detection, routing policy, fallback behavior, provider drift handling
 - `docs/Tauri_Svelte_AI_App_Architecture_Adversarial_Hardened_v5.md` — **Adversarial hardening spec.** User explicitly invoked this during discussion. Contains the hard invariant: backend-only secrets, stream commands must never accept api_key, `stream_chat` retrieves credentials internally. Read before designing any IPC interface for this phase.
 - `docs/privacy-boundaries.md` — Privacy boundary definitions relevant to credential handling
 - `docs/threat-model.md` — Threat model for provider routing and hostile renderer behavior
 
 ### Codebase Maps
+
 - `.planning/codebase/ARCHITECTURE.md` — (already listed above; emphasize §Layers for module dependency rules)
 - `.planning/codebase/CONCERNS.md` — Phase 02 readiness gate checklist and 18 unimplemented scaffold modules
 
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
+
 - `src-tauri/src/ipc/app_shell.rs` — `assert_main_window()` helper; `ShellError` enum with `thiserror` + `serde` derive pattern. Copy this pattern for `ChatError`.
 - `src-tauri/src/storage/sqlite.rs` — `SqlitePool` with `with_conn()` pattern. `chat_send` will need to call into storage for conversation persistence (Phase 3 wires this — Phase 2 can stub or skip the storage write).
 - `src/lib/stores/surface.ts` — `normalizeIpcError()` and optimistic-update rollback. Frontend chat store should follow the same error normalization pattern.
 
 ### Established Patterns
+
 - **IPC error shape:** `{ code: "SCREAMING_SNAKE_CASE", message: string }` — enforced at IPC layer, normalized on frontend. `ChatError` must serialize to the same shape.
 - **Window-label enforcement:** Every shell command validates caller via `assert_main_window`. Apply to all `chat_*` commands.
 - **Dependency direction:** `ipc/` depends on `{providers, security, storage, telemetry}`. Backend modules must not import from `ipc/`. `chat_send` calls `providers::routing`, which calls `providers::openrouter`, which uses `providers::sse` and `security::secrets`.
 - **Lock ordering:** shell lock acquired before sqlite lock. `chat_send` must not invert this.
 
 ### Integration Points
+
 - `src-tauri/src/providers/` — All four modules are scaffold placeholders: `routing.rs`, `openrouter.rs`, `sse.rs`, `capabilities.rs`. This phase implements `routing`, `openrouter`, and `sse`; `capabilities` deferred.
 - `src-tauri/src/security/secrets.rs` — Scaffold placeholder. This phase implements the thin stub.
 - `src-tauri/src/ipc/chat.rs` — Scaffold placeholder. This phase implements `chat_send` and `chat_cancel`.
@@ -134,5 +143,5 @@ None — discussion stayed within phase scope.
 
 ---
 
-*Phase: 02-routing*
-*Context gathered: 2026-06-14*
+_Phase: 02-routing_
+_Context gathered: 2026-06-14_

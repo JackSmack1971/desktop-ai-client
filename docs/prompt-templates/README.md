@@ -13,4 +13,3 @@ This folder contains reusable prompt drafts for the agents in this repo.
 
 Treat these as templates, not rigid scripts.
 Adapt the task-specific part, but keep the structure and guardrails.
-

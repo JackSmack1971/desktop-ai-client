@@ -7,6 +7,7 @@
 ## Phase Boundary
 
 Provide sandboxed artifact previews that remain safe and usable under hostile content. This phase implements:
+
 - `security::artifact_sandbox` — HTML sanitization (strip scripts, event handlers) plus CSP policy string generation. Belt-and-suspenders: backend sanitizes the content, frontend iframe enforces strict CSP as a second layer.
 - `artifacts::detector` — backend-owned classifier called from `ipc::chat` after stream completion. Determines whether model output is an artifact (HTML/SVG/code block) or a plain message.
 - `ArtifactReady` channel event — emitted through the existing `ChatEvent` channel when an artifact is detected. Frontend reacts to typed events only; it never classifies raw deltas.
@@ -57,31 +58,38 @@ This phase does NOT include: executable JavaScript artifacts (deferred; the ifra
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Phase Scope and Requirements
+
 - `.planning/ROADMAP.md` — Phase 5 goal, success criteria (ARTF-01, ARTF-02, ARTF-03)
 - `.planning/REQUIREMENTS.md` — ARTF-01, ARTF-02, ARTF-03 definitions
 
 ### Architecture and Patterns
+
 - `.planning/codebase/ARCHITECTURE.md` — File intake data flow (§Data Flow: File Intake; artifact_sandbox is listed under security/), IPC boundary enforcement, command registration invariant (§Tauri Command Surface), error handling patterns (§Error Handling), threading/lock ordering (§Architectural Constraints), anti-patterns (§Anti-Patterns)
 - `src-tauri/src/ipc/app_shell.rs` — Canonical IPC patterns: `ShellError` typed error enum with `thiserror + serde`, `assert_main_window` window-label enforcement. New `ArtifactsError` must follow the same serialization shape.
 - `src-tauri/src/ipc/chat.rs` — Phase 2/3 output. `ChatEvent` enum lives here; `ArtifactReady` variant must be added to this enum. `chat_send` signature extended with `attachments: Option<Vec<TokenId>>`.
 
 ### Security and Privacy Authority
+
 - `docs/Tauri_Svelte_AI_App_Architecture_Adversarial_Hardened_v5.md` — **Primary authority** for IPC boundary invariants and isolation requirements. Contains rules on sandboxing, hostile renderer behavior, and content isolation. Read before designing any artifact isolation interface.
 - `docs/privacy-boundaries.md` — Privacy boundary definitions; artifact content (which may contain sensitive user data) must stay backend-owned for sanitization.
 
 ### Phase 4 Context (upstream decisions Phase 5 must honor)
+
 - `.planning/phases/04-privacy/04-CONTEXT.md` — D-04/D-05/D-06 (file token system; Phase 5 must wire `attachments: Option<Vec<TokenId>>` into `chat_send`), D-10 (`ipc::privacy` command surface; `privacy_*` patterns to follow), D-11 (SettingsSurface scope was narrow — Phase 5 does not expand Settings)
 - `src-tauri/src/security/file_tokens.rs` — Phase 4 output. `mint_token`, `resolve_token`, `revoke_token` against `AppState.file_tokens`. Phase 5 `chat_send` calls `resolve_token` for each attachment.
 
 ### Phase 2 Context (streaming channel design)
+
 - `.planning/phases/02-routing/02-CONTEXT.md` — D-01/D-02/D-03 (ChatEvent channel design). `ArtifactReady` must be added as a new `ChatEvent` variant following the same tagged enum shape.
 
 ### Scaffolded Files to Implement
+
 - `src-tauri/src/security/artifact_sandbox.rs` — Scaffold; implement HTML sanitizer (strip scripts, event handlers) and CSP policy string builder.
 - `src/lib/components/surfaces/ArtifactsSurface.svelte` — Scaffold; implement host chrome (stop/reload controls, artifact indicator) + sandboxed iframe with strict CSP.
 - `src-tauri/src/ipc/chat.rs` — Extend `ChatEvent` enum with `ArtifactReady` variant; extend `chat_send` with `attachments: Option<Vec<TokenId>>`.
@@ -89,9 +97,11 @@ This phase does NOT include: executable JavaScript artifacts (deferred; the ifra
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
+
 - `src-tauri/src/ipc/app_shell.rs` — `assert_main_window()` helper; `ShellError` enum with `thiserror + serde + #[serde(tag = "code", content = "message", rename_all = "SCREAMING_SNAKE_CASE")]` derive pattern. Copy for `ArtifactsError`.
 - `src-tauri/src/ipc/chat.rs` — `ChatEvent` tagged enum and `chat_send` channel pattern (Phase 2 output). `ArtifactReady` added here as a new variant; the channel already exists.
 - `src-tauri/src/security/file_tokens.rs` — Phase 4 output: `resolve_token()` callable from `chat_send` to resolve attachment tokens before provider request. Phase 5 calls this function.
@@ -100,6 +110,7 @@ This phase does NOT include: executable JavaScript artifacts (deferred; the ifra
 - `src/lib/stores/surface.ts` — `normalizeIpcError()` and surface store patterns. Frontend artifacts store should use the same IPC error normalization pattern.
 
 ### Established Patterns
+
 - **IPC error shape:** `{ code: "SCREAMING_SNAKE_CASE", message: string }` — all Phase 5 error enums must serialize to this shape.
 - **Window-label enforcement:** Every artifacts command validates caller via `policy_check()` (Phase 4's `security::command_policy` replaces `assert_main_window`).
 - **Typed domain stores:** `ConversationStore`/`MessageStore` (Phase 3) are the canonical model. New `ArtifactStore` wraps `SqlitePool` and exposes domain-specific methods.
@@ -108,6 +119,7 @@ This phase does NOT include: executable JavaScript artifacts (deferred; the ifra
 - **Command registration invariant:** Every new command must appear in `tauri::generate_handler![...]` (main.rs) AND a `src-tauri/capabilities/*.json` grant (and eventually `security/command-inventory.toml` for Phase 6).
 
 ### Integration Points
+
 - `src-tauri/src/main.rs` — Must register all Phase 5 IPC commands in `tauri::generate_handler![...]`.
 - `src-tauri/src/app_state.rs` — May need extension if artifact store handle is managed separately from the SQLite pool (likely not — `ArtifactStore` wraps the existing pool).
 - `src-tauri/capabilities/main.json` — Must add allow grants for all new Phase 5 commands.
@@ -145,5 +157,5 @@ None — discussion stayed within phase scope.
 
 ---
 
-*Phase: 05-artifacts*
-*Context gathered: 2026-06-15*
+_Phase: 05-artifacts_
+_Context gathered: 2026-06-15_

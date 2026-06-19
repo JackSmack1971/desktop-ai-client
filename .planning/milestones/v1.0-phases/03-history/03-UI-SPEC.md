@@ -18,13 +18,13 @@ created: 2026-06-14
 
 ## Design System
 
-| Property | Value |
-|----------|-------|
-| Tool | none — manual scoped CSS in `.svelte` files |
-| Preset | not applicable |
-| Component library | none (custom Svelte components only) |
-| Icon library | none (emoji glyphs used in SurfaceRail; History surface uses no icons) |
-| Font | `system-ui, -apple-system, sans-serif` (sourced from WorkspaceShell.svelte) |
+| Property          | Value                                                                       |
+| ----------------- | --------------------------------------------------------------------------- |
+| Tool              | none — manual scoped CSS in `.svelte` files                                 |
+| Preset            | not applicable                                                              |
+| Component library | none (custom Svelte components only)                                        |
+| Icon library      | none (emoji glyphs used in SurfaceRail; History surface uses no icons)      |
+| Font              | `system-ui, -apple-system, sans-serif` (sourced from WorkspaceShell.svelte) |
 
 **Note:** shadcn was not initialized. The project has no `components.json`. The existing shell uses hand-authored scoped CSS with a consistent dark-mode token set. This contract formalizes those tokens for Phase 3 implementation.
 
@@ -34,17 +34,18 @@ created: 2026-06-14
 
 Declared values (multiples of 4 only):
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| xs | 4px | Icon gaps, inline tight spacing (rail gap: 4px) |
-| sm | 8px | Button padding block, input gap, row internal gap |
-| md | 16px | Surface header horizontal padding, message horizontal padding, button padding inline |
-| lg | 24px | Surface header horizontal padding (confirmed: `padding: 16px 24px`) |
-| xl | 32px | Not currently in use — reserved for future layout |
-| 2xl | 48px | Not currently in use — reserved for major breaks |
-| 3xl | 64px | Not currently in use — reserved for page-level spacing |
+| Token | Value | Usage                                                                                |
+| ----- | ----- | ------------------------------------------------------------------------------------ |
+| xs    | 4px   | Icon gaps, inline tight spacing (rail gap: 4px)                                      |
+| sm    | 8px   | Button padding block, input gap, row internal gap                                    |
+| md    | 16px  | Surface header horizontal padding, message horizontal padding, button padding inline |
+| lg    | 24px  | Surface header horizontal padding (confirmed: `padding: 16px 24px`)                  |
+| xl    | 32px  | Not currently in use — reserved for future layout                                    |
+| 2xl   | 48px  | Not currently in use — reserved for major breaks                                     |
+| 3xl   | 64px  | Not currently in use — reserved for page-level spacing                               |
 
 Exceptions:
+
 - Search input height: 40px (comfortable touch target; 5 × 8pt = 40px, valid 8pt grid value)
 - Conversation row height: 56px minimum (readable at-a-glance density; aligns to 8pt grid)
 - Rail button touch target: 48px × 48px (pre-existing from SurfaceRail.svelte)
@@ -55,12 +56,12 @@ Exceptions:
 
 ## Typography
 
-| Role | Size | Weight | Line Height | Notes |
-|------|------|--------|-------------|-------|
-| Body | 14px | 400 | 1.5 | Message content, search result snippets, row metadata (sourced from ChatMessage.svelte) |
-| Label | 12px | 400 | 1.4 | Conversation timestamp ("2 days ago"), model badge text, muted secondary text |
-| Heading | 16px | 600 | 1.2 | Surface title "History" in surface header (sourced from HistorySurface.svelte) |
-| Micro | 11px | 600 | 1.0 | Status badge text ("Cancelled", "Incomplete") and confirmation destructive labels |
+| Role    | Size | Weight | Line Height | Notes                                                                                   |
+| ------- | ---- | ------ | ----------- | --------------------------------------------------------------------------------------- |
+| Body    | 14px | 400    | 1.5         | Message content, search result snippets, row metadata (sourced from ChatMessage.svelte) |
+| Label   | 12px | 400    | 1.4         | Conversation timestamp ("2 days ago"), model badge text, muted secondary text           |
+| Heading | 16px | 600    | 1.2         | Surface title "History" in surface header (sourced from HistorySurface.svelte)          |
+| Micro   | 11px | 600    | 1.0         | Status badge text ("Cancelled", "Incomplete") and confirmation destructive labels       |
 
 Font stack for all roles: `system-ui, -apple-system, sans-serif`
 
@@ -70,22 +71,23 @@ Font stack for all roles: `system-ui, -apple-system, sans-serif`
 
 ## Color
 
-| Role | Value | Usage |
-|------|-------|-------|
-| Dominant (60%) | `#0f0f0f` | Workspace shell background, full-bleed page surface |
-| Secondary (30%) | `#1a1a1a` | Surface header background, search input area background, row hover state background |
-| Card / tertiary | `#242424` | Individual conversation row background (at-rest), search result row background |
-| Border | `#2a2a2a` | Divider between header and list, row separator, search input border |
-| Accent (10%) | `#4a9eff` | Focus rings on search input and row items, active rail indicator (pre-existing) |
-| Text primary | `#e0e0e0` | Conversation title, search query text, heading |
-| Text muted | `#888` | Model badge, secondary metadata; `#666` for placeholder text |
-| Warning / incomplete | `#e0a020` | "Incomplete" status badge on conversation rows (matches Cancelled badge pattern) |
-| Destructive bg | `#2a1a1a` | Delete confirmation inline area background |
-| Destructive border | `#7a1e1e` | Delete confirmation area border |
-| Destructive text | `#cc4444` | Delete action label, error alert text |
-| Snippet highlight | `#1e4a7a` | FTS5 search match highlight background within snippet text (matches user-bubble background) |
+| Role                 | Value     | Usage                                                                                       |
+| -------------------- | --------- | ------------------------------------------------------------------------------------------- |
+| Dominant (60%)       | `#0f0f0f` | Workspace shell background, full-bleed page surface                                         |
+| Secondary (30%)      | `#1a1a1a` | Surface header background, search input area background, row hover state background         |
+| Card / tertiary      | `#242424` | Individual conversation row background (at-rest), search result row background              |
+| Border               | `#2a2a2a` | Divider between header and list, row separator, search input border                         |
+| Accent (10%)         | `#4a9eff` | Focus rings on search input and row items, active rail indicator (pre-existing)             |
+| Text primary         | `#e0e0e0` | Conversation title, search query text, heading                                              |
+| Text muted           | `#888`    | Model badge, secondary metadata; `#666` for placeholder text                                |
+| Warning / incomplete | `#e0a020` | "Incomplete" status badge on conversation rows (matches Cancelled badge pattern)            |
+| Destructive bg       | `#2a1a1a` | Delete confirmation inline area background                                                  |
+| Destructive border   | `#7a1e1e` | Delete confirmation area border                                                             |
+| Destructive text     | `#cc4444` | Delete action label, error alert text                                                       |
+| Snippet highlight    | `#1e4a7a` | FTS5 search match highlight background within snippet text (matches user-bubble background) |
 
 Accent (`#4a9eff`) reserved for:
+
 1. Focus rings on the search input (`box-shadow: 0 0 0 2px rgba(74,158,255,0.25)`, `border-color: #4a9eff`) — mirrors ChatInput focus pattern
 2. Focus-visible outline on conversation row items (`outline: 2px solid #4a9eff; outline-offset: 2px`) — mirrors SurfaceRail focus pattern
 3. Highlighted search match term within snippet text (foreground `#4a9eff` on `#1e4a7a` bg)
@@ -106,19 +108,20 @@ Accent is NOT applied to: inactive row text, timestamps, model badges, or genera
 
 These are the new components the executor must build for Phase 3:
 
-| Component | File | Description |
-|-----------|------|-------------|
-| `HistorySurface` | `src/lib/components/surfaces/HistorySurface.svelte` | Root surface — replaces scaffold. Composes SearchBar + ConversationList. |
-| `SearchBar` | `src/lib/components/history/SearchBar.svelte` | Controlled text input. Calls `history_search` IPC with 300ms debounce. Clears list back to `history_list` results when empty. |
-| `ConversationList` | `src/lib/components/history/ConversationList.svelte` | Scrollable `role="list"` container. Renders `ConversationRow` items. Shows empty state or error state. |
-| `ConversationRow` | `src/lib/components/history/ConversationRow.svelte` | Single conversation entry. Keyboard-navigable. Has per-row delete trigger. |
-| `historyStore` | `src/lib/stores/history.ts` | Svelte 5 rune-based store. Manages list, search results, loading, error, delete state. Uses `normalizeIpcError()` pattern from `surface.ts`. |
+| Component          | File                                                 | Description                                                                                                                                  |
+| ------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HistorySurface`   | `src/lib/components/surfaces/HistorySurface.svelte`  | Root surface — replaces scaffold. Composes SearchBar + ConversationList.                                                                     |
+| `SearchBar`        | `src/lib/components/history/SearchBar.svelte`        | Controlled text input. Calls `history_search` IPC with 300ms debounce. Clears list back to `history_list` results when empty.                |
+| `ConversationList` | `src/lib/components/history/ConversationList.svelte` | Scrollable `role="list"` container. Renders `ConversationRow` items. Shows empty state or error state.                                       |
+| `ConversationRow`  | `src/lib/components/history/ConversationRow.svelte`  | Single conversation entry. Keyboard-navigable. Has per-row delete trigger.                                                                   |
+| `historyStore`     | `src/lib/stores/history.ts`                          | Svelte 5 rune-based store. Manages list, search results, loading, error, delete state. Uses `normalizeIpcError()` pattern from `surface.ts`. |
 
 ---
 
 ## Interaction Contracts
 
 ### Search Bar
+
 - Placeholder text: "Search conversations…"
 - Debounce: 300ms after last keystroke before invoking `history_search` IPC (sourced from D-07)
 - When query is empty: revert to full `history_list` result; do not show "no results"
@@ -128,6 +131,7 @@ These are the new components the executor must build for Phase 3:
 - `role="search"` on the wrapping form element
 
 ### Conversation Row
+
 - Layout (left to right): conversation title | model badge | status indicator | relative timestamp | delete trigger
 - Title: single line, truncated with ellipsis at 100% minus badge/timestamp widths
 - Model badge: `<span>` containing the model name (e.g. "claude-sonnet-4-6"), color `#888`, font-size 12px
@@ -141,12 +145,14 @@ These are the new components the executor must build for Phase 3:
 - Focus-visible: `outline: 2px solid #4a9eff; outline-offset: 2px` on the row button
 
 ### Search Result Rows
+
 - Same `ConversationRow` component, same layout
 - Snippet replaces the model badge position: ~80-char extract from matching message with matched term highlighted in `#4a9eff` foreground on `#1e4a7a` background
 - FTS5 `snippet()` output is trusted backend-generated text — render as plain text (no HTML injection)
 - When results contain snippet, model badge is omitted from that row
 
 ### Delete Flow
+
 - Delete trigger label: "Delete conversation" (visible text, not icon-only)
 - `aria-label="Delete conversation: {title}"` on the delete button for screen reader disambiguation
 - On delete trigger click: show an inline confirmation within the row (no modal dialog)
@@ -160,6 +166,7 @@ These are the new components the executor must build for Phase 3:
 - Keyboard: Escape dismisses inline confirmation and returns focus to the delete trigger
 
 ### Chat Navigation
+
 - Clicking a conversation row invokes `surfaceStore.setSurface('chat')` and passes the `conversation_id` to the chat store
 - No back-navigation UI — the surface rail is the navigation mechanism
 - Input field focus: Chat surface pre-focuses the textarea after loading a prior conversation (D-10)
@@ -168,17 +175,17 @@ These are the new components the executor must build for Phase 3:
 
 ## States and Transitions
 
-| Surface State | Trigger | Visual Treatment |
-|---------------|---------|-----------------|
-| Loading (initial) | `historyStore.hydrate()` on mount | Single line `aria-live="polite"` status text "Loading conversations…" centered in list area; no spinner |
-| Loaded / empty | 0 conversations returned | Empty state UI (see Copywriting Contract) |
-| Loaded / populated | 1+ conversations returned | Scrollable `ConversationList` |
-| Search active | Query non-empty, results returned | List replaced by result rows with snippets |
-| Search empty results | Query non-empty, 0 results | Empty search state copy (see Copywriting Contract) |
-| Delete pending | User clicked "Confirm delete" | Row enters loading state: row opacity 0.6, row non-interactive |
-| Delete success | IPC returns success | Row removed with no animation (instant) |
-| Delete error | IPC returns error | Row restored; inline `role="alert"` below row |
-| IPC error (list load) | `history_list` fails | Error state copy shown in place of list (see Copywriting Contract) |
+| Surface State         | Trigger                           | Visual Treatment                                                                                        |
+| --------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Loading (initial)     | `historyStore.hydrate()` on mount | Single line `aria-live="polite"` status text "Loading conversations…" centered in list area; no spinner |
+| Loaded / empty        | 0 conversations returned          | Empty state UI (see Copywriting Contract)                                                               |
+| Loaded / populated    | 1+ conversations returned         | Scrollable `ConversationList`                                                                           |
+| Search active         | Query non-empty, results returned | List replaced by result rows with snippets                                                              |
+| Search empty results  | Query non-empty, 0 results        | Empty search state copy (see Copywriting Contract)                                                      |
+| Delete pending        | User clicked "Confirm delete"     | Row enters loading state: row opacity 0.6, row non-interactive                                          |
+| Delete success        | IPC returns success               | Row removed with no animation (instant)                                                                 |
+| Delete error          | IPC returns error                 | Row restored; inline `role="alert"` below row                                                           |
+| IPC error (list load) | `history_list` fails              | Error state copy shown in place of list (see Copywriting Contract)                                      |
 
 ---
 
@@ -200,35 +207,35 @@ These requirements are mandatory, not optional. The adversarial hardening spec (
 
 ## Copywriting Contract
 
-| Element | Copy |
-|---------|------|
-| Surface heading | History |
-| Search placeholder | Search conversations… |
-| Empty state heading | No conversations yet |
-| Empty state body | Your conversations will appear here after your first chat. Start a new chat to begin. |
-| Empty search heading | No matches found |
-| Empty search body | No conversations matched "{query}". Try different keywords. |
-| Loading state | Loading conversations… |
-| Delete trigger label | Delete conversation |
-| Delete confirmation heading | Delete this conversation? |
-| Delete confirmation body | This cannot be undone. |
-| Delete confirm button | Confirm delete |
-| Delete cancel link | Cancel |
-| Delete success (live region) | Conversation deleted. |
-| Delete error inline | Failed to delete. Try again. |
-| IPC list error | Could not load history. Check the app connection and try again. |
-| Incomplete status badge | Incomplete |
-| Row aria-label pattern | {title} — {relative timestamp} |
-| Delete button aria-label pattern | Delete conversation: {title} |
+| Element                          | Copy                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------- |
+| Surface heading                  | History                                                                               |
+| Search placeholder               | Search conversations…                                                                 |
+| Empty state heading              | No conversations yet                                                                  |
+| Empty state body                 | Your conversations will appear here after your first chat. Start a new chat to begin. |
+| Empty search heading             | No matches found                                                                      |
+| Empty search body                | No conversations matched "{query}". Try different keywords.                           |
+| Loading state                    | Loading conversations…                                                                |
+| Delete trigger label             | Delete conversation                                                                   |
+| Delete confirmation heading      | Delete this conversation?                                                             |
+| Delete confirmation body         | This cannot be undone.                                                                |
+| Delete confirm button            | Confirm delete                                                                        |
+| Delete cancel link               | Cancel                                                                                |
+| Delete success (live region)     | Conversation deleted.                                                                 |
+| Delete error inline              | Failed to delete. Try again.                                                          |
+| IPC list error                   | Could not load history. Check the app connection and try again.                       |
+| Incomplete status badge          | Incomplete                                                                            |
+| Row aria-label pattern           | {title} — {relative timestamp}                                                        |
+| Delete button aria-label pattern | Delete conversation: {title}                                                          |
 
 ---
 
 ## Registry Safety
 
-| Registry | Blocks Used | Safety Gate |
-|----------|-------------|-------------|
-| shadcn official | none | not applicable — shadcn not initialized |
-| Third-party | none | not applicable |
+| Registry        | Blocks Used | Safety Gate                             |
+| --------------- | ----------- | --------------------------------------- |
+| shadcn official | none        | not applicable — shadcn not initialized |
+| Third-party     | none        | not applicable                          |
 
 No third-party component registries are used in this phase. All components are hand-authored Svelte 5 components following the established project patterns.
 

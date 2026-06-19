@@ -17,4 +17,3 @@ Implemented the privacy IPC surface and audit logging:
 Verification:
 
 - `cargo test --manifest-path src-tauri/Cargo.toml -- telemetry::audit_log::tests ipc::privacy::tests`
-

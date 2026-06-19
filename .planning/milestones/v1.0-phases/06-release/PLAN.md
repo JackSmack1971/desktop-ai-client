@@ -26,16 +26,16 @@ Research for this phase is already captured in [`06-CONTEXT.md`](./06-CONTEXT.md
 
 ## Locked Decision Coverage
 
-| Decision | Covered In |
-|----------|------------|
-| D-01 deny-by-inventory release gate | T-1, T-2 |
-| D-02 reviewed inventory shape in `security/command-inventory.toml` | T-1, T-2 |
-| D-03 full registered command set is in scope | T-1, T-2, T-3 |
-| D-04 explicit release/dev capability split | T-1, T-2 |
-| D-05 `main.json` remains the release-selected baseline unless expanded intentionally | T-1, T-2 |
-| D-06 first-pass evidence bundle only requires implemented paths | T-3 |
-| D-07 evidence bundle preserves hardening-spec categories | T-3 |
-| D-08 exact fixture families remain the target shape where implementation exists | T-3 |
+| Decision                                                                             | Covered In    |
+| ------------------------------------------------------------------------------------ | ------------- |
+| D-01 deny-by-inventory release gate                                                  | T-1, T-2      |
+| D-02 reviewed inventory shape in `security/command-inventory.toml`                   | T-1, T-2      |
+| D-03 full registered command set is in scope                                         | T-1, T-2, T-3 |
+| D-04 explicit release/dev capability split                                           | T-1, T-2      |
+| D-05 `main.json` remains the release-selected baseline unless expanded intentionally | T-1, T-2      |
+| D-06 first-pass evidence bundle only requires implemented paths                      | T-3           |
+| D-07 evidence bundle preserves hardening-spec categories                             | T-3           |
+| D-08 exact fixture families remain the target shape where implementation exists      | T-3           |
 
 ---
 
@@ -43,30 +43,30 @@ Research for this phase is already captured in [`06-CONTEXT.md`](./06-CONTEXT.md
 
 ### Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
+| Boundary                                       | Description                                                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Rust command registration → reviewed inventory | Every compiled custom command must be declared in the source-controlled inventory before release |
-| capability files → release selection | Capability inclusion must be explicit; folder presence alone is not a release decision |
-| test outputs / fixtures → release evidence | Evidence files must reflect actual implemented-path verification, not fabricated coverage |
+| capability files → release selection           | Capability inclusion must be explicit; folder presence alone is not a release decision           |
+| test outputs / fixtures → release evidence     | Evidence files must reflect actual implemented-path verification, not fabricated coverage        |
 
 ### STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-06-01 | Elevation of Privilege | unreviewed command surface | mitigate | inventory verifier fails if any registered custom command is missing from `security/command-inventory.toml` or the selected release capability set |
-| T-06-02 | Tampering | capability drift | mitigate | classify every capability file as release-selected or dev-only and fail release if the classification is ambiguous |
-| T-06-03 | Information Disclosure | release evidence placeholders | mitigate | evidence bundle must cite real test outputs and implemented-path fixtures only |
-| T-06-04 | Denial of Service | partial release gate | mitigate | release gate fails on missing negative-test coverage for commands and on missing fixture families |
+| Threat ID | Category               | Component                     | Disposition | Mitigation Plan                                                                                                                                    |
+| --------- | ---------------------- | ----------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-06-01   | Elevation of Privilege | unreviewed command surface    | mitigate    | inventory verifier fails if any registered custom command is missing from `security/command-inventory.toml` or the selected release capability set |
+| T-06-02   | Tampering              | capability drift              | mitigate    | classify every capability file as release-selected or dev-only and fail release if the classification is ambiguous                                 |
+| T-06-03   | Information Disclosure | release evidence placeholders | mitigate    | evidence bundle must cite real test outputs and implemented-path fixtures only                                                                     |
+| T-06-04   | Denial of Service      | partial release gate          | mitigate    | release gate fails on missing negative-test coverage for commands and on missing fixture families                                                  |
 
 ---
 
 ## Wave Structure
 
-| Wave | Tasks | Description | Parallel? |
-|------|-------|-------------|-----------|
-| 1 | T-1 | Reviewed inventory + explicit capability selection catalog | — |
-| 2 | T-2 | Command-inventory verifier + compiled-command allowlist checks | — |
-| 3 | T-3 | Release evidence bundle + fixture-backed verification | — |
+| Wave | Tasks | Description                                                    | Parallel? |
+| ---- | ----- | -------------------------------------------------------------- | --------- |
+| 1    | T-1   | Reviewed inventory + explicit capability selection catalog     | —         |
+| 2    | T-2   | Command-inventory verifier + compiled-command allowlist checks | —         |
+| 3    | T-3   | Release evidence bundle + fixture-backed verification          | —         |
 
 ---
 
@@ -79,6 +79,7 @@ Research for this phase is already captured in [`06-CONTEXT.md`](./06-CONTEXT.md
 #### T-1 — Create the reviewed command inventory and explicit capability selection catalog
 
 **Files:**
+
 - `security/command-inventory.toml`
 - `security/release-capabilities.toml`
 - `docs/command-inventory.md`
@@ -120,6 +121,7 @@ Create a separate release-capability catalog so release selection is explicit in
 Update `docs/command-inventory.md` so the review file explains the canonical fields and how the release/dev split is interpreted by the verifier.
 
 **Verification:**
+
 ```
 cat security/command-inventory.toml
 cat security/release-capabilities.toml
@@ -134,6 +136,7 @@ cat security/release-capabilities.toml
 #### T-2 — Implement the command-inventory verifier and compiled-command cross-check
 
 **Files:**
+
 - `src-tauri/build.rs`
 - `src-tauri/Cargo.toml`
 - `src-tauri/src/ipc/inventory.rs`
@@ -156,6 +159,7 @@ Add tests that cover:
 - negative-test coverage metadata for each command
 
 **Verification:**
+
 ```
 cargo test --manifest-path src-tauri/Cargo.toml -- command_inventory
 cargo run --manifest-path src-tauri/Cargo.toml --bin verify-command-inventory
@@ -170,6 +174,7 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin verify-command-inventory
 #### T-3 — Build the release evidence bundle and implement the first-pass evidence collector
 
 **Files:**
+
 - `src-tauri/src/telemetry/mod.rs`
 - `src-tauri/src/telemetry/release_evidence.rs`
 - `src-tauri/src/bin/collect-release-evidence.rs`
@@ -207,6 +212,7 @@ Materialize the exact fixture families called out by the hardening spec wherever
 Keep the evidence bundle honest: if a path is not implemented yet, represent it as deferred structure instead of inventing proof. Update `docs/release-evidence.md` so the bundle contract and naming scheme are explicit for maintainers and CI.
 
 **Verification:**
+
 ```
 cargo test --manifest-path src-tauri/Cargo.toml
 cargo run --manifest-path src-tauri/Cargo.toml --bin collect-release-evidence
@@ -218,20 +224,20 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin collect-release-evidence
 
 ## Source Audit
 
-| Source | Item | Covered By | Status |
-|--------|------|------------|--------|
-| GOAL | Release-ready command exposure | T-1, T-2 | COVERED |
-| GOAL | Adversarial evidence before release | T-3 | COVERED |
-| REQ REL-01 | Reviewed command inventory + explicit release capability selection | T-1, T-2 | COVERED |
-| REQ REL-02 | Release evidence for security, routing, storage, and adversarial fixtures | T-3 | COVERED |
-| D-01 deny-by-inventory | T-1, T-2 | COVERED |
-| D-02 inventory as source-controlled artifact | T-1 | COVERED |
-| D-03 full registered surface | T-1, T-2 | COVERED |
-| D-04 explicit release/dev split | T-1, T-2 | COVERED |
-| D-05 main.json baseline remains release-selected | T-1, T-2 | COVERED |
-| D-06 first-pass evidence only for implemented paths | T-3 | COVERED |
-| D-07 preserve hardening-spec evidence shape | T-3 | COVERED |
-| D-08 exact fixture families remain the target shape | T-3 | COVERED |
+| Source                                              | Item                                                                      | Covered By | Status  |
+| --------------------------------------------------- | ------------------------------------------------------------------------- | ---------- | ------- |
+| GOAL                                                | Release-ready command exposure                                            | T-1, T-2   | COVERED |
+| GOAL                                                | Adversarial evidence before release                                       | T-3        | COVERED |
+| REQ REL-01                                          | Reviewed command inventory + explicit release capability selection        | T-1, T-2   | COVERED |
+| REQ REL-02                                          | Release evidence for security, routing, storage, and adversarial fixtures | T-3        | COVERED |
+| D-01 deny-by-inventory                              | T-1, T-2                                                                  | COVERED    |
+| D-02 inventory as source-controlled artifact        | T-1                                                                       | COVERED    |
+| D-03 full registered surface                        | T-1, T-2                                                                  | COVERED    |
+| D-04 explicit release/dev split                     | T-1, T-2                                                                  | COVERED    |
+| D-05 main.json baseline remains release-selected    | T-1, T-2                                                                  | COVERED    |
+| D-06 first-pass evidence only for implemented paths | T-3                                                                       | COVERED    |
+| D-07 preserve hardening-spec evidence shape         | T-3                                                                       | COVERED    |
+| D-08 exact fixture families remain the target shape | T-3                                                                       | COVERED    |
 
 ---
 
