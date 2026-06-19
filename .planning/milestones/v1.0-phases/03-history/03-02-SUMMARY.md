@@ -28,9 +28,9 @@ affects:
 tech-stack:
   added: []
   patterns:
-    - "assert_main_window guard: called first in every command handler, before any tauri::State access"
-    - "HistoryError serde shape: { code: SCREAMING_SNAKE_CASE, message } via #[serde(tag, content, rename_all)]"
-    - "Four typed stores registered in setup closure sharing one Arc<SqlitePool>"
+    - 'assert_main_window guard: called first in every command handler, before any tauri::State access'
+    - 'HistoryError serde shape: { code: SCREAMING_SNAKE_CASE, message } via #[serde(tag, content, rename_all)]'
+    - 'Four typed stores registered in setup closure sharing one Arc<SqlitePool>'
 
 key-files:
   created:
@@ -41,11 +41,11 @@ key-files:
     - src-tauri/capabilities/main.json
 
 key-decisions:
-  - "assert_main_window called before any tauri::State access in all four commands — backend enforcement, not just capability file"
-  - "ConversationSummary.snippet is Option<String> with skip_serializing_if — absent from list results, present in search results"
-  - "history_delete is idempotent — RetentionStore returns Ok(()) when id does not exist"
-  - "ShellPreferenceStore::new(pool) changed to ShellPreferenceStore::new(pool.clone()) to keep pool available for new stores"
-  - "RetentionStore receives final pool move (not clone) since it is the last managed store"
+  - 'assert_main_window called before any tauri::State access in all four commands — backend enforcement, not just capability file'
+  - 'ConversationSummary.snippet is Option<String> with skip_serializing_if — absent from list results, present in search results'
+  - 'history_delete is idempotent — RetentionStore returns Ok(()) when id does not exist'
+  - 'ShellPreferenceStore::new(pool) changed to ShellPreferenceStore::new(pool.clone()) to keep pool available for new stores'
+  - 'RetentionStore receives final pool move (not clone) since it is the last managed store'
 
 # Metrics
 duration: 5min
@@ -54,7 +54,7 @@ completed: 2026-06-14
 
 # Phase 03 Plan 02: History IPC Commands Summary
 
-**Four history_* Tauri IPC commands with typed error enum, response types, and full registration — history_list, history_get, history_delete, history_search callable from main window via assert_main_window guard.**
+**Four history\_\* Tauri IPC commands with typed error enum, response types, and full registration — history_list, history_get, history_delete, history_search callable from main window via assert_main_window guard.**
 
 ## Performance
 
@@ -71,11 +71,13 @@ completed: 2026-06-14
 `src-tauri/src/ipc/history.rs` — replaced the one-line scaffold placeholder with full implementation:
 
 **HistoryError enum** (`#[derive(Debug, thiserror::Error, serde::Serialize)]`):
+
 - `StorageError(String)` — serializes as `{ "code": "STORAGE_ERROR", "message": "..." }`
 - `NotFound(String)` — serializes as `{ "code": "NOT_FOUND", "message": "..." }`
 - `UnauthorizedWindow(String)` — serializes as `{ "code": "UNAUTHORIZED_WINDOW", "message": "..." }`
 
 **Response types** (all `#[derive(Debug, Clone, serde::Serialize)]`):
+
 - `MessageSummary` — id, role, content, status, created_at
 - `ConversationSummary` — id, title, model, status, updated_at, snippet: Option<String> (skipped when None)
 - `ConversationDetail` — id, title, model, status, updated_at, messages: Vec<MessageSummary>
@@ -83,12 +85,14 @@ completed: 2026-06-14
 **Private `assert_main_window` guard** — returns `HistoryError::UnauthorizedWindow` if label != "main"; called first in every command handler before any `tauri::State` access.
 
 **Four `#[tauri::command]` async functions:**
+
 - `history_list` — asserts window, calls `ConversationStore::list_conversations()`, maps rows to `ConversationSummary` (snippet: None)
 - `history_get` — asserts window, fetches conversation (NotFound if absent) + messages, returns `ConversationDetail`
 - `history_delete` — asserts window, delegates to `RetentionStore::delete_conversation()`, propagates errors as `StorageError`
 - `history_search` — asserts window, calls `FtsStore::search()`, maps results to `ConversationSummary` (snippet: Some(...))
 
 **Unit tests:**
+
 - `history_error_serializes_storage_error` — StorageError → json contains "STORAGE_ERROR"
 - `history_error_serializes_not_found` — NotFound → json contains "NOT_FOUND"
 - `history_error_serializes_unauthorized_window` — UnauthorizedWindow → json contains "UNAUTHORIZED_WINDOW"
@@ -96,15 +100,18 @@ completed: 2026-06-14
 ### Task 2: Register stores and history commands in main.rs and capabilities
 
 **`src-tauri/src/main.rs`:**
+
 - Added imports: `storage::fts::FtsStore`, `storage::retention::RetentionStore`, `storage::sqlite::{ConversationStore, MessageStore, ...}`
 - Changed `ShellPreferenceStore::new(pool)` to `ShellPreferenceStore::new(pool.clone())` so pool remains live for new stores
 - Registered `ConversationStore`, `MessageStore`, `FtsStore`, `RetentionStore` via `app.manage()` in setup closure
 - Added `history_list`, `history_get`, `history_delete`, `history_search` to `tauri::generate_handler![]`
 
 **`src-tauri/capabilities/main.json`:**
+
 - Added four permissions: `"allow-history-list"`, `"allow-history-get"`, `"allow-history-delete"`, `"allow-history-search"`
 
 **`src-tauri/permissions/history.toml`** (new file):
+
 - Four `[[permission]]` entries following app-shell.toml structure exactly
 - Each entry has identifier, description, and `[permission.commands] allow = [...]`
 
@@ -112,7 +119,7 @@ completed: 2026-06-14
 
 - `src-tauri/src/ipc/history.rs` — HistoryError, MessageSummary, ConversationSummary, ConversationDetail, assert_main_window, four IPC commands, three unit tests
 - `src-tauri/src/main.rs` — four new store imports, four app.manage() calls, four generate_handler! entries
-- `src-tauri/capabilities/main.json` — four allow-history-* permission grants
+- `src-tauri/capabilities/main.json` — four allow-history-\* permission grants
 - `src-tauri/permissions/history.toml` — four [[permission]] definitions
 
 ## Commits
@@ -142,17 +149,18 @@ completed: 2026-06-14
 
 ## Security Notes
 
-| Threat | Status |
-|--------|--------|
-| T-03-06: history_* called from non-main window | Mitigated — assert_main_window fires first in every handler; returns UNAUTHORIZED_WINDOW before any state access |
-| T-03-07: ConversationDetail.messages contains full user prompt content | Mitigated — restricted to main window; content never logged; HistoryError never contains prompt content |
-| T-03-08: history_delete with arbitrary id | Accepted — single-user desktop app; window-label authentication only |
-| T-03-09: history_search with malformed FTS5 MATCH syntax | Accepted — returns HistoryError::StorageError; does not crash process |
-| T-03-10: HistoryError.message leaks internal storage details | Accepted — rusqlite error string; no secrets; acceptable for local desktop single-user context |
+| Threat                                                                 | Status                                                                                                           |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| T-03-06: history\_\* called from non-main window                       | Mitigated — assert_main_window fires first in every handler; returns UNAUTHORIZED_WINDOW before any state access |
+| T-03-07: ConversationDetail.messages contains full user prompt content | Mitigated — restricted to main window; content never logged; HistoryError never contains prompt content          |
+| T-03-08: history_delete with arbitrary id                              | Accepted — single-user desktop app; window-label authentication only                                             |
+| T-03-09: history_search with malformed FTS5 MATCH syntax               | Accepted — returns HistoryError::StorageError; does not crash process                                            |
+| T-03-10: HistoryError.message leaks internal storage details           | Accepted — rusqlite error string; no secrets; acceptable for local desktop single-user context                   |
 
 ## Verification Note
 
 `cargo test` and `cargo build` could not be run in this environment (cargo not in PATH for Bash tool). Tests were written following the established pattern from `ipc::app_shell` and `ipc::chat` tests and are embedded in history.rs. All acceptance criteria were verified via grep checks confirming:
+
 - `history_list` in generate_handler! block
 - `ConversationStore::new` in setup closure
 - Four `allow-history-*` entries in capabilities/main.json
@@ -170,11 +178,12 @@ None — all four commands are fully wired to their typed stores. No placeholder
 
 - [x] `src-tauri/src/ipc/history.rs` — exists with HistoryError, three response types, assert_main_window, four commands, three tests
 - [x] `src-tauri/src/main.rs` — contains "history_list" in generate_handler! (line 65), "ConversationStore::new" in setup (line 46)
-- [x] `src-tauri/capabilities/main.json` — contains all four allow-history-* entries (lines 15-18)
+- [x] `src-tauri/capabilities/main.json` — contains all four allow-history-\* entries (lines 15-18)
 - [x] `src-tauri/permissions/history.toml` — exists with four [[permission]] entries
 - [x] Commit cfbcc29 — history.rs implemented
 - [x] Commit 2750290 — main.rs, capabilities, history.toml updated
 
 ---
-*Phase: 03-history*
-*Completed: 2026-06-14*
+
+_Phase: 03-history_
+_Completed: 2026-06-14_

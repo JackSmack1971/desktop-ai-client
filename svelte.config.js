@@ -12,11 +12,17 @@ const config = {
 			assets: 'dist',
 			fallback: 'index.html',
 			precompress: false,
-			strict: true
+			strict: true,
 		}),
 		// Tauri does not use a real origin; mark it as trusted.
-		csrf: { trustedOrigins: ['tauri://localhost', 'https://tauri.localhost', 'http://localhost:1420'] }
-	}
+		csrf: {
+			trustedOrigins: [
+				'tauri://localhost',
+				'https://tauri.localhost',
+				'http://localhost:1420',
+			],
+		},
+	},
 };
 
 export default config;

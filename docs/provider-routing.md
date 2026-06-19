@@ -8,4 +8,3 @@ This document will define how the client chooses between providers and transport
 - routing policy
 - fallback behavior
 - provider drift handling
-

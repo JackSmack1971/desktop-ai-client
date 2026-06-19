@@ -32,18 +32,20 @@ The repo root has both `package-lock.json` and `pnpm-lock.yaml` checked in, but 
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Confirm pnpm still resolves cleanly | `pnpm install --frozen-lockfile` | exit 0 |
-| Type-check (sanity) | `pnpm check` | exit 0 |
+| Purpose                             | Command                          | Expected on success |
+| ----------------------------------- | -------------------------------- | ------------------- |
+| Confirm pnpm still resolves cleanly | `pnpm install --frozen-lockfile` | exit 0              |
+| Type-check (sanity)                 | `pnpm check`                     | exit 0              |
 
 ## Scope
 
 **In scope**:
+
 - Delete `package-lock.json`.
 - Add a `packageManager` field to `package.json`.
 
 **Out of scope**:
+
 - Any change to `pnpm-lock.yaml` itself.
 - Adding a `preinstall` guard script that blocks plain `npm install` — a reasonable follow-up, but adds a new script/dependency-on-behavior beyond this plan's "delete the stray file" scope; mention it in your final report as an optional follow-up, don't implement it here.
 

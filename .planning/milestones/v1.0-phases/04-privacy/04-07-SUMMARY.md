@@ -17,4 +17,3 @@ Implemented the privacy settings surface:
 Verification:
 
 - `npx svelte-check --tsconfig ./tsconfig.json`
-

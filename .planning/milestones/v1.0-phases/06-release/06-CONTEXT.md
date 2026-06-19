@@ -37,31 +37,37 @@ Make the project release-ready by enforcing a reviewed command inventory, explic
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Phase Scope and Requirements
+
 - `.planning/ROADMAP.md` — Phase 6 goal and success criteria for release readiness
 - `.planning/REQUIREMENTS.md` — REL-01 and REL-02 definitions
 
 ### Release Evidence and Inventory Authority
+
 - `docs/release-evidence.md` — release evidence focus areas and the placeholder contract to replace
 - `docs/command-inventory.md` — reviewed command inventory placeholder and required fields
 - `docs/Tauri_Svelte_AI_App_Architecture_Adversarial_Hardened_v5.md` — primary release hardening authority; command inventory verifier, explicit release capabilities, and release evidence bundle structure
 
 ### Boundary and Policy Context
+
 - `docs/provider-routing.md` — provider-routing evidence scope and terminology
 - `docs/privacy-boundaries.md` — privacy boundary definitions that release evidence must preserve
 - `docs/threat-model.md` — hostile-renderer and command-execution risks that release verification must cover
 
 ### Prior Phase Decisions
+
 - `.planning/phases/05-artifacts/05-CONTEXT.md` — artifact sandboxing, fail-closed preview behavior, and artifact-related evidence expectations
 - `.planning/phases/04-privacy/04-CONTEXT.md` — command policy, redaction, and file-token constraints that feed release verification
 - `.planning/phases/03-history/03-CONTEXT.md` — history persistence, retention, and deletion behavior that feed storage evidence
 - `.planning/phases/02-routing/02-CONTEXT.md` — streaming, cancellation, and credential-handling decisions that feed release evidence
 
 ### Codebase and Architecture References
+
 - `.planning/codebase/ARCHITECTURE.md` — Tauri command-surface invariant, capability model, and release boundary rules
 - `.planning/codebase/CONCERNS.md` — current release readiness gaps and known missing verification paths
 - `.planning/codebase/TESTING.md` — current test coverage gaps and evidence categories
@@ -74,9 +80,11 @@ Make the project release-ready by enforcing a reviewed command inventory, explic
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
+
 - `src-tauri/src/main.rs` already centralizes `tauri::generate_handler![...]`, so the release verifier can compare one registration site against the inventory and capabilities.
 - `src-tauri/capabilities/main.json` already expresses the main-window permission set, which can become the release-selected capability baseline.
 - `src-tauri/src/ipc/mod.rs` documents the three-way sync expectation between registration, capabilities, and inventory.
@@ -84,11 +92,13 @@ Make the project release-ready by enforcing a reviewed command inventory, explic
 - `docs/Tauri_Svelte_AI_App_Architecture_Adversarial_Hardened_v5.md` already defines the evidence bundle shape and the required adversarial fixture families.
 
 ### Established Patterns
+
 - The project already treats deny-by-default capability files as a release boundary, so release/dev separation should extend that model rather than invent a new one.
 - Command registration is already centralized in `main.rs`, which makes inventory verification mechanically feasible.
 - The phase history shows that previous decisions are meant to be carried forward rather than re-litigated; release verification should build on Phase 2 through Phase 5 contracts.
 
 ### Integration Points
+
 - `src-tauri/src/telemetry/release_evidence.rs` for release evidence generation and packaging
 - `src-tauri/src/main.rs` for command inventory discovery
 - `src-tauri/capabilities/main.json` and any future dev-only capability files for explicit release selection
@@ -115,5 +125,5 @@ None — discussion stayed within phase scope.
 
 ---
 
-*Phase: 06-Release*
-*Context gathered: 2026-06-15*
+_Phase: 06-Release_
+_Context gathered: 2026-06-15_

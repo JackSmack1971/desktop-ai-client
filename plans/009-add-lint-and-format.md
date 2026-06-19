@@ -33,22 +33,24 @@ There is no lint or format tooling anywhere in this repo — no `.eslintrc*`/`es
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Install deps | `pnpm install` | exit 0 |
-| Run lint | `pnpm lint` | exit 0, or a finite list of pre-existing warnings (see Step 4) |
-| Run format check | `pnpm format` | exit 0 |
-| Typecheck (regression guard) | `pnpm check` | exit 0, unaffected by this plan |
+| Purpose                      | Command        | Expected on success                                            |
+| ---------------------------- | -------------- | -------------------------------------------------------------- |
+| Install deps                 | `pnpm install` | exit 0                                                         |
+| Run lint                     | `pnpm lint`    | exit 0, or a finite list of pre-existing warnings (see Step 4) |
+| Run format check             | `pnpm format`  | exit 0                                                         |
+| Typecheck (regression guard) | `pnpm check`   | exit 0, unaffected by this plan                                |
 
 ## Scope
 
 **In scope**:
+
 - `package.json` — add `devDependencies` and `lint`/`format` scripts.
 - New file: `eslint.config.js` (flat config — required for current ESLint major versions).
 - New file: `.prettierrc.json`
 - New file: `.editorconfig`
 
 **Out of scope**:
+
 - Auto-fixing every lint warning that surfaces across the existing 24 frontend files — see Step 4's handling of pre-existing findings. Do not silently rewrite working code beyond what `--fix` safely auto-corrects.
 - Linting `src-tauri/**/*.rs` — Rust already has `cargo check`/`clippy` as its native equivalent; if the team wants `clippy` wired in, that's better scoped as part of `plans/008-add-ci-workflow.md`'s backend job, not this frontend-tooling plan. Do not add a Rust linter here.
 - A pre-commit hook (e.g. husky/lint-staged) — a reasonable follow-up, but adds new tooling/dependencies beyond "add lint and format configs"; mention it as an optional next step in your final report.
@@ -89,7 +91,13 @@ export default [
 		},
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', 'dist/', 'src-tauri/target/', 'node_modules/'],
+		ignores: [
+			'build/',
+			'.svelte-kit/',
+			'dist/',
+			'src-tauri/target/',
+			'node_modules/',
+		],
 	},
 ];
 ```
@@ -101,6 +109,7 @@ If `typescript-eslint` (the unified meta-package, distinct from `@typescript-esl
 ### Step 3: Add `.prettierrc.json` and `.editorconfig`
 
 `.prettierrc.json`:
+
 ```json
 {
 	"useTabs": true,
@@ -109,9 +118,11 @@ If `typescript-eslint` (the unified meta-package, distinct from `@typescript-esl
 	"overrides": [{ "files": "*.svelte", "options": { "parser": "svelte" } }]
 }
 ```
+
 (`useTabs: true` matches the existing indentation style observed in `src/lib/stores/chat.ts` and `src/lib/components/chat/ChatInput.svelte` during recon — both use tabs. Confirm this against a couple more existing files before locking it in; if the codebase is actually mixed, default to tabs since that's what the two files read during this audit use, and let Prettier's first run normalize the rest.)
 
 `.editorconfig`:
+
 ```ini
 root = true
 
@@ -129,6 +140,7 @@ indent_size = 2
 ### Step 4: Add `lint` and `format` scripts, run them, triage pre-existing findings
 
 Add to `package.json`'s `scripts`:
+
 ```json
 "lint": "eslint .",
 "format": "prettier --check .",
@@ -136,6 +148,7 @@ Add to `package.json`'s `scripts`:
 ```
 
 Run `pnpm lint`. If it reports findings in pre-existing files (likely, since no linter has ever run on this codebase), do **not** mass-fix everything blindly:
+
 1. Run `pnpm dlx eslint . --fix` to apply only the auto-fixable subset (typically formatting-adjacent rules ESLint marks as safely fixable).
 2. Re-run `pnpm lint` and read what remains.
 3. For each remaining finding, fix it only if it's a clear, low-risk correction (e.g. an unused import, a missing `lang="ts"` ESLint can't auto-add but is a one-line fix). If a finding looks like it requires understanding intent you don't have (e.g. a suspicious-looking but possibly-intentional pattern), leave it and list it in your final report as "pre-existing lint debt, not fixed under this plan" rather than guessing.
@@ -157,7 +170,7 @@ No new application test needed — this plan adds tooling, not application behav
 - [ ] `pnpm check` still exits 0 after Prettier's reformatting
 - [ ] `eslint.config.js`, `.prettierrc.json`, `.editorconfig` exist at repo root
 - [ ] `package.json` has `lint`, `format`, `format:write` scripts
-- [ ] No `.svelte`/`.ts` file's *behavior* changed — only formatting/lint-fix-level edits (verify with `git diff` review of any file Prettier or `eslint --fix` touched beyond whitespace/quotes)
+- [ ] No `.svelte`/`.ts` file's _behavior_ changed — only formatting/lint-fix-level edits (verify with `git diff` review of any file Prettier or `eslint --fix` touched beyond whitespace/quotes)
 - [ ] `plans/README.md` status row updated
 
 ## STOP conditions

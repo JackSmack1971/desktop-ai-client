@@ -1,9 +1,9 @@
-name: "Bug Report"
-description: "Report a reproducible defect, stack trace, test flake, FSV disagreement, or uncovered 5xx/4xx response."
-title: "[BUG] "
+name: 'Bug Report'
+description: 'Report a reproducible defect, stack trace, test flake, FSV disagreement, or uncovered 5xx/4xx response.'
+title: '[BUG] '
 labels:
-  - "source:agent"
-  - "status:needs-triage"
+  - 'source:agent'
+  - 'status:needs-triage'
 body:
   - type: markdown
     attributes:
@@ -40,17 +40,17 @@ body:
   - type: input
     id: forensic-evidence-trace
     attributes:
-      label: "1. Forensic Evidence Trace"
-      description: "Provide concrete evidence: file:line, error trace, git SHA, query output, dashboard link, logs, or failing test output."
-      placeholder: "Example: src/orders/handler.ts:142; commit abc1234; failing query output..."
+      label: '1. Forensic Evidence Trace'
+      description: 'Provide concrete evidence: file:line, error trace, git SHA, query output, dashboard link, logs, or failing test output.'
+      placeholder: 'Example: src/orders/handler.ts:142; commit abc1234; failing query output...'
     validations:
       required: true
 
   - type: textarea
     id: state-delta-assertion
     attributes:
-      label: "2. State Delta Assertion"
-      description: "Declare the Expected vs Observed state. This should support FSV interrogation of Source of Truth vs returned/observed state."
+      label: '2. State Delta Assertion'
+      description: 'Declare the Expected vs Observed state. This should support FSV interrogation of Source of Truth vs returned/observed state.'
       placeholder: |
         Expected:
           SoT: ...
@@ -68,8 +68,8 @@ body:
   - type: textarea
     id: blast-radius-definition
     attributes:
-      label: "3. Blast Radius Definition"
-      description: "Scope the impact of the defect: affected users, endpoints, agents, services, tests, queues, data, or environments."
+      label: '3. Blast Radius Definition'
+      description: 'Scope the impact of the defect: affected users, endpoints, agents, services, tests, queues, data, or environments.'
       placeholder: |
         Impacted scope:
         - Endpoint/service:
@@ -82,8 +82,8 @@ body:
   - type: textarea
     id: reproduction-sequence
     attributes:
-      label: "4. Reproduction Sequence"
-      description: "List deterministic steps required to trigger the anomaly. Mandatory when the defect is non-trivial."
+      label: '4. Reproduction Sequence'
+      description: 'List deterministic steps required to trigger the anomaly. Mandatory when the defect is non-trivial.'
       placeholder: |
         1. Checkout commit ...
         2. Run ...
@@ -95,8 +95,8 @@ body:
   - type: textarea
     id: execution-directive
     attributes:
-      label: "5. Execution Directive"
-      description: "Suggest the next action for the polling agent."
+      label: '5. Execution Directive'
+      description: 'Suggest the next action for the polling agent.'
       placeholder: |
         Suggested next action:
         - investigate further
@@ -109,8 +109,8 @@ body:
   - type: textarea
     id: traceability-footer
     attributes:
-      label: "6. Traceability Footer"
-      description: "Append execution identity metadata for deterministic multi-agent synchronization."
+      label: '6. Traceability Footer'
+      description: 'Append execution identity metadata for deterministic multi-agent synchronization.'
       value: |
         ---
         Executing agent:

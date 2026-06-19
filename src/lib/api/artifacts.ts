@@ -7,7 +7,9 @@ export type ArtifactPreviewResponse = {
 	srcdoc: string;
 };
 
-export async function artifactGet(artifactId: string): Promise<ArtifactPreviewResponse> {
+export async function artifactGet(
+	artifactId: string,
+): Promise<ArtifactPreviewResponse> {
 	return invoke<ArtifactPreviewResponse>('artifact_get', { artifactId });
 }
 

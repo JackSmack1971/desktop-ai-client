@@ -61,14 +61,20 @@
 		const diffMin = Math.floor(diffSec / 60);
 		if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? '' : 's'} ago`;
 		const diffHours = Math.floor(diffMin / 60);
-		if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+		if (diffHours < 24)
+			return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
 		const diffDays = Math.floor(diffHours / 24);
 		return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
 	}
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div class="conversation-row" class:deleting onkeydown={handleKeydown} role="listitem">
+<div
+	class="conversation-row"
+	class:deleting
+	onkeydown={handleKeydown}
+	role="listitem"
+>
 	<button
 		class="row-body"
 		onclick={handleRowClick}
@@ -94,11 +100,20 @@
 		Delete conversation
 	</button>
 	{#if showConfirm}
-		<div class="delete-confirm" role="alertdialog" aria-label="Confirm deletion" aria-modal="true">
+		<div
+			class="delete-confirm"
+			role="alertdialog"
+			aria-label="Confirm deletion"
+			aria-modal="true"
+		>
 			<p class="confirm-heading">Delete this conversation?</p>
 			<p class="confirm-body">This cannot be undone.</p>
 			<div class="confirm-actions">
-				<button class="confirm-btn" onclick={handleConfirmDelete} disabled={deleting}>
+				<button
+					class="confirm-btn"
+					onclick={handleConfirmDelete}
+					disabled={deleting}
+				>
 					Confirm delete
 				</button>
 				<button class="cancel-link" onclick={handleCancelDelete}>Cancel</button>
@@ -139,7 +154,10 @@
 		border: none;
 		cursor: pointer;
 		text-align: left;
-		font-family: system-ui, -apple-system, sans-serif;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
 		color: inherit;
 		box-sizing: border-box;
 	}
@@ -204,7 +222,10 @@
 		font-size: 12px;
 		cursor: pointer;
 		padding: 4px 8px;
-		font-family: system-ui, -apple-system, sans-serif;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
 		opacity: 0;
 		transition: opacity 0.15s ease;
 	}
@@ -252,7 +273,10 @@
 		padding: 6px 12px;
 		border-radius: 4px;
 		cursor: pointer;
-		font-family: system-ui, -apple-system, sans-serif;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
 	}
 
 	.confirm-btn:disabled {
@@ -272,7 +296,10 @@
 		font-size: 14px;
 		cursor: pointer;
 		padding: 6px 0;
-		font-family: system-ui, -apple-system, sans-serif;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
 	}
 
 	.cancel-link:focus-visible {

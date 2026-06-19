@@ -9,4 +9,3 @@ This document will capture the desktop client threat model.
 - hostile renderer behavior
 - unsafe command execution
 - file access boundary violations
-

@@ -7,6 +7,7 @@
 ---
 
 <user_constraints>
+
 ## User Constraints (from CONTEXT.md)
 
 ### Locked Decisions
@@ -40,18 +41,20 @@
 - SQLite `audit_events` table — JSON Lines is sufficient for Phase 4
 - `privacy_import_from_env` helper — may be CLI flag or test helper, not an IPC command
 - Phase 6 command-inventory verifier
-</user_constraints>
+  </user_constraints>
 
 ---
 
 <phase_requirements>
+
 ## Phase Requirements
 
-| ID | Description | Research Support |
-|----|-------------|------------------|
-| SEC-01 | Secrets stay backend-owned and are not exposed to ordinary frontend windows | D-01/D-02/D-10: KeyringSecretStore replaces env-var backing; IPC commands never return key value; `deny_unknown_fields` structs block forbidden parameters |
+| ID     | Description                                                                          | Research Support                                                                                                                                           |
+| ------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SEC-01 | Secrets stay backend-owned and are not exposed to ordinary frontend windows          | D-01/D-02/D-10: KeyringSecretStore replaces env-var backing; IPC commands never return key value; `deny_unknown_fields` structs block forbidden parameters |
 | SEC-02 | File access uses opaque tokens or Rust-owned selection instead of raw frontend paths | D-04/D-05/D-06: `tauri-plugin-dialog` v2.7.1 opens picker backend-side; `security::file_tokens` mints UUID tokens; `ipc::files` returns safe metadata only |
-| SEC-03 | Sensitive data is redacted before logs or telemetry | D-07/D-08/D-09: `security::redaction` gates all three sensitive categories; `telemetry::audit_log` enforces redaction before JSON Lines write |
+| SEC-03 | Sensitive data is redacted before logs or telemetry                                  | D-07/D-08/D-09: `security::redaction` gates all three sensitive categories; `telemetry::audit_log` enforces redaction before JSON Lines write              |
+
 </phase_requirements>
 
 ---
@@ -70,17 +73,17 @@ The most critical dependency decision is the secrets backing store. The `keyring
 
 ## Architectural Responsibility Map
 
-| Capability | Primary Tier | Secondary Tier | Rationale |
-|------------|-------------|----------------|-----------|
-| OS keychain read/write | Backend (security module) | — | Credentials are backend-owned; no path to frontend by invariant |
-| Credential status query | Backend (IPC) | Frontend (status display) | Status (Configured/Missing) is safe to cross IPC; key value never does |
-| File picker invocation | Backend (IPC + security) | — | Rust-owned selection; frontend never holds path authority |
-| File token minting | Backend (security::file_tokens) | — | Opaque token authority stays backend-scoped |
-| Safe metadata return | Backend (IPC) → Frontend | — | filename/size/MIME carry no path authority |
-| Redaction enforcement | Backend (security::redaction) | — | Unconditional gate before telemetry; not a frontend concern |
-| Audit log write | Backend (telemetry::audit_log) | — | JSON Lines writer with redaction gate; no SQL |
-| Credential management UI | Frontend (SettingsSurface.svelte) | — | Write-only entry form + status display; never reads the key |
-| Command policy enforcement | Backend (security::command_policy) | — | Window-label allow-table replaces per-command `assert_main_window` |
+| Capability                 | Primary Tier                       | Secondary Tier            | Rationale                                                              |
+| -------------------------- | ---------------------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| OS keychain read/write     | Backend (security module)          | —                         | Credentials are backend-owned; no path to frontend by invariant        |
+| Credential status query    | Backend (IPC)                      | Frontend (status display) | Status (Configured/Missing) is safe to cross IPC; key value never does |
+| File picker invocation     | Backend (IPC + security)           | —                         | Rust-owned selection; frontend never holds path authority              |
+| File token minting         | Backend (security::file_tokens)    | —                         | Opaque token authority stays backend-scoped                            |
+| Safe metadata return       | Backend (IPC) → Frontend           | —                         | filename/size/MIME carry no path authority                             |
+| Redaction enforcement      | Backend (security::redaction)      | —                         | Unconditional gate before telemetry; not a frontend concern            |
+| Audit log write            | Backend (telemetry::audit_log)     | —                         | JSON Lines writer with redaction gate; no SQL                          |
+| Credential management UI   | Frontend (SettingsSurface.svelte)  | —                         | Write-only entry form + status display; never reads the key            |
+| Command policy enforcement | Backend (security::command_policy) | —                         | Window-label allow-table replaces per-command `assert_main_window`     |
 
 ---
 
@@ -88,19 +91,19 @@ The most critical dependency decision is the secrets backing store. The `keyring
 
 ### Core (new additions — already in Cargo.toml unless noted)
 
-| Library | Version | Purpose | Status |
-|---------|---------|---------|--------|
-| `keyring-core` | `1.0.0` [VERIFIED: crates.io] | Cross-platform credential store API (replaces `keyring 3.x` simple crate) | ADD to Cargo.toml |
-| `apple-native-keyring-store` | `1.0.0` [VERIFIED: crates.io] | macOS Keychain backend for keyring-core | ADD (cfg target_os = "macos") |
-| `windows-native-keyring-store` | `1.1.0` [VERIFIED: crates.io] | Windows Credential Manager backend | ADD (cfg target_os = "windows") |
-| `dbus-secret-service-keyring-store` | `1.0.0` [VERIFIED: crates.io] | Linux D-Bus Secret Service backend | ADD (cfg linux/freebsd) |
-| `tauri-plugin-dialog` | `2.7.1` [VERIFIED: crates.io] | Native OS file picker from Rust | ADD to Cargo.toml + main.rs plugin init |
-| `mime_guess` | `2.0.5` [VERIFIED: crates.io] | File extension to MIME type (for safe metadata) | ADD to Cargo.toml |
-| `uuid` | `1` [VERIFIED: crates.io] | Token ID generation (`Uuid::new_v4()`) | Already in Cargo.toml |
-| `thiserror` | `1` [ASSUMED: Cargo.toml already] | Derive typed error enums | Already in Cargo.toml |
-| `secrecy` | `0.10` | SecretString wrapper auto-redacts Debug/Display | Already in Cargo.toml |
-| `serde_json` | `1` | JSON Lines serialization for audit log | Already in Cargo.toml |
-| `chrono` | `0.4` | Timestamps for audit log entries | Already in Cargo.toml |
+| Library                             | Version                           | Purpose                                                                   | Status                                  |
+| ----------------------------------- | --------------------------------- | ------------------------------------------------------------------------- | --------------------------------------- |
+| `keyring-core`                      | `1.0.0` [VERIFIED: crates.io]     | Cross-platform credential store API (replaces `keyring 3.x` simple crate) | ADD to Cargo.toml                       |
+| `apple-native-keyring-store`        | `1.0.0` [VERIFIED: crates.io]     | macOS Keychain backend for keyring-core                                   | ADD (cfg target_os = "macos")           |
+| `windows-native-keyring-store`      | `1.1.0` [VERIFIED: crates.io]     | Windows Credential Manager backend                                        | ADD (cfg target_os = "windows")         |
+| `dbus-secret-service-keyring-store` | `1.0.0` [VERIFIED: crates.io]     | Linux D-Bus Secret Service backend                                        | ADD (cfg linux/freebsd)                 |
+| `tauri-plugin-dialog`               | `2.7.1` [VERIFIED: crates.io]     | Native OS file picker from Rust                                           | ADD to Cargo.toml + main.rs plugin init |
+| `mime_guess`                        | `2.0.5` [VERIFIED: crates.io]     | File extension to MIME type (for safe metadata)                           | ADD to Cargo.toml                       |
+| `uuid`                              | `1` [VERIFIED: crates.io]         | Token ID generation (`Uuid::new_v4()`)                                    | Already in Cargo.toml                   |
+| `thiserror`                         | `1` [ASSUMED: Cargo.toml already] | Derive typed error enums                                                  | Already in Cargo.toml                   |
+| `secrecy`                           | `0.10`                            | SecretString wrapper auto-redacts Debug/Display                           | Already in Cargo.toml                   |
+| `serde_json`                        | `1`                               | JSON Lines serialization for audit log                                    | Already in Cargo.toml                   |
+| `chrono`                            | `0.4`                             | Timestamps for audit log entries                                          | Already in Cargo.toml                   |
 
 ### Alternative: `keyring` v3 (simpler, fewer crates)
 
@@ -120,17 +123,17 @@ This is simpler but the upstream project now recommends applications migrate to 
 
 > slopcheck ran against npm registry (incorrect ecosystem). All packages below are Rust crates verified against crates.io via `cargo search`.
 
-| Package | Registry | Verified Version | Source Repo | Cargo Search | Disposition |
-|---------|----------|-----------------|-------------|--------------|-------------|
-| `keyring-core` | crates.io | 1.0.0 | github.com/open-source-cooperative/keyring-core | FOUND | Approved |
-| `keyring` (v3 alt) | crates.io | latest 3.x | github.com/open-source-cooperative/keyring-rs | FOUND | Approved (alternative) |
-| `apple-native-keyring-store` | crates.io | 1.0.0 | github.com/open-source-cooperative/ | FOUND | Approved |
-| `windows-native-keyring-store` | crates.io | 1.1.0 | github.com/open-source-cooperative/ | FOUND | Approved |
-| `dbus-secret-service-keyring-store` | crates.io | 1.0.0 | github.com/open-source-cooperative/ | FOUND | Approved |
-| `tauri-plugin-dialog` | crates.io | 2.7.1 | github.com/tauri-apps/plugins-workspace | FOUND | Approved |
-| `mime_guess` | crates.io | 2.0.5 | github.com/abonander/mime_guess | FOUND | Approved |
-| `uuid` | crates.io | 1.x | already in project | FOUND | Approved |
-| `thiserror` | crates.io | 1.x | already in project | FOUND | Approved |
+| Package                             | Registry  | Verified Version | Source Repo                                     | Cargo Search | Disposition            |
+| ----------------------------------- | --------- | ---------------- | ----------------------------------------------- | ------------ | ---------------------- |
+| `keyring-core`                      | crates.io | 1.0.0            | github.com/open-source-cooperative/keyring-core | FOUND        | Approved               |
+| `keyring` (v3 alt)                  | crates.io | latest 3.x       | github.com/open-source-cooperative/keyring-rs   | FOUND        | Approved (alternative) |
+| `apple-native-keyring-store`        | crates.io | 1.0.0            | github.com/open-source-cooperative/             | FOUND        | Approved               |
+| `windows-native-keyring-store`      | crates.io | 1.1.0            | github.com/open-source-cooperative/             | FOUND        | Approved               |
+| `dbus-secret-service-keyring-store` | crates.io | 1.0.0            | github.com/open-source-cooperative/             | FOUND        | Approved               |
+| `tauri-plugin-dialog`               | crates.io | 2.7.1            | github.com/tauri-apps/plugins-workspace         | FOUND        | Approved               |
+| `mime_guess`                        | crates.io | 2.0.5            | github.com/abonander/mime_guess                 | FOUND        | Approved               |
+| `uuid`                              | crates.io | 1.x              | already in project                              | FOUND        | Approved               |
+| `thiserror`                         | crates.io | 1.x              | already in project                              | FOUND        | Approved               |
 
 **slopcheck note:** Tool was npm-only; Rust packages were verified through `cargo search` against crates.io (correct registry). All packages confirmed present and maintained.
 
@@ -533,55 +536,81 @@ export type CredentialStatus = 'CONFIGURED' | 'MISSING';
 export type ProviderId = 'OpenRouter';
 
 function normalizeIpcError(e: unknown): string {
-    if (typeof e === 'string') return e;
-    if (e && typeof e === 'object') {
-        const obj = e as Record<string, unknown>;
-        if (typeof obj['message'] === 'string') return obj['message'];
-        if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
-    }
-    return 'An unexpected error occurred.';
+	if (typeof e === 'string') return e;
+	if (e && typeof e === 'object') {
+		const obj = e as Record<string, unknown>;
+		if (typeof obj['message'] === 'string') return obj['message'];
+		if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
+	}
+	return 'An unexpected error occurred.';
 }
 
 function createPrivacyStore() {
-    let status = $state<CredentialStatus>('MISSING');
-    let loading = $state(false);
-    let error = $state<string | null>(null);
+	let status = $state<CredentialStatus>('MISSING');
+	let loading = $state(false);
+	let error = $state<string | null>(null);
 
-    async function loadStatus(provider: ProviderId = 'OpenRouter'): Promise<void> {
-        loading = true; error = null;
-        try {
-            status = await invoke<CredentialStatus>('privacy_get_credential_status', { provider });
-        } catch (e) {
-            error = normalizeIpcError(e);
-        } finally { loading = false; }
-    }
+	async function loadStatus(
+		provider: ProviderId = 'OpenRouter',
+	): Promise<void> {
+		loading = true;
+		error = null;
+		try {
+			status = await invoke<CredentialStatus>('privacy_get_credential_status', {
+				provider,
+			});
+		} catch (e) {
+			error = normalizeIpcError(e);
+		} finally {
+			loading = false;
+		}
+	}
 
-    async function setProviderKey(provider: ProviderId, key: string): Promise<void> {
-        loading = true; error = null;
-        try {
-            await invoke<void>('privacy_set_provider_key', { provider, key });
-            status = 'CONFIGURED';
-        } catch (e) {
-            error = normalizeIpcError(e);
-        } finally { loading = false; }
-    }
+	async function setProviderKey(
+		provider: ProviderId,
+		key: string,
+	): Promise<void> {
+		loading = true;
+		error = null;
+		try {
+			await invoke<void>('privacy_set_provider_key', { provider, key });
+			status = 'CONFIGURED';
+		} catch (e) {
+			error = normalizeIpcError(e);
+		} finally {
+			loading = false;
+		}
+	}
 
-    async function clearProviderKey(provider: ProviderId = 'OpenRouter'): Promise<void> {
-        loading = true; error = null;
-        try {
-            await invoke<void>('privacy_clear_provider_key', { provider });
-            status = 'MISSING';
-        } catch (e) {
-            error = normalizeIpcError(e);
-        } finally { loading = false; }
-    }
+	async function clearProviderKey(
+		provider: ProviderId = 'OpenRouter',
+	): Promise<void> {
+		loading = true;
+		error = null;
+		try {
+			await invoke<void>('privacy_clear_provider_key', { provider });
+			status = 'MISSING';
+		} catch (e) {
+			error = normalizeIpcError(e);
+		} finally {
+			loading = false;
+		}
+	}
 
-    return {
-        get status() { return status; },
-        get loading() { return loading; },
-        get error() { return error; },
-        loadStatus, setProviderKey, clearProviderKey,
-    };
+	return {
+		get status() {
+			return status;
+		},
+		get loading() {
+			return loading;
+		},
+		get error() {
+			return error;
+		},
+		loadStatus,
+		setProviderKey,
+		clearProviderKey,
+	};
 }
 
 export const privacyStore = createPrivacyStore();
@@ -657,14 +686,14 @@ allow = ["files_read_token"]
 
 ## Don't Hand-Roll
 
-| Problem | Don't Build | Use Instead | Why |
-|---------|-------------|-------------|-----|
-| OS keychain storage | Custom encrypted file, env vars | `keyring = "3"` / `keyring-core = "1"` | Platform keychain handles encryption, ACL enforcement, and unlock/lock lifecycle |
-| Secure string memory clearing | Manual `memset` on String | `secrecy::SecretString` | Already in project; handles Debug/Display redaction and zeroize-on-drop automatically |
-| File extension to MIME type | Custom match table | `mime_guess = "2"` | Static 4,900+ entry table; 5M+ weekly downloads; no false negatives for common types |
-| Native file dialog invocation | Custom IPC protocol | `tauri-plugin-dialog` | Tauri-maintained plugin; integrates with AppHandle state lifecycle correctly |
-| UUID token generation | Custom RNG | `uuid::Uuid::new_v4()` | Already in project; cryptographically random via OS entropy |
-| Typed error serialization | Custom enum `impl Serialize` | `thiserror` + `serde(tag)` | Already in project; see `ShellError` pattern |
+| Problem                       | Don't Build                     | Use Instead                            | Why                                                                                   |
+| ----------------------------- | ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------- |
+| OS keychain storage           | Custom encrypted file, env vars | `keyring = "3"` / `keyring-core = "1"` | Platform keychain handles encryption, ACL enforcement, and unlock/lock lifecycle      |
+| Secure string memory clearing | Manual `memset` on String       | `secrecy::SecretString`                | Already in project; handles Debug/Display redaction and zeroize-on-drop automatically |
+| File extension to MIME type   | Custom match table              | `mime_guess = "2"`                     | Static 4,900+ entry table; 5M+ weekly downloads; no false negatives for common types  |
+| Native file dialog invocation | Custom IPC protocol             | `tauri-plugin-dialog`                  | Tauri-maintained plugin; integrates with AppHandle state lifecycle correctly          |
+| UUID token generation         | Custom RNG                      | `uuid::Uuid::new_v4()`                 | Already in project; cryptographically random via OS entropy                           |
+| Typed error serialization     | Custom enum `impl Serialize`    | `thiserror` + `serde(tag)`             | Already in project; see `ShellError` pattern                                          |
 
 **Key insight:** This phase is almost entirely plumbing between well-tested crates. The security value comes from the architecture (what crosses IPC), not from novel cryptography. Don't invent new crypto primitives.
 
@@ -673,42 +702,49 @@ allow = ["files_read_token"]
 ## Common Pitfalls
 
 ### Pitfall 1: keyring API method name `delete_password` vs `delete_credential`
+
 **What goes wrong:** Calling `entry.delete_password()` which was the v2 API. v3+ renamed it to `delete_credential()`.
 **Why it happens:** Training data and many Stack Overflow answers reference the older API.
 **How to avoid:** Use `entry.delete_credential()`. [VERIFIED: docs.rs/keyring/3.6.3]
 **Warning signs:** Compiler error "no method named `delete_password`" — easy to catch.
 
 ### Pitfall 2: keyring crate v4 is not the right crate to use
+
 **What goes wrong:** Adding `keyring = "4"` and discovering the v4 crate is "sample/demo code" only per upstream README.
 **Why it happens:** `cargo search keyring` returns `keyring = "4.0.1"` as the top result.
 **How to avoid:** Either pin `keyring = "3"` explicitly (3.6.3), or use `keyring-core = "1"` with platform store crates. [VERIFIED: github.com/open-source-cooperative/keyring-rs/releases — v4 README states "Apps should not depend on this release"]
 **Warning signs:** Compilation may succeed but runtime behavior may be mock/sample.
 
 ### Pitfall 3: blocking_pick_file() on the Tokio async thread
+
 **What goes wrong:** Calling `app_handle.dialog().file().blocking_pick_file()` inside an `async #[tauri::command]` that is running on a Tokio async worker thread. This can deadlock on some platforms (macOS UI thread requirement).
 **Why it happens:** Tauri async commands look like normal async fns; the thread constraint is easy to miss.
 **How to avoid:** Use either (a) a sync (non-async) `#[tauri::command]` function, which Tauri runs on a blocking thread pool, or (b) `tauri::async_runtime::spawn_blocking(|| ...)`. [ASSUMED: platform thread constraint — verify against Tauri v2 docs during implementation]
 **Warning signs:** Dialog freezes or never returns on macOS; works on Linux/Windows where there is no UI thread constraint.
 
 ### Pitfall 4: secrets.rs test helper requires AppState update
+
 **What goes wrong:** Existing `make_state_with_secrets()` test helper in `secrets.rs` constructs `AppState` directly. After adding `file_tokens` field to `AppState`, this helper will fail to compile.
 **Why it happens:** Struct literal initialization is exhaustive in Rust.
 **How to avoid:** Update the helper to include `file_tokens: Mutex::new(HashMap::new())` in the same task that adds the field to `AppState`. [VERIFIED: secrets.rs lines 100-108]
 **Warning signs:** Compile error at test helper instantiation site.
 
 ### Pitfall 5: `#[serde(tag, content)]` incompatibility with `deny_unknown_fields`
+
 **What goes wrong:** Combining `#[serde(tag = "code", content = "message")]` (on error enums for responses) with `#[serde(deny_unknown_fields)]` (on request structs for deserialization). These serve different types and must not be combined on the same struct.
 **Why it happens:** Serde issue #2666 documents that `tag` + `deny_unknown_fields` on the same type has known serialization problems.
 **How to avoid:** `deny_unknown_fields` goes on **request/input structs** (deserializing from frontend). `tag + content + rename_all` goes on **error/response enums** (serializing to frontend). Never combine both on the same type. [CITED: github.com/serde-rs/serde/issues/2666]
 **Warning signs:** Runtime serde deserialization panics or unexpected behavior; may not be caught at compile time.
 
 ### Pitfall 6: Audit log path not created before first write
+
 **What goes wrong:** `OpenOptions::new().append(true).open()` fails with `NotFound` if the `logs/` subdirectory doesn't exist.
 **Why it happens:** `app_handle.path().app_log_dir()` returns the path but doesn't create it.
 **How to avoid:** Call `std::fs::create_dir_all(&log_dir)` before the first `OpenOptions::new()` call. [CITED: main.rs setup hook pattern — same pattern used for `app_data_dir`]
 **Warning signs:** First audit log write returns `ErrorKind::NotFound`; subsequent writes succeed once directory exists.
 
 ### Pitfall 7: Svelte API key input leaking to DOM
+
 **What goes wrong:** Rendering the API key value in a `<span>` or `aria-label` for status feedback, making it readable from DevTools.
 **Why it happens:** Wanting to confirm the key was saved by showing a preview.
 **How to avoid:** The UI must never receive the key value back from the backend. Status feedback is always `CONFIGURED | MISSING`. The input is `<input type="password">` and the local Svelte `$state` holding the typed key is cleared immediately after `setProviderKey()` returns. [CITED: D-02, adversarial spec invariant #1]
@@ -718,6 +754,7 @@ allow = ["files_read_token"]
 ## Code Examples
 
 ### keyring v3 Entry API (verified)
+
 ```rust
 // Source: [VERIFIED: docs.rs/keyring/3.6.3/keyring/struct.Entry.html]
 use keyring::{Entry, Error};
@@ -740,6 +777,7 @@ entry.delete_credential()?;  // v3+ API (NOT delete_password)
 ```
 
 ### tauri-plugin-dialog FilePath extraction
+
 ```rust
 // Source: [VERIFIED: docs.rs/tauri-plugin-dialog/latest - FileDialogBuilder]
 // FilePath::into_path() converts to PathBuf
@@ -755,6 +793,7 @@ if let Some(file_path) = fp {
 ```
 
 ### PathResolver for app log dir (Tauri v2)
+
 ```rust
 // Source: [VERIFIED: docs.rs/tauri/2.11.2/tauri/path/struct.PathResolver.html]
 // app_log_dir() returns Result<PathBuf>
@@ -765,6 +804,7 @@ let log_dir: std::path::PathBuf = app_handle.path().app_log_dir()?;
 ```
 
 ### IPC command registration (5 new commands)
+
 ```rust
 // Source: [VERIFIED: src-tauri/src/main.rs - established pattern]
 // In main.rs generate_handler![] — add to existing list:
@@ -782,14 +822,15 @@ ipc::files::files_read_token,
 
 ## State of the Art
 
-| Old Approach | Current Approach | When Changed | Impact |
-|--------------|------------------|--------------|--------|
-| `keyring` all-in-one crate | `keyring-core` + separate platform stores | keyring v4 release (2025) | More crates but official "correct" API going forward; v3 still works |
-| `assert_main_window()` per-handler | `command_policy::policy_check()` centralized allow-table | Phase 4 | Phase 6 can swap backing table without touching command handlers |
-| `SecretsState` backed by env vars | `KeyringSecretStore` via OS keychain | Phase 4 | Production fail-closed; no silent fallback |
-| `telemetry::audit_log()` stub | Append-only JSON Lines with redaction gate | Phase 4 | Machine-readable audit trail for release evidence |
+| Old Approach                       | Current Approach                                         | When Changed              | Impact                                                               |
+| ---------------------------------- | -------------------------------------------------------- | ------------------------- | -------------------------------------------------------------------- |
+| `keyring` all-in-one crate         | `keyring-core` + separate platform stores                | keyring v4 release (2025) | More crates but official "correct" API going forward; v3 still works |
+| `assert_main_window()` per-handler | `command_policy::policy_check()` centralized allow-table | Phase 4                   | Phase 6 can swap backing table without touching command handlers     |
+| `SecretsState` backed by env vars  | `KeyringSecretStore` via OS keychain                     | Phase 4                   | Production fail-closed; no silent fallback                           |
+| `telemetry::audit_log()` stub      | Append-only JSON Lines with redaction gate               | Phase 4                   | Machine-readable audit trail for release evidence                    |
 
 **Deprecated/outdated in this codebase:**
+
 - `SecretsState::default()` reading from `OPENROUTER_API_KEY` env var: replaced in Phase 4 for production, kept behind dev flag
 - Per-command `assert_main_window()` calls: superseded by `command_policy::policy_check()` (existing commands may keep their per-handler check as belt-and-suspenders, or be migrated)
 
@@ -797,12 +838,12 @@ ipc::files::files_read_token,
 
 ## Assumptions Log
 
-| # | Claim | Section | Risk if Wrong |
-|---|-------|---------|---------------|
-| A1 | `blocking_pick_file()` is safe to call from a sync `#[tauri::command]` without deadlocking on macOS | Pitfall 3, Pattern 4 | Dialog freeze on macOS; need to use `spawn_blocking` instead |
-| A2 | `keyring = "3"` (3.6.3) is the best single-crate choice for Phase 4 over `keyring-core = "1"` | Standard Stack | Could pick keyring-core if planner prefers forward-compatibility |
-| A3 | `thiserror = "1"` is compatible with the new error enum patterns (v1 vs v2 API diff is minor for this use case) | Pattern 2 | If project migrates to thiserror v2, `#[error]` attribute syntax changes slightly |
-| A4 | The `privacyStore` TypeScript store uses `SCREAMING_SNAKE_CASE` for `CredentialStatus` values | Pattern 8 | If Rust `CredentialStatus` serde serialization changes, TypeScript types must match |
+| #   | Claim                                                                                                           | Section              | Risk if Wrong                                                                       |
+| --- | --------------------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------------------------- |
+| A1  | `blocking_pick_file()` is safe to call from a sync `#[tauri::command]` without deadlocking on macOS             | Pitfall 3, Pattern 4 | Dialog freeze on macOS; need to use `spawn_blocking` instead                        |
+| A2  | `keyring = "3"` (3.6.3) is the best single-crate choice for Phase 4 over `keyring-core = "1"`                   | Standard Stack       | Could pick keyring-core if planner prefers forward-compatibility                    |
+| A3  | `thiserror = "1"` is compatible with the new error enum patterns (v1 vs v2 API diff is minor for this use case) | Pattern 2            | If project migrates to thiserror v2, `#[error]` attribute syntax changes slightly   |
+| A4  | The `privacyStore` TypeScript store uses `SCREAMING_SNAKE_CASE` for `CredentialStatus` values                   | Pattern 8            | If Rust `CredentialStatus` serde serialization changes, TypeScript types must match |
 
 ---
 
@@ -827,18 +868,19 @@ ipc::files::files_read_token,
 
 ## Environment Availability
 
-| Dependency | Required By | Available | Version | Fallback |
-|------------|------------|-----------|---------|----------|
-| macOS Keychain | KeyringSecretStore (macOS) | ✓ (OS-provided) | — | EnvSecretStore behind dev flag |
-| Windows Credential Manager | KeyringSecretStore (Windows) | ✓ (OS-provided) | — | EnvSecretStore behind dev flag |
-| Linux SecretService (D-Bus) | KeyringSecretStore (Linux) | Depends on distro | — | EnvSecretStore behind dev flag |
-| `cargo` (Rust toolchain) | Building new crates | ✓ | verified in project | — |
-| `uuid` crate | Token minting | ✓ | v1 in Cargo.toml | — |
-| `chrono` crate | Audit log timestamps | ✓ | v0.4 in Cargo.toml | — |
+| Dependency                  | Required By                  | Available         | Version             | Fallback                       |
+| --------------------------- | ---------------------------- | ----------------- | ------------------- | ------------------------------ |
+| macOS Keychain              | KeyringSecretStore (macOS)   | ✓ (OS-provided)   | —                   | EnvSecretStore behind dev flag |
+| Windows Credential Manager  | KeyringSecretStore (Windows) | ✓ (OS-provided)   | —                   | EnvSecretStore behind dev flag |
+| Linux SecretService (D-Bus) | KeyringSecretStore (Linux)   | Depends on distro | —                   | EnvSecretStore behind dev flag |
+| `cargo` (Rust toolchain)    | Building new crates          | ✓                 | verified in project | —                              |
+| `uuid` crate                | Token minting                | ✓                 | v1 in Cargo.toml    | —                              |
+| `chrono` crate              | Audit log timestamps         | ✓                 | v0.4 in Cargo.toml  | —                              |
 
 **Missing dependencies with no fallback:** None — all new crates are additive.
 
 **Missing dependencies with fallback:**
+
 - Linux SecretService: If `dbus-secret-service-keyring-store` is unavailable at runtime, `SecretsState` must return `NotConfigured`; the `EnvSecretStore` flag provides the dev fallback.
 
 ---
@@ -846,37 +888,40 @@ ipc::files::files_read_token,
 ## Validation Architecture
 
 ### Test Framework
-| Property | Value |
-|----------|-------|
-| Framework | Rust built-in (`cargo test`) |
-| Config file | `src-tauri/Cargo.toml` |
-| Quick run command | `cargo test --manifest-path src-tauri/Cargo.toml -p desktop-ai-client -- security` |
-| Full suite command | `cargo test --manifest-path src-tauri/Cargo.toml --all-targets` |
+
+| Property           | Value                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| Framework          | Rust built-in (`cargo test`)                                                       |
+| Config file        | `src-tauri/Cargo.toml`                                                             |
+| Quick run command  | `cargo test --manifest-path src-tauri/Cargo.toml -p desktop-ai-client -- security` |
+| Full suite command | `cargo test --manifest-path src-tauri/Cargo.toml --all-targets`                    |
 
 ### Phase Requirements → Test Map
 
-| Req ID | Behavior | Test Type | Automated Command | File Exists? |
-|--------|----------|-----------|-------------------|-------------|
-| SEC-01 | `get_provider_key` returns `NotConfigured` when keychain empty | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- secrets::tests` | ✅ (existing in secrets.rs) |
-| SEC-01 | `get_provider_key` returns key after `store_provider_key` (mocked keyring) | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- secrets::tests` | ❌ Wave 0 |
-| SEC-01 | `privacy_set_provider_key` never exposes key in IPC response | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- ipc::privacy::tests` | ❌ Wave 0 |
-| SEC-01 | `PrivacyError` serializes with SCREAMING_SNAKE_CASE code field | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- ipc::privacy::tests` | ❌ Wave 0 |
-| SEC-01 | `command_policy` denies unknown commands | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- security::command_policy::tests` | ❌ Wave 0 |
-| SEC-01 | `command_policy` denies wrong window label | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- security::command_policy::tests` | ❌ Wave 0 |
-| SEC-02 | `files_open_dialog` returns `Cancelled` when no file selected | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- ipc::files::tests` | ❌ Wave 0 |
-| SEC-02 | Token resolves to path after mint, fails after revoke | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- security::file_tokens::tests` | ❌ Wave 0 |
-| SEC-02 | `FilesError` serializes with SCREAMING_SNAKE_CASE code field | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- ipc::files::tests` | ❌ Wave 0 |
-| SEC-03 | `redact_path` replaces path with `[REDACTED]` | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- security::redaction::tests` | ❌ Wave 0 |
-| SEC-03 | `redact_secret` replaces API key with `[REDACTED]` | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- security::redaction::tests` | ❌ Wave 0 |
-| SEC-03 | Audit log entry does not contain path or secret | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- telemetry::audit_log::tests` | ❌ Wave 0 |
-| SEC-03 | `AuditEntry` serializes to valid JSON (parseable) | unit | `cargo test --manifest-path src-tauri/Cargo.toml -- telemetry::audit_log::tests` | ❌ Wave 0 |
+| Req ID | Behavior                                                                   | Test Type | Automated Command                                                                    | File Exists?                |
+| ------ | -------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------ | --------------------------- |
+| SEC-01 | `get_provider_key` returns `NotConfigured` when keychain empty             | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- secrets::tests`                  | ✅ (existing in secrets.rs) |
+| SEC-01 | `get_provider_key` returns key after `store_provider_key` (mocked keyring) | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- secrets::tests`                  | ❌ Wave 0                   |
+| SEC-01 | `privacy_set_provider_key` never exposes key in IPC response               | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- ipc::privacy::tests`             | ❌ Wave 0                   |
+| SEC-01 | `PrivacyError` serializes with SCREAMING_SNAKE_CASE code field             | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- ipc::privacy::tests`             | ❌ Wave 0                   |
+| SEC-01 | `command_policy` denies unknown commands                                   | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- security::command_policy::tests` | ❌ Wave 0                   |
+| SEC-01 | `command_policy` denies wrong window label                                 | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- security::command_policy::tests` | ❌ Wave 0                   |
+| SEC-02 | `files_open_dialog` returns `Cancelled` when no file selected              | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- ipc::files::tests`               | ❌ Wave 0                   |
+| SEC-02 | Token resolves to path after mint, fails after revoke                      | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- security::file_tokens::tests`    | ❌ Wave 0                   |
+| SEC-02 | `FilesError` serializes with SCREAMING_SNAKE_CASE code field               | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- ipc::files::tests`               | ❌ Wave 0                   |
+| SEC-03 | `redact_path` replaces path with `[REDACTED]`                              | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- security::redaction::tests`      | ❌ Wave 0                   |
+| SEC-03 | `redact_secret` replaces API key with `[REDACTED]`                         | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- security::redaction::tests`      | ❌ Wave 0                   |
+| SEC-03 | Audit log entry does not contain path or secret                            | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- telemetry::audit_log::tests`     | ❌ Wave 0                   |
+| SEC-03 | `AuditEntry` serializes to valid JSON (parseable)                          | unit      | `cargo test --manifest-path src-tauri/Cargo.toml -- telemetry::audit_log::tests`     | ❌ Wave 0                   |
 
 ### Sampling Rate
+
 - **Per task commit:** `cargo test --manifest-path src-tauri/Cargo.toml -- <module>::tests`
 - **Per wave merge:** `cargo test --manifest-path src-tauri/Cargo.toml --all-targets`
 - **Phase gate:** Full suite green before `/gsd-verify-work`
 
 ### Wave 0 Gaps
+
 - [ ] `src-tauri/src/security/secrets.rs` — test for keyring-backed store (using mock keyring in test cfg)
 - [ ] `src-tauri/src/security/file_tokens.rs` — tests for `mint_token`, `resolve_token`, `revoke_token`
 - [ ] `src-tauri/src/security/redaction.rs` — tests for all three redaction categories
@@ -894,25 +939,25 @@ ipc::files::files_read_token,
 
 ### Applicable ASVS Categories
 
-| ASVS Category | Applies | Standard Control |
-|---------------|---------|-----------------|
-| V2 Authentication (credential storage) | Yes | `keyring-core` / `keyring` OS keychain; `secrecy::SecretString` in memory |
-| V3 Session Management | Partial | File tokens are session-scoped in-memory `HashMap`; no persistence |
-| V4 Access Control | Yes | `command_policy::policy_check()` — window-label allow-table on all IPC commands |
-| V5 Input Validation | Yes | `#[serde(deny_unknown_fields)]` on all request structs; `FilePath::into_path()` for path validation |
-| V6 Cryptography | Partial | No custom crypto — OS keychain handles encryption; `Uuid::new_v4()` for token entropy |
-| V9 Communications | No | No new network paths in this phase |
+| ASVS Category                          | Applies | Standard Control                                                                                    |
+| -------------------------------------- | ------- | --------------------------------------------------------------------------------------------------- |
+| V2 Authentication (credential storage) | Yes     | `keyring-core` / `keyring` OS keychain; `secrecy::SecretString` in memory                           |
+| V3 Session Management                  | Partial | File tokens are session-scoped in-memory `HashMap`; no persistence                                  |
+| V4 Access Control                      | Yes     | `command_policy::policy_check()` — window-label allow-table on all IPC commands                     |
+| V5 Input Validation                    | Yes     | `#[serde(deny_unknown_fields)]` on all request structs; `FilePath::into_path()` for path validation |
+| V6 Cryptography                        | Partial | No custom crypto — OS keychain handles encryption; `Uuid::new_v4()` for token entropy               |
+| V9 Communications                      | No      | No new network paths in this phase                                                                  |
 
 ### Known Threat Patterns for this Stack
 
-| Pattern | STRIDE | Standard Mitigation |
-|---------|--------|---------------------|
-| Frontend reading API key via IPC response | Information Disclosure | `privacy_*` commands never return key; `CredentialStatus` is a safe enum |
-| Smuggling extra parameters to bypass policy | Tampering | `#[serde(deny_unknown_fields)]` on all input structs |
-| Frontend supplying raw path to file read | Elevation of Privilege | `ipc::files` accepts only backend-issued UUID tokens; no raw path parameter |
-| Unauthorized window calling privileged commands | Spoofing | `command_policy::policy_check()` enforces window label before any work |
-| Key value appearing in audit log | Information Disclosure | `AuditEntry` struct has no content fields; `security::redaction` gate before writes |
-| API key leaking through error messages | Information Disclosure | `SecretsError::StorageError(String)` — message must not include key value in call sites |
+| Pattern                                         | STRIDE                 | Standard Mitigation                                                                     |
+| ----------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
+| Frontend reading API key via IPC response       | Information Disclosure | `privacy_*` commands never return key; `CredentialStatus` is a safe enum                |
+| Smuggling extra parameters to bypass policy     | Tampering              | `#[serde(deny_unknown_fields)]` on all input structs                                    |
+| Frontend supplying raw path to file read        | Elevation of Privilege | `ipc::files` accepts only backend-issued UUID tokens; no raw path parameter             |
+| Unauthorized window calling privileged commands | Spoofing               | `command_policy::policy_check()` enforces window label before any work                  |
+| Key value appearing in audit log                | Information Disclosure | `AuditEntry` struct has no content fields; `security::redaction` gate before writes     |
+| API key leaking through error messages          | Information Disclosure | `SecretsError::StorageError(String)` — message must not include key value in call sites |
 
 ### Non-Negotiable Invariants (from adversarial spec)
 
@@ -925,6 +970,7 @@ ipc::files::files_read_token,
 ## Sources
 
 ### Primary (HIGH confidence)
+
 - `src-tauri/src/ipc/app_shell.rs` — canonical IPC patterns verified directly from codebase
 - `src-tauri/src/security/secrets.rs` — Phase 2 implementation; locked caller interface verified
 - `src-tauri/src/app_state.rs` — AppState structure, lock ordering constraints
@@ -937,11 +983,13 @@ ipc::files::files_read_token,
 - [v2.tauri.app/security/permissions/](https://v2.tauri.app/security/permissions/) — TOML permission file format
 
 ### Secondary (MEDIUM confidence)
+
 - [github.com/open-source-cooperative/keyring-rs/releases](https://github.com/open-source-cooperative/keyring-rs/releases) — v4 deprecation notice; v3 vs keyring-core recommendation
 - [docs.rs/keyring-core/1.0.0](https://docs.rs/keyring-core/latest/keyring_core/struct.Entry.html) — `keyring-core` v1 Entry API
 - [crates.io/crates/mime_guess](https://crates.io/crates/mime_guess) — mime_guess 2.0.5 verified
 
 ### Tertiary (LOW confidence — marked [ASSUMED] where used)
+
 - [deepwiki.com/tauri-apps/tauri/3.1-command-system](https://deepwiki.com/tauri-apps/tauri/3.1-command-system) — blocking thread pool behavior for sync commands
 
 ---
@@ -949,6 +997,7 @@ ipc::files::files_read_token,
 ## Metadata
 
 **Confidence breakdown:**
+
 - Standard stack: HIGH — all crates verified against crates.io; API methods verified against docs.rs
 - Architecture: HIGH — patterns extracted directly from existing codebase (`app_shell.rs`, `app_state.rs`, `secrets.rs`, store files)
 - Pitfalls: HIGH (1, 4, 5, 6) / MEDIUM (2, 3, 7) — compile-time catches are HIGH; runtime platform threading is MEDIUM

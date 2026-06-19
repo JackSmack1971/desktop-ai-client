@@ -33,4 +33,3 @@ Output:
 - acceptance criteria
 - rollback path
 ```
-

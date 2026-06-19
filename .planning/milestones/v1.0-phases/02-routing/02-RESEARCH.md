@@ -7,6 +7,7 @@
 ---
 
 <user_constraints>
+
 ## User Constraints (from CONTEXT.md)
 
 ### Locked Decisions
@@ -43,7 +44,7 @@
 - Capability-based model selection
 - Full Stronghold/OS keychain secrets store (Phase 4)
 - Conversation persistence write (Phase 3; `conversation_id` field is wired but no DB write)
-</user_constraints>
+  </user_constraints>
 
 ---
 
@@ -61,15 +62,15 @@ The dependency chain is: `ipc::chat` → `providers::routing` → `providers::op
 
 ## Architectural Responsibility Map
 
-| Capability | Primary Tier | Secondary Tier | Rationale |
-|------------|-------------|----------------|-----------|
-| Prompt submission | API/Backend (`ipc::chat`) | Frontend (invoke caller) | Backend validates, enforces secrets invariant |
-| SSE streaming to provider | API/Backend (`providers::sse`) | — | Credentials must not cross IPC; streaming happens entirely in Rust |
-| Token delivery to renderer | IPC Channel (`tauri::ipc::Channel`) | — | Per-invocation typed pipe; not global events |
-| Cancellation signal | API/Backend (`ipc::chat::chat_cancel`) | Frontend (button calls invoke) | Backend owns the CancellationToken registry |
-| Credential storage | API/Backend (`security::secrets`) | AppState Mutex | Never touches renderer |
-| Request ID generation | API/Backend | — | Generated in `chat_send` before spawning task |
-| Streaming UI state | Frontend (`src/lib/stores/`) | — | Reactive state from channel messages only |
+| Capability                 | Primary Tier                           | Secondary Tier                 | Rationale                                                          |
+| -------------------------- | -------------------------------------- | ------------------------------ | ------------------------------------------------------------------ |
+| Prompt submission          | API/Backend (`ipc::chat`)              | Frontend (invoke caller)       | Backend validates, enforces secrets invariant                      |
+| SSE streaming to provider  | API/Backend (`providers::sse`)         | —                              | Credentials must not cross IPC; streaming happens entirely in Rust |
+| Token delivery to renderer | IPC Channel (`tauri::ipc::Channel`)    | —                              | Per-invocation typed pipe; not global events                       |
+| Cancellation signal        | API/Backend (`ipc::chat::chat_cancel`) | Frontend (button calls invoke) | Backend owns the CancellationToken registry                        |
+| Credential storage         | API/Backend (`security::secrets`)      | AppState Mutex                 | Never touches renderer                                             |
+| Request ID generation      | API/Backend                            | —                              | Generated in `chat_send` before spawning task                      |
+| Streaming UI state         | Frontend (`src/lib/stores/`)           | —                              | Reactive state from channel messages only                          |
 
 ---
 
@@ -90,34 +91,38 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 
 // Define the exact shape of ChatEvent variants (must match Rust serde output)
 type ChatEvent =
-  | { type: 'Ack';   request_id: string }
-  | { type: 'Delta'; text: string }
-  | { type: 'Done';  usage?: { prompt_tokens: number; completion_tokens: number }; model: string }
-  | { type: 'Error'; code: string; message: string };
+	| { type: 'Ack'; request_id: string }
+	| { type: 'Delta'; text: string }
+	| {
+			type: 'Done';
+			usage?: { prompt_tokens: number; completion_tokens: number };
+			model: string;
+	  }
+	| { type: 'Error'; code: string; message: string };
 
 export async function chatSend(params: {
-  messages: { role: string; content: string }[];
-  model?: string;
-  conversation_id?: string;
-  max_completion_tokens?: number;
-  temperature?: number;
-  onEvent: (event: ChatEvent) => void;
+	messages: { role: string; content: string }[];
+	model?: string;
+	conversation_id?: string;
+	max_completion_tokens?: number;
+	temperature?: number;
+	onEvent: (event: ChatEvent) => void;
 }): Promise<void> {
-  const channel = new Channel<ChatEvent>();
-  channel.onmessage = params.onEvent;
+	const channel = new Channel<ChatEvent>();
+	channel.onmessage = params.onEvent;
 
-  await invoke('chat_send', {
-    messages: params.messages,
-    model: params.model ?? null,
-    conversationId: params.conversation_id ?? null,
-    maxCompletionTokens: params.max_completion_tokens ?? null,
-    temperature: params.temperature ?? null,
-    channel,   // Tauri serializes this as its internal channel ID
-  });
+	await invoke('chat_send', {
+		messages: params.messages,
+		model: params.model ?? null,
+		conversationId: params.conversation_id ?? null,
+		maxCompletionTokens: params.max_completion_tokens ?? null,
+		temperature: params.temperature ?? null,
+		channel, // Tauri serializes this as its internal channel ID
+	});
 }
 
 export async function chatCancel(requestId: string): Promise<void> {
-  await invoke('chat_cancel', { requestId });
+	await invoke('chat_cancel', { requestId });
 }
 ```
 
@@ -743,18 +748,19 @@ https://openrouter.ai/api/v1
 
 ```json
 {
-  "model": "anthropic/claude-sonnet-4-6",
-  "messages": [
-    { "role": "system", "content": "You are a helpful assistant." },
-    { "role": "user",   "content": "Hello" }
-  ],
-  "stream": true,
-  "max_completion_tokens": 2048,
-  "temperature": 0.7
+	"model": "anthropic/claude-sonnet-4-6",
+	"messages": [
+		{ "role": "system", "content": "You are a helpful assistant." },
+		{ "role": "user", "content": "Hello" }
+	],
+	"stream": true,
+	"max_completion_tokens": 2048,
+	"temperature": 0.7
 }
 ```
 
 **Headers:**
+
 ```
 Authorization: Bearer <api_key>
 Content-Type: application/json
@@ -779,14 +785,14 @@ data: [DONE]
 
 ### Key Parsing Rules
 
-| Line | Action |
-|------|--------|
-| Starts with `:` | Ignore (SSE comment; OpenRouter sends `: OPENROUTER PROCESSING` to prevent timeout) |
-| `data: [DONE]` | Stream complete; emit `ChatEvent::Done` |
-| `data: {"choices":[{"delta":{"content":"..."}}]}` | Extract `choices[0].delta.content`; emit `ChatEvent::Delta` |
-| `data: {...,"usage":{...}}` | Capture usage for `ChatEvent::Done` (often on the last chunk before `[DONE]`) |
-| `data: {"error":{...}}` | Provider error mid-stream (HTTP 200 but error in body); emit `ChatEvent::Error` |
-| `event:`, `id:`, `retry:` | Ignore for Phase 2 |
+| Line                                              | Action                                                                              |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Starts with `:`                                   | Ignore (SSE comment; OpenRouter sends `: OPENROUTER PROCESSING` to prevent timeout) |
+| `data: [DONE]`                                    | Stream complete; emit `ChatEvent::Done`                                             |
+| `data: {"choices":[{"delta":{"content":"..."}}]}` | Extract `choices[0].delta.content`; emit `ChatEvent::Delta`                         |
+| `data: {...,"usage":{...}}`                       | Capture usage for `ChatEvent::Done` (often on the last chunk before `[DONE]`)       |
+| `data: {"error":{...}}`                           | Provider error mid-stream (HTTP 200 but error in body); emit `ChatEvent::Error`     |
+| `event:`, `id:`, `retry:`                         | Ignore for Phase 2                                                                  |
 
 ### Mid-Stream Error Format
 
@@ -794,8 +800,8 @@ OpenRouter can signal errors inside a 200 response:
 
 ```json
 {
-  "error": { "message": "...", "code": 429 },
-  "choices": [{ "finish_reason": "error" }]
+	"error": { "message": "...", "code": 429 },
+	"choices": [{ "finish_reason": "error" }]
 }
 ```
 
@@ -821,6 +827,7 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
 **Why `sync` on tokio:** `CancellationToken` requires `tokio::sync` internally.
 
 **Version pins:** All are semver-compatible minor pins. Exact versions at research time:
+
 - reqwest 0.13.4 (crates.io, 2026-05-25)
 - secrecy 0.10.3 (crates.io)
 - tokio-util 0.7.18 (crates.io, 2026-01-04)
@@ -836,20 +843,20 @@ File: `src-tauri/capabilities/main.json`
 
 ```json
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "main-window",
-  "description": "Capability set for the main application window.",
-  "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "opener:default",
-    "core:app:allow-app-hide",
-    "core:window:allow-start-dragging",
-    "allow-get-active-surface",
-    "allow-set-active-surface",
-    "allow-chat-send",
-    "allow-chat-cancel"
-  ]
+	"$schema": "../gen/schemas/desktop-schema.json",
+	"identifier": "main-window",
+	"description": "Capability set for the main application window.",
+	"windows": ["main"],
+	"permissions": [
+		"core:default",
+		"opener:default",
+		"core:app:allow-app-hide",
+		"core:window:allow-start-dragging",
+		"allow-get-active-surface",
+		"allow-set-active-surface",
+		"allow-chat-send",
+		"allow-chat-cancel"
+	]
 }
 ```
 
@@ -887,6 +894,7 @@ src-tauri/src/
 ```
 
 **Dependency direction (enforced, never inverted):**
+
 ```
 ipc::chat
   → providers::routing
@@ -902,12 +910,12 @@ ipc::chat
 
 > These are Rust (Cargo) crates — slopcheck operates on npm and is not applicable. All crates verified against crates.io directly.
 
-| Package | Registry | Age | Downloads | Source Repo | Disposition |
-|---------|----------|-----|-----------|-------------|-------------|
-| reqwest 0.13.4 | crates.io | 8+ yrs | 527M | github.com/seanmonstar/reqwest | Approved |
-| secrecy 0.10.3 | crates.io | 5+ yrs | 119M | github.com/iqlusioninc/crates | Approved |
-| tokio-util 0.7.18 | crates.io | 5+ yrs | 605M | github.com/tokio-rs/tokio | Approved |
-| futures-util 0.3.32 | crates.io | 7+ yrs | 676M | github.com/rust-lang/futures-rs | Approved |
+| Package             | Registry  | Age    | Downloads | Source Repo                     | Disposition |
+| ------------------- | --------- | ------ | --------- | ------------------------------- | ----------- |
+| reqwest 0.13.4      | crates.io | 8+ yrs | 527M      | github.com/seanmonstar/reqwest  | Approved    |
+| secrecy 0.10.3      | crates.io | 5+ yrs | 119M      | github.com/iqlusioninc/crates   | Approved    |
+| tokio-util 0.7.18   | crates.io | 5+ yrs | 605M      | github.com/tokio-rs/tokio       | Approved    |
+| futures-util 0.3.32 | crates.io | 7+ yrs | 676M      | github.com/rust-lang/futures-rs | Approved    |
 
 **Packages removed due to slopcheck [SLOP] verdict:** none (slopcheck is npm-only; Cargo crates verified separately)
 **Packages flagged as suspicious:** none
@@ -922,7 +930,7 @@ ipc::chat
 
 **Why it happens:** `tokio::spawn` requires `'static` bounds. `tauri::State` is a reference with a lifetime.
 
-**How to avoid:** Acquire all needed data from state *before* the spawn, then move only owned values (cloned keys, request IDs, `Arc<AppState>`) into the closure. If you need post-spawn access to state (e.g., to remove the token on completion), pass `state.inner()` wrapped in `Arc`.
+**How to avoid:** Acquire all needed data from state _before_ the spawn, then move only owned values (cloned keys, request IDs, `Arc<AppState>`) into the closure. If you need post-spawn access to state (e.g., to remove the token on completion), pass `state.inner()` wrapped in `Arc`.
 
 ```rust
 // Wrong: state cannot move into spawn
@@ -958,7 +966,7 @@ let _ = channel.send(ChatEvent::Done { ... }); // ignore result
 
 **Why it happens:** `std::sync::Mutex` guards are not `Send` across await points in Tauri's async executor.
 
-**How to avoid:** Always lock, clone or extract the needed value, drop the guard, *then* await.
+**How to avoid:** Always lock, clone or extract the needed value, drop the guard, _then_ await.
 
 ```rust
 // Wrong
@@ -1037,25 +1045,25 @@ Do NOT include a `X-Title` header that exposes the user's local machine hostname
 
 ### Test Framework
 
-| Property | Value |
-|----------|-------|
-| Framework | Rust built-in (`#[test]`, `#[tokio::test]`) |
-| Config file | none — cargo test discovers tests in module |
-| Quick run command | `cargo test -p desktop-ai-client-lib` |
+| Property           | Value                                                      |
+| ------------------ | ---------------------------------------------------------- |
+| Framework          | Rust built-in (`#[test]`, `#[tokio::test]`)                |
+| Config file        | none — cargo test discovers tests in module                |
+| Quick run command  | `cargo test -p desktop-ai-client-lib`                      |
 | Full suite command | `cargo test -p desktop-ai-client-lib -- --include-ignored` |
 
 ### Phase Requirements → Test Map
 
-| Req ID | Behavior | Test Type | Automated Command |
-|--------|----------|-----------|-------------------|
-| ROUTE-01 | Provider selection routes to OpenRouter | unit | `cargo test providers::routing` |
-| ROUTE-01 | Credential retrieved from SecretsState, not IPC param | unit | `cargo test security::secrets` |
-| ROUTE-02 | SSE line parser extracts delta content correctly | unit | `cargo test providers::sse` |
-| ROUTE-02 | SSE parser ignores comment lines | unit | `cargo test providers::sse::ignores_comment` |
-| ROUTE-02 | SSE parser handles [DONE] | unit | `cargo test providers::sse::handles_done` |
-| ROUTE-02 | CancellationToken cancels in-flight task | unit | `cargo test ipc::chat::cancel_stops_stream` |
-| ROUTE-02 | ChatError serializes as SCREAMING_SNAKE_CASE | unit | `cargo test ipc::chat::error_serialization` |
-| D-10 | chat_send has no api_key parameter | compile-time | `cargo check` (type system enforces) |
+| Req ID   | Behavior                                              | Test Type    | Automated Command                            |
+| -------- | ----------------------------------------------------- | ------------ | -------------------------------------------- |
+| ROUTE-01 | Provider selection routes to OpenRouter               | unit         | `cargo test providers::routing`              |
+| ROUTE-01 | Credential retrieved from SecretsState, not IPC param | unit         | `cargo test security::secrets`               |
+| ROUTE-02 | SSE line parser extracts delta content correctly      | unit         | `cargo test providers::sse`                  |
+| ROUTE-02 | SSE parser ignores comment lines                      | unit         | `cargo test providers::sse::ignores_comment` |
+| ROUTE-02 | SSE parser handles [DONE]                             | unit         | `cargo test providers::sse::handles_done`    |
+| ROUTE-02 | CancellationToken cancels in-flight task              | unit         | `cargo test ipc::chat::cancel_stops_stream`  |
+| ROUTE-02 | ChatError serializes as SCREAMING_SNAKE_CASE          | unit         | `cargo test ipc::chat::error_serialization`  |
+| D-10     | chat_send has no api_key parameter                    | compile-time | `cargo check` (type system enforces)         |
 
 ### Wave 0 Gaps
 
@@ -1068,49 +1076,50 @@ Do NOT include a `X-Title` header that exposes the user's local machine hostname
 
 ### Applicable ASVS Categories
 
-| ASVS Category | Applies | Standard Control |
-|---------------|---------|-----------------|
-| V2 Authentication | partial | Backend-only `SecretString`; env-var stub → Phase 4 keychain |
-| V3 Session Management | no | No session tokens; request_id is ephemeral |
-| V4 Access Control | yes | `assert_main_window` on all chat commands |
-| V5 Input Validation | yes | `ChatMessage` deserialization; reject oversized payloads |
-| V6 Cryptography | no | TLS handled by reqwest/rustls; no app-level crypto |
+| ASVS Category         | Applies | Standard Control                                             |
+| --------------------- | ------- | ------------------------------------------------------------ |
+| V2 Authentication     | partial | Backend-only `SecretString`; env-var stub → Phase 4 keychain |
+| V3 Session Management | no      | No session tokens; request_id is ephemeral                   |
+| V4 Access Control     | yes     | `assert_main_window` on all chat commands                    |
+| V5 Input Validation   | yes     | `ChatMessage` deserialization; reject oversized payloads     |
+| V6 Cryptography       | no      | TLS handled by reqwest/rustls; no app-level crypto           |
 
 ### Known Threat Patterns
 
-| Pattern | STRIDE | Standard Mitigation |
-|---------|--------|---------------------|
-| Renderer passes api_key in IPC payload | Info Disclosure | D-10 invariant: never accept api_key parameter |
-| Compromised renderer calls chat_send with crafted system prompt | Tampering | System prompt is backend-owned (D-12); not accepted from IPC |
-| SSRF via custom endpoint (future) | Elevation of Privilege | Phase 2 has hardcoded OpenRouter URL; custom endpoint validation is Phase 4+ |
-| CancellationToken registry never cleaned | DoS | Pitfall 5 above: unconditional cleanup in spawned task |
-| SecretString logged in error messages | Info Disclosure | `thiserror` error messages must not reference the key value; use `ChatError::CredentialError("not configured")` not `format!("{}", key)` |
+| Pattern                                                         | STRIDE                 | Standard Mitigation                                                                                                                      |
+| --------------------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Renderer passes api_key in IPC payload                          | Info Disclosure        | D-10 invariant: never accept api_key parameter                                                                                           |
+| Compromised renderer calls chat_send with crafted system prompt | Tampering              | System prompt is backend-owned (D-12); not accepted from IPC                                                                             |
+| SSRF via custom endpoint (future)                               | Elevation of Privilege | Phase 2 has hardcoded OpenRouter URL; custom endpoint validation is Phase 4+                                                             |
+| CancellationToken registry never cleaned                        | DoS                    | Pitfall 5 above: unconditional cleanup in spawned task                                                                                   |
+| SecretString logged in error messages                           | Info Disclosure        | `thiserror` error messages must not reference the key value; use `ChatError::CredentialError("not configured")` not `format!("{}", key)` |
 
 ---
 
 ## Environment Availability
 
-| Dependency | Required By | Available | Notes |
-|------------|------------|-----------|-------|
-| Rust toolchain | All Cargo builds | Assumed present | Existing Phase 1 passed |
-| `OPENROUTER_API_KEY` env var | Phase 2 runtime | Unknown | Must be set by developer; stubbed to None if absent |
-| Internet access | OpenRouter SSE | Required at runtime | Not relevant for unit tests |
-| Tauri v2 CLI | `cargo tauri dev` | Assumed present | Phase 1 used it |
+| Dependency                   | Required By       | Available           | Notes                                               |
+| ---------------------------- | ----------------- | ------------------- | --------------------------------------------------- |
+| Rust toolchain               | All Cargo builds  | Assumed present     | Existing Phase 1 passed                             |
+| `OPENROUTER_API_KEY` env var | Phase 2 runtime   | Unknown             | Must be set by developer; stubbed to None if absent |
+| Internet access              | OpenRouter SSE    | Required at runtime | Not relevant for unit tests                         |
+| Tauri v2 CLI                 | `cargo tauri dev` | Assumed present     | Phase 1 used it                                     |
 
 **Missing dependencies with no fallback:**
+
 - `OPENROUTER_API_KEY` — without it, `chat_send` returns `ChatError::CredentialError("OPENROUTER_API_KEY not configured")`. Implementer must set this in their shell before testing live streaming.
 
 ---
 
 ## Assumptions Log
 
-| # | Claim | Section | Risk if Wrong |
-|---|-------|---------|---------------|
-| A1 | Capability permission key format is `"allow-chat-send"` / `"allow-chat-cancel"` | Capabilities JSON | Build will reject unknown permission key; easy to fix at build time |
-| A2 | `reqwest` 0.13 uses rustls on Windows by default (no native-tls feature needed) | Cargo.toml | TLS handshake failure to openrouter.ai; fix: add `features = ["json", "stream", "rustls-tls"]` explicitly |
-| A3 | `AppState` can be made `Clone` or wrapped in `Arc` for spawn sharing | Cancellation | Spawn pattern needs adjustment; alternative is `AppHandle` capture |
-| A4 | `#[serde(tag = "type", rename_all = "PascalCase")]` produces `{ "type": "Delta", ... }` that the frontend TypeScript union correctly discriminates | Channel API | Frontend event handler never matches; rename_all value change required |
-| A5 | `tokio = { features = ["sync"] }` is the correct feature name for `tokio_util::sync::CancellationToken` | Cargo.toml | Compile error; check tokio feature list |
+| #   | Claim                                                                                                                                              | Section           | Risk if Wrong                                                                                             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------- |
+| A1  | Capability permission key format is `"allow-chat-send"` / `"allow-chat-cancel"`                                                                    | Capabilities JSON | Build will reject unknown permission key; easy to fix at build time                                       |
+| A2  | `reqwest` 0.13 uses rustls on Windows by default (no native-tls feature needed)                                                                    | Cargo.toml        | TLS handshake failure to openrouter.ai; fix: add `features = ["json", "stream", "rustls-tls"]` explicitly |
+| A3  | `AppState` can be made `Clone` or wrapped in `Arc` for spawn sharing                                                                               | Cancellation      | Spawn pattern needs adjustment; alternative is `AppHandle` capture                                        |
+| A4  | `#[serde(tag = "type", rename_all = "PascalCase")]` produces `{ "type": "Delta", ... }` that the frontend TypeScript union correctly discriminates | Channel API       | Frontend event handler never matches; rename_all value change required                                    |
+| A5  | `tokio = { features = ["sync"] }` is the correct feature name for `tokio_util::sync::CancellationToken`                                            | Cargo.toml        | Compile error; check tokio feature list                                                                   |
 
 ---
 
@@ -1136,6 +1145,7 @@ Do NOT include a `X-Title` header that exposes the user's local machine hostname
 ## Sources
 
 ### Primary (HIGH confidence)
+
 - `docs.rs/tauri/latest/tauri/ipc/struct.Channel.html` — Channel struct API, send() method
 - `v2.tauri.app/develop/calling-frontend/` — Channel TypeScript usage pattern
 - `docs.rs/reqwest/latest/reqwest/struct.Response.html` — bytes_stream(), chunk() methods
@@ -1146,10 +1156,12 @@ Do NOT include a `X-Title` header that exposes the user's local machine hostname
 - `openrouter.ai/docs/api/reference/streaming` — SSE format, comment handling, [DONE]
 
 ### Secondary (MEDIUM confidence)
+
 - WebSearch: CancellationToken HashMap pattern in Tauri AppState — confirmed against official tokio docs
 - WebSearch: reqwest SSE bytes_stream with StreamExt — confirmed against official reqwest docs
 
 ### Tertiary (LOW confidence — see Assumptions Log)
+
 - Capability permission key format `"allow-chat-send"` — inferred from existing entries in `main.json`
 
 ---
@@ -1157,6 +1169,7 @@ Do NOT include a `X-Title` header that exposes the user's local machine hostname
 ## Metadata
 
 **Confidence breakdown:**
+
 - Tauri Channel API: HIGH — verified against official v2 docs
 - reqwest SSE: HIGH — verified against official docs; pattern is idiomatic futures-util
 - CancellationToken: HIGH — verified against official tokio-util docs

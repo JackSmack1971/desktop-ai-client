@@ -2,7 +2,8 @@
 phase: 03-history
 plan: 03
 subsystem: database
-tags: [sqlite, rusqlite, chat, ipc, streaming, conversation-history, storage-wiring]
+tags:
+  [sqlite, rusqlite, chat, ipc, streaming, conversation-history, storage-wiring]
 
 # Dependency graph
 requires:
@@ -24,9 +25,9 @@ affects:
 tech-stack:
   added: []
   patterns:
-    - "Arc<Mutex<String>> accumulator: shared mutable state between move closure and outer async fn without changing drive_sse_stream signature"
-    - "run_stream tuple return: (Result<(),String>, String, String) for result + accumulated_text + resolved_model"
-    - "Non-fatal storage errors: eprintln! in spawned task, streaming never blocked by storage outcome (T-03-13)"
+    - 'Arc<Mutex<String>> accumulator: shared mutable state between move closure and outer async fn without changing drive_sse_stream signature'
+    - 'run_stream tuple return: (Result<(),String>, String, String) for result + accumulated_text + resolved_model'
+    - 'Non-fatal storage errors: eprintln! in spawned task, streaming never blocked by storage outcome (T-03-13)'
 
 key-files:
   created: []
@@ -36,14 +37,14 @@ key-files:
 
 key-decisions:
   - "run_stream returns tuple (result, accumulated_text, resolved_model) via Arc<Mutex<String>> accumulators — avoids changing drive_sse_stream's callback signature"
-  - "Storage writes are non-fatal in spawned task — eprintln! only, streaming task continues regardless (T-03-13)"
-  - "ConversationStore and MessageStore registered in main.rs setup using pool.clone() — required so app_handle.state::<T>() resolves at runtime (Pitfall 1)"
-  - "Pre-connection cancellation maps to Err(CANCELLED) from run_stream — consistent with mid-stream cancellation path"
-  - "title_from_messages uses chars().take(60) for unicode-correct truncation — not byte slice"
+  - 'Storage writes are non-fatal in spawned task — eprintln! only, streaming task continues regardless (T-03-13)'
+  - 'ConversationStore and MessageStore registered in main.rs setup using pool.clone() — required so app_handle.state::<T>() resolves at runtime (Pitfall 1)'
+  - 'Pre-connection cancellation maps to Err(CANCELLED) from run_stream — consistent with mid-stream cancellation path'
+  - 'title_from_messages uses chars().take(60) for unicode-correct truncation — not byte slice'
 
 patterns-established:
   - "app_handle.state::<T>() inside spawned task: all state re-acquisition uses AppHandle, never tauri::State<'_> moved into spawn"
-  - "TDD RED/GREEN gate: test commit before feat commit enforced per plan tdd=true requirement"
+  - 'TDD RED/GREEN gate: test commit before feat commit enforced per plan tdd=true requirement'
 
 requirements-completed:
   - HIST-01
@@ -114,6 +115,7 @@ Each task committed atomically (TDD):
 ### Auto-fixed Issues
 
 **1. [Rule 2 - Missing Critical] Registered ConversationStore and MessageStore in main.rs**
+
 - **Found during:** Task 1 (GREEN implementation)
 - **Issue:** `app_handle.state::<ConversationStore>()` inside spawned task would panic at runtime if the stores were not registered via `app.manage()`. The plan specified the wiring in chat.rs but the plan's `files_modified` list did not include `main.rs`.
 - **Fix:** Added `app.manage(ConversationStore::new(pool.clone()))` and `app.manage(MessageStore::new(pool))` to the `.setup()` hook in `main.rs`, and added the required imports.
@@ -134,19 +136,20 @@ Each task committed atomically (TDD):
 
 ## Security Notes
 
-| Threat | Status |
-|--------|--------|
-| T-03-11: conversation_id from frontend references arbitrary conversation | Accepted — single-user desktop app, no multi-tenancy |
-| T-03-12: title_from_messages includes user prompt content | Mitigated — title stays backend-owned (D-03); never returned directly to frontend |
-| T-03-13: storage write failure blocks streaming | Mitigated — eprintln! non-fatal, streaming continues regardless |
-| T-03-14: adversarial provider content in accumulated text | Accepted — content stored verbatim per D-04; no execution |
-| T-03-15: conversation_id injected to corrupt another conversation | Accepted — single user, worst case is extra messages in wrong conversation |
+| Threat                                                                   | Status                                                                            |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| T-03-11: conversation_id from frontend references arbitrary conversation | Accepted — single-user desktop app, no multi-tenancy                              |
+| T-03-12: title_from_messages includes user prompt content                | Mitigated — title stays backend-owned (D-03); never returned directly to frontend |
+| T-03-13: storage write failure blocks streaming                          | Mitigated — eprintln! non-fatal, streaming continues regardless                   |
+| T-03-14: adversarial provider content in accumulated text                | Accepted — content stored verbatim per D-04; no execution                         |
+| T-03-15: conversation_id injected to corrupt another conversation        | Accepted — single user, worst case is extra messages in wrong conversation        |
 
 ## Verification Note
 
 `cargo test` could not be run in this environment (cargo not in PATH for Bash tool). Tests are written and embedded in `src-tauri/src/ipc/chat.rs` under the `ipc::chat` module. They will execute as part of CI or when the developer runs `cargo test --manifest-path src-tauri/Cargo.toml ipc::chat`.
 
 All acceptance criteria verified via grep:
+
 - `let _ = &conversation_id` stub removed
 - `ConversationStore` imported and used (7 occurrences)
 - `mark_complete` and `mark_incomplete` present (3 occurrences)
@@ -175,5 +178,6 @@ All acceptance criteria verified via grep:
 ## Self-Check: PASSED
 
 ---
-*Phase: 03-history*
-*Completed: 2026-06-14*
+
+_Phase: 03-history_
+_Completed: 2026-06-14_

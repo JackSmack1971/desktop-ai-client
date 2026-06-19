@@ -78,6 +78,7 @@ desktop-ai-client/
 ## Usage
 
 Main commands:
+
 - pnpm dev: Development with hot reload
 - pnpm build: Production binary
 - pnpm check: Type-check
@@ -88,19 +89,19 @@ Read AGENTS.md before editing code in any directory.
 
 ## Configuration
 
-| Variable | Required | Default | Notes |
-|---|---|---|---|
-| RUST_LOG | No | info | Backend log level |
-| Provider keys | No | None | Via system keyring |
+| Variable      | Required | Default | Notes              |
+| ------------- | -------- | ------- | ------------------ |
+| RUST_LOG      | No       | info    | Backend log level  |
+| Provider keys | No       | None    | Via system keyring |
 
 ## Developer Command Center
 
-| Script | Purpose |
-|---|---|
-| pnpm dev | Dev server |
-| pnpm build | Production binary |
-| pnpm check | Type-check |
-| cargo run --manifest-path src-tauri/Cargo.toml --bin verify-command-inventory | Verify commands |
+| Script                                                                        | Purpose           |
+| ----------------------------------------------------------------------------- | ----------------- |
+| pnpm dev                                                                      | Dev server        |
+| pnpm build                                                                    | Production binary |
+| pnpm check                                                                    | Type-check        |
+| cargo run --manifest-path src-tauri/Cargo.toml --bin verify-command-inventory | Verify commands   |
 
 ## Testing & Verification
 
@@ -111,27 +112,27 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin verify-command-inventory
 
 ## Troubleshooting
 
-| Symptom | Fix |
-|---|---|
-| pnpm dev hangs | rustup update && pnpm install |
-| Frontend fails to connect | Check port 1420 in vite.config.ts |
-| Type-check fails | pnpm check or pnpm dlx svelte-kit sync |
-| Command inventory fails | Add to security/command-inventory.toml |
-| SQLite error | Check database path in app_state.rs |
-| Keyring fails | Check system credential manager |
+| Symptom                   | Fix                                    |
+| ------------------------- | -------------------------------------- |
+| pnpm dev hangs            | rustup update && pnpm install          |
+| Frontend fails to connect | Check port 1420 in vite.config.ts      |
+| Type-check fails          | pnpm check or pnpm dlx svelte-kit sync |
+| Command inventory fails   | Add to security/command-inventory.toml |
+| SQLite error              | Check database path in app_state.rs    |
+| Keyring fails             | Check system credential manager        |
 
 ## Stack Inventory
 
-| Component | Tech | Version |
-|---|---|---|
-| Desktop | Tauri | 2.0.0 |
-| Frontend | SvelteKit | 2.0.0 |
-| UI | Svelte | 5.0.0 |
-| Build | Vite | 6.0.0 |
-| Backend | Rust | 1.77+ |
-| Database | SQLite | bundled |
-| Runtime | Tokio | 1.x |
-| Package Mgr | pnpm | 8+ |
+| Component   | Tech      | Version |
+| ----------- | --------- | ------- |
+| Desktop     | Tauri     | 2.0.0   |
+| Frontend    | SvelteKit | 2.0.0   |
+| UI          | Svelte    | 5.0.0   |
+| Build       | Vite      | 6.0.0   |
+| Backend     | Rust      | 1.77+   |
+| Database    | SQLite    | bundled |
+| Runtime     | Tokio     | 1.x     |
+| Package Mgr | pnpm      | 8+      |
 
 ## Reproducibility & Maintenance
 
@@ -164,6 +165,7 @@ pnpm check
 ## Contributing
 
 Before large changes:
+
 1. Open an issue
 2. Read AGENTS.md files
 3. Read design blueprints in docs/
@@ -172,13 +174,13 @@ Before large changes:
 
 ## Governance
 
-| Area | Status |
-|---|---|
-| Code of Conduct | [TBD] |
-| Security Policy | [TBD] |
-| License | No license file found |
-| Maintainers | [TBD] |
-| Support | [TBD] |
+| Area            | Status                |
+| --------------- | --------------------- |
+| Code of Conduct | [TBD]                 |
+| Security Policy | [TBD]                 |
+| License         | No license file found |
+| Maintainers     | [TBD]                 |
+| Support         | [TBD]                 |
 
 ## Roadmap
 

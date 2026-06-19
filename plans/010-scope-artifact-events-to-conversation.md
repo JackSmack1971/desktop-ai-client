@@ -61,15 +61,17 @@
   Note: `effective_conv_id` (the conversation this artifact belongs to) is already in scope at this point in the function — it's used two lines earlier in `save_artifact`. It is simply not threaded into the `ArtifactReady` event payload.
 - `src/lib/stores/artifacts.ts:32-41` (`receiveArtifact`):
   ```ts
-  function receiveArtifact(event: Extract<ChatEvent, { type: 'ArtifactReady' }>): void {
-      artifactId = event.artifact_id;
-      contentType = event.content_type;
-      preview = event.preview;
-      error = null;
-      state = event.preview.trim() ? 'ready' : 'error';
-      if (!event.preview.trim()) {
-          error = 'Artifact could not be displayed safely.';
-      }
+  function receiveArtifact(
+    event: Extract<ChatEvent, { type: 'ArtifactReady' }>,
+  ): void {
+    artifactId = event.artifact_id;
+    contentType = event.content_type;
+    preview = event.preview;
+    error = null;
+    state = event.preview.trim() ? 'ready' : 'error';
+    if (!event.preview.trim()) {
+      error = 'Artifact could not be displayed safely.';
+    }
   }
   ```
   No check against which conversation is currently active.
@@ -80,28 +82,30 @@
       break;
   }
   ```
-- The frontend's notion of "currently active conversation" lives in `historyStore` (`src/lib/stores/history.ts` — read this file yourself to find the exact getter name for the active/loaded conversation id; do not guess it) — `chat.ts` itself doesn't track a `conversationId` per se today (it only tracks `streamingId`/`requestId` for the single in-flight message). You will likely need to introduce a `conversationId` concept into `chatStore` as part of this fix, since the artifact-scoping check needs *some* notion of "which conversation is the user looking at right now" to compare against.
+- The frontend's notion of "currently active conversation" lives in `historyStore` (`src/lib/stores/history.ts` — read this file yourself to find the exact getter name for the active/loaded conversation id; do not guess it) — `chat.ts` itself doesn't track a `conversationId` per se today (it only tracks `streamingId`/`requestId` for the single in-flight message). You will likely need to introduce a `conversationId` concept into `chatStore` as part of this fix, since the artifact-scoping check needs _some_ notion of "which conversation is the user looking at right now" to compare against.
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Compile check (backend) | `cargo check --manifest-path src-tauri/Cargo.toml` | exit 0 |
-| Backend tests | `cargo test --manifest-path src-tauri/Cargo.toml --lib ipc::chat` | all pass |
-| Type-check (frontend) | `pnpm check` | exit 0 |
-| Frontend tests (if `plans/005-add-test-coverage.md` has landed) | `pnpm test` | all pass |
+| Purpose                                                         | Command                                                           | Expected on success |
+| --------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------- |
+| Compile check (backend)                                         | `cargo check --manifest-path src-tauri/Cargo.toml`                | exit 0              |
+| Backend tests                                                   | `cargo test --manifest-path src-tauri/Cargo.toml --lib ipc::chat` | all pass            |
+| Type-check (frontend)                                           | `pnpm check`                                                      | exit 0              |
+| Frontend tests (if `plans/005-add-test-coverage.md` has landed) | `pnpm test`                                                       | all pass            |
 
 ## Scope
 
 **In scope**:
+
 - `src-tauri/src/ipc/chat.rs` — add `conversation_id` to `ChatEvent::ArtifactReady`.
 - `src/lib/api/chat.ts` (or wherever the `ChatEvent` TypeScript type is defined/generated to mirror the Rust enum — read this file first to find the exact type location) — mirror the new field.
 - `src/lib/stores/chat.ts` — track the current conversation id and pass it through to the artifact handler.
 - `src/lib/stores/artifacts.ts` — `receiveArtifact` ignores events whose `conversation_id` doesn't match the currently active one.
 
 **Out of scope**:
-- Building full multi-conversation support (tabs, parallel chats) — this plan only adds the scoping *check*; it does not change the app from single-conversation-at-a-time to multi-conversation. The check is a no-op safety net for the current UI and becomes load-bearing only if/when multi-conversation support is added later.
-- `src-tauri/src/storage/artifacts.rs` — no schema or storage change; `effective_conv_id` is already stored against the artifact row (via `save_artifact`'s second argument) — this plan only adds it to the *event payload*, which is a separate, smaller thing.
+
+- Building full multi-conversation support (tabs, parallel chats) — this plan only adds the scoping _check_; it does not change the app from single-conversation-at-a-time to multi-conversation. The check is a no-op safety net for the current UI and becomes load-bearing only if/when multi-conversation support is added later.
+- `src-tauri/src/storage/artifacts.rs` — no schema or storage change; `effective_conv_id` is already stored against the artifact row (via `save_artifact`'s second argument) — this plan only adds it to the _event payload_, which is a separate, smaller thing.
 - `src/lib/components/surfaces/ArtifactsSurface.svelte` — no UI change expected; if the scoping check causes a visible behavior difference here, that's the intended fix working, not a regression to chase further.
 
 ## Git workflow
@@ -117,6 +121,7 @@
 ### Step 1: Add `conversation_id` to the Rust `ChatEvent::ArtifactReady` variant
 
 In `src-tauri/src/ipc/chat.rs`, change the enum variant (lines 76-80) to:
+
 ```rust
 ArtifactReady {
     conversation_id: String,
@@ -125,7 +130,9 @@ ArtifactReady {
     preview: String,
 },
 ```
+
 Update the send site (inside the `Ok(())` branch, currently lines 295-299) to include it:
+
 ```rust
 let _ = channel.send(ChatEvent::ArtifactReady {
     conversation_id: effective_conv_id.clone(),
@@ -134,7 +141,9 @@ let _ = channel.send(ChatEvent::ArtifactReady {
     preview: preview.srcdoc,
 });
 ```
+
 Update the existing test `chat_event_artifact_ready_serializes_with_type_field` (in the `#[cfg(test)] mod tests` block, currently around line 646-658) to include the new field when constructing the test event:
+
 ```rust
 let event = ChatEvent::ArtifactReady {
     conversation_id: "conv-1".into(),
@@ -143,6 +152,7 @@ let event = ChatEvent::ArtifactReady {
     preview: "<html></html>".into(),
 };
 ```
+
 and add an assertion that `conversation_id` is present in the serialized JSON.
 
 **Verify**: `cargo check --manifest-path src-tauri/Cargo.toml` → exit 0. `cargo test --manifest-path src-tauri/Cargo.toml --lib ipc::chat` → all pass.
@@ -156,6 +166,7 @@ Read `src/lib/api/chat.ts` to find where the `ChatEvent` discriminated union typ
 ### Step 3: Track a `conversationId` in `chatStore` and pass it through
 
 In `src/lib/stores/chat.ts`:
+
 1. Add a new piece of state near `streamingId`/`requestId` (around line 50-54):
    ```ts
    let activeConversationId = $state<string | null>(null);
@@ -174,26 +185,31 @@ In `src/lib/stores/chat.ts`:
 ### Step 4: `artifactsStore.receiveArtifact` ignores mismatched conversations
 
 In `src/lib/stores/artifacts.ts`, change `receiveArtifact`'s signature and add the guard:
+
 ```ts
 function receiveArtifact(
-    event: Extract<ChatEvent, { type: 'ArtifactReady' }>,
-    activeConversationId: string | null,
+	event: Extract<ChatEvent, { type: 'ArtifactReady' }>,
+	activeConversationId: string | null,
 ): void {
-    if (activeConversationId !== null && event.conversation_id !== activeConversationId) {
-        // Stale event from a conversation the user has navigated away from —
-        // do not let it mutate the artifact panel for whatever is active now.
-        return;
-    }
-    artifactId = event.artifact_id;
-    contentType = event.content_type;
-    preview = event.preview;
-    error = null;
-    state = event.preview.trim() ? 'ready' : 'error';
-    if (!event.preview.trim()) {
-        error = 'Artifact could not be displayed safely.';
-    }
+	if (
+		activeConversationId !== null &&
+		event.conversation_id !== activeConversationId
+	) {
+		// Stale event from a conversation the user has navigated away from —
+		// do not let it mutate the artifact panel for whatever is active now.
+		return;
+	}
+	artifactId = event.artifact_id;
+	contentType = event.content_type;
+	preview = event.preview;
+	error = null;
+	state = event.preview.trim() ? 'ready' : 'error';
+	if (!event.preview.trim()) {
+		error = 'Artifact could not be displayed safely.';
+	}
 }
 ```
+
 The `activeConversationId !== null` check is deliberate: if the frontend doesn't yet have a confident notion of the active conversation (e.g. very first message of a new conversation, before any id is known), fail open (apply the artifact) rather than fail closed (silently drop every artifact) — matching this plan's "best-effort scoping" framing from Step 3.
 
 **Verify**: `pnpm check` → exit 0. If `plans/005-add-test-coverage.md` has landed and a `artifacts.test.ts` exists, add a test asserting a mismatched `conversation_id` is ignored and a matching one is applied; if no test file exists yet, skip this (do not create a whole new test file as a side effect of this plan — that's plan 005's scope).
@@ -201,6 +217,7 @@ The `activeConversationId !== null` check is deliberate: if the frontend doesn't
 ## Test plan
 
 If `plans/005-add-test-coverage.md` has landed:
+
 - Add to `src/lib/stores/chat.test.ts` (or a new `artifacts.test.ts` only if one already exists from a prior session — do not create the file fresh under this plan): a test sending an `ArtifactReady` event with a `conversation_id` that doesn't match `activeConversationId`, asserting the artifact store's `artifactId` remains unchanged from its prior value.
 
 If plan 005 has not landed: rely on manual verification — send a message, let an artifact-producing response complete, confirm the artifact panel shows it; this is a regression check on existing behavior, not new coverage for the fix itself (which is inherently hard to manually trigger without simulating the race).

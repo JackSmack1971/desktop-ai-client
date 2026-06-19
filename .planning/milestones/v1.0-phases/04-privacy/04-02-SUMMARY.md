@@ -17,4 +17,3 @@ Implemented the phase security primitives:
 Verification:
 
 - `cargo test --manifest-path src-tauri/Cargo.toml -- security::redaction::tests security::command_policy::tests`
-
