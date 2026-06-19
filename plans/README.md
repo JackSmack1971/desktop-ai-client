@@ -17,7 +17,7 @@ your row when done.
 | 006 | Escape FTS5 search queries so ordinary punctuation doesn't throw | P2 | S | — | DONE |
 | 007 | Remove duplicate npm lockfile, pin pnpm via `packageManager` | P3 | S | — | TODO |
 | 008 | Add a CI workflow (typecheck, backend tests, dependency audits) | P2 | M | 005 (soft), 007 (soft) | TODO |
-| 009 | Add ESLint + Prettier with `lint`/`format` scripts | P3 | S-M | — | TODO |
+| 009 | Add ESLint + Prettier with `lint`/`format` scripts | P3 | S-M | — | DONE |
 | 010 | Scope `ArtifactReady` events to the conversation that produced them | P3 | S-M | 001 (soft) | TODO |
 
 Status values: TODO \| IN PROGRESS \| DONE \| BLOCKED (with one-line reason) \| REJECTED (with one-line rationale)
