@@ -39,6 +39,16 @@ pub fn policy_check(command: &str, window_label: &str) -> Result<(), PolicyError
     }
 }
 
+/// Names of every command registered in the policy table.
+///
+/// Exposed so `ipc::inventory::verify_inventory` can reconcile this table
+/// against `security/command-inventory.toml`, the registered handler list,
+/// permission files, and capability files — closing the gap where this
+/// registry could silently drift from the others (ARCH-002).
+pub fn command_names() -> Vec<String> {
+    COMMANDS.iter().map(|name| (*name).to_string()).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -13,6 +13,7 @@
 
 import { chatSend, chatCancel } from '$lib/api/chat';
 import type { ChatEvent } from '$lib/api/chat';
+import { normalizeIpcError } from '$lib/api/errors';
 import { artifactsStore } from '$lib/stores/artifacts';
 
 /** The persisted shape of a single chat message, including streaming state. */
@@ -25,23 +26,6 @@ export type ChatMessageState = {
 	/** `complete` = finished normally; `incomplete` = cancelled by user (D-06); `error` = terminal error. */
 	status: 'complete' | 'incomplete' | 'error';
 };
-
-/**
- * Normalize an IPC rejection or ChatEvent Error to a user-facing string.
- *
- * Copied from `surface.ts` (not exported from there) — single source of truth
- * pattern: do not create a third copy; import from a shared util if a third
- * consumer appears.
- */
-function normalizeIpcError(e: unknown): string {
-	if (typeof e === 'string') return e;
-	if (e && typeof e === 'object') {
-		const obj = e as Record<string, unknown>;
-		if (typeof obj['message'] === 'string') return obj['message'];
-		if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
-	}
-	return 'An unexpected error occurred.';
-}
 
 function createChatStore() {
 	/** Full ordered message list including user and assistant turns. */

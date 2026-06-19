@@ -27,7 +27,7 @@
 **Goal:** Persist and search local conversation history with recoverable storage behavior.
 **Mode:** mvp
 **Requirements:** HIST-01, HIST-02, HIST-03
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans executed
 **Success Criteria**:
 
 1. Conversations persist across app restarts.
@@ -39,14 +39,14 @@ Plans:
 - [x] 03-01-PLAN.md — SQLite schema migrations (0002, 0003) + typed domain stores (ConversationStore, MessageStore, FtsStore, RetentionStore)
 - [x] 03-02-PLAN.md — IPC command surface (history_list, history_get, history_delete, history_search) + main.rs registration + capabilities
 - [x] 03-03-PLAN.md — chat_send storage wiring (conversation persistence, title generation, Done/Cancel terminal writes)
-- [ ] 03-04-PLAN.md — Frontend History surface (historyStore, HistorySurface, SearchBar, ConversationList, ConversationRow)
+- [x] 03-04-PLAN.md — Frontend History surface (historyStore, HistorySurface, SearchBar, ConversationList, ConversationRow)
 
 ## Phase 4: Privacy
 
 **Goal:** Enforce the privacy boundary for secrets, file access, and telemetry.
 **Mode:** mvp
 **Requirements:** SEC-01, SEC-02, SEC-03
-**Plans:** 7 plans
+**Plans:** 7/7 plans executed
 **Success Criteria**:
 
 1. Ordinary frontend windows cannot read backend-owned secrets.
@@ -55,13 +55,13 @@ Plans:
 
 Plans:
 
-- [ ] 04-01-PLAN.md — Foundation: Cargo deps (keyring v3, dialog, mime_guess) + AppState.file_tokens + KeyringSecretStore backing
-- [ ] 04-02-PLAN.md — security::redaction (three categories) + security::command_policy (window-label allow-table)
-- [ ] 04-03-PLAN.md — security::file_tokens (mint/resolve/revoke against AppState.file_tokens)
-- [ ] 04-04-PLAN.md — telemetry::audit_log (JSON Lines) + ipc::privacy (set/status/clear commands)
-- [ ] 04-05-PLAN.md — ipc::files (files_open_dialog native picker + files_read_token)
-- [ ] 04-06-PLAN.md — Wiring: main.rs registration + dialog plugin + privacy.toml/files.toml + capabilities
-- [ ] 04-07-PLAN.md — Frontend: privacyStore (settings.ts) + SettingsSurface.svelte credential UI
+- [x] 04-01-PLAN.md — Foundation: Cargo deps (keyring v3, dialog, mime_guess) + AppState.file_tokens + KeyringSecretStore backing
+- [x] 04-02-PLAN.md — security::redaction (three categories) + security::command_policy (window-label allow-table)
+- [x] 04-03-PLAN.md — security::file_tokens (mint/resolve/revoke against AppState.file_tokens)
+- [x] 04-04-PLAN.md — telemetry::audit_log (JSON Lines) + ipc::privacy (set/status/clear commands)
+- [x] 04-05-PLAN.md — ipc::files (files_open_dialog native picker + files_read_token)
+- [x] 04-06-PLAN.md — Wiring: main.rs registration + dialog plugin + privacy.toml/files.toml + capabilities
+- [x] 04-07-PLAN.md — Frontend: privacyStore (settings.ts) + SettingsSurface.svelte credential UI
 
 ## Phase 5: Artifacts
 
@@ -76,9 +76,11 @@ Plans:
 
 **Plan Waves:**
 
-- Wave 1: `05-01` - backend artifact contract, persistence, and IPC surface
-- Wave 2: `05-02` - frontend preview surface, reload/stop controls, and chat routing
-- Wave 3: `05-03` - accessibility, fail-closed behavior, and verification
+- [x] Wave 1: `05-01` - backend artifact contract, persistence, and IPC surface
+- [x] Wave 2: `05-02` - frontend preview surface, reload/stop controls, and chat routing
+- [x] Wave 3: `05-03` - accessibility, fail-closed behavior, and verification
+
+**Execution:** Complete — all three waves executed (see `05-01-SUMMARY.md` through `05-03-SUMMARY.md`).
 
 **Cross-cutting constraints:**
 

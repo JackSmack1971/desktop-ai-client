@@ -39,6 +39,11 @@ pub struct FtsStore {
     pool: std::sync::Arc<SqlitePool>,
 }
 
+/// Escape arbitrary user input into a single FTS5 quoted phrase.
+fn escape_fts5_phrase(query: &str) -> String {
+    format!("\"{}\"", query.replace('"', "\"\""))
+}
+
 impl FtsStore {
     /// Create a new `FtsStore` sharing the given connection pool.
     pub fn new(pool: std::sync::Arc<SqlitePool>) -> Self {
@@ -57,6 +62,7 @@ impl FtsStore {
     /// The `query` string is bound via SQLite parameters — it is never
     /// interpolated into the SQL text (T-03-04).
     pub fn search(&self, query: &str) -> rusqlite::Result<Vec<SearchResult>> {
+        let escaped_query = escape_fts5_phrase(query);
         self.pool.with_conn(|conn| {
             let mut stmt = conn.prepare(
                 "SELECT c.id, c.title, c.model, c.status, c.updated_at,
@@ -78,7 +84,7 @@ impl FtsStore {
                  LIMIT 50",
             )?;
 
-            let rows = stmt.query_map(rusqlite::params![query], |row| {
+            let rows = stmt.query_map(rusqlite::params![escaped_query], |row| {
                 Ok(SearchResult {
                     id: row.get(0)?,
                     title: row.get(1)?,
@@ -170,6 +176,58 @@ mod tests {
         assert!(
             results.is_empty(),
             "search for absent term should return empty vec"
+        );
+    }
+
+    #[test]
+    fn fts_search_does_not_error_on_unbalanced_quote() {
+        let pool = in_memory_pool();
+        let store = FtsStore::new(pool.clone());
+
+        pool.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO conversations (id, title) VALUES ('conv-q', 'Quote Test')",
+                [],
+            )?;
+            conn.execute(
+                "INSERT INTO messages (id, conversation_id, role, content)
+                 VALUES ('msg-q', 'conv-q', 'user', 'some normal message text')",
+                [],
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        let result = store.search("\"unterminated");
+        assert!(
+            result.is_ok(),
+            "search with an unbalanced quote should not error: {result:?}"
+        );
+    }
+
+    #[test]
+    fn fts_search_treats_operator_keywords_as_literal_text() {
+        let pool = in_memory_pool();
+        let store = FtsStore::new(pool.clone());
+
+        pool.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO conversations (id, title) VALUES ('conv-op', 'Operator Test')",
+                [],
+            )?;
+            conn.execute(
+                "INSERT INTO messages (id, conversation_id, role, content)
+                 VALUES ('msg-op', 'conv-op', 'user', 'find the AND keyword in this sentence')",
+                [],
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        let result = store.search("AND");
+        assert!(
+            result.is_ok(),
+            "search for a bare boolean-operator keyword should not error: {result:?}"
         );
     }
 }

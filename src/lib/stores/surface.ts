@@ -10,6 +10,7 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
+import { normalizeIpcError } from '$lib/api/errors';
 
 /** Named surfaces the workspace shell can display. Must match Surface enum in app_state.rs. */
 export type Surface = 'chat' | 'history' | 'settings' | 'artifacts';
@@ -21,23 +22,6 @@ const SURFACE_LABELS: Record<Surface, string> = {
 	settings: 'Settings',
 	artifacts: 'Artifacts',
 };
-
-/**
- * Normalize an IPC rejection to a user-facing error string.
- *
- * Tauri rejects IPC calls with serialized ShellError objects
- * ({ code, message }) or plain strings. String(e) on an object
- * produces "[object Object]", which is useless in the status bar.
- */
-function normalizeIpcError(e: unknown): string {
-    if (typeof e === 'string') return e;
-    if (e && typeof e === 'object') {
-        const obj = e as Record<string, unknown>;
-        if (typeof obj['message'] === 'string') return obj['message'];
-        if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
-    }
-    return 'An unexpected error occurred.';
-}
 
 function createSurfaceStore() {
 	// Svelte 5 rune: mutable reactive state.

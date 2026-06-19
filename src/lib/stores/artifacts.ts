@@ -1,17 +1,8 @@
 import { artifactDismiss, artifactGet, type ArtifactPreviewResponse } from '$lib/api/artifacts';
 import type { ArtifactContentType, ChatEvent } from '$lib/api/chat';
+import { normalizeIpcError } from '$lib/api/errors';
 
 type ArtifactState = 'idle' | 'loading' | 'ready' | 'dismissed' | 'error';
-
-function normalizeIpcError(e: unknown): string {
-	if (typeof e === 'string') return e;
-	if (e && typeof e === 'object') {
-		const obj = e as Record<string, unknown>;
-		if (typeof obj['message'] === 'string') return obj['message'];
-		if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
-	}
-	return 'An unexpected error occurred.';
-}
 
 function createArtifactsStore() {
 	let state = $state<ArtifactState>('idle');

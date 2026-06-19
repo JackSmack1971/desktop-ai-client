@@ -11,6 +11,7 @@
 ///   get_active_surface  – windows: ["main"], production: true, sensitivity: low
 ///   set_active_surface  – windows: ["main"], production: true, sensitivity: low
 use crate::app_state::{AppState, Surface};
+use crate::security::command_policy;
 use crate::storage::sqlite::ShellPreferenceStore;
 
 /// Error type returned to the frontend from shell IPC commands.
@@ -24,6 +25,19 @@ pub enum ShellError {
     InvalidSurface(String),
     #[error("unauthorized window: {0}")]
     UnauthorizedWindow(String),
+}
+
+impl From<command_policy::PolicyError> for ShellError {
+    fn from(value: command_policy::PolicyError) -> Self {
+        match value {
+            command_policy::PolicyError::UnauthorizedWindow(msg) => {
+                ShellError::UnauthorizedWindow(msg)
+            }
+            command_policy::PolicyError::UnknownCommand(msg) => {
+                ShellError::UnauthorizedWindow(msg)
+            }
+        }
+    }
 }
 
 /// Returns the active surface stored in backend-owned state.
@@ -40,7 +54,7 @@ pub async fn get_active_surface(
     state: tauri::State<'_, AppState>,
     store: tauri::State<'_, ShellPreferenceStore>,
 ) -> Result<Surface, ShellError> {
-    assert_main_window(&window)?;
+    command_policy::policy_check("get_active_surface", window.label())?;
 
     // Hold the shell lock for the entire check-read-write sequence so that
     // concurrent async invocations cannot both observe hydrated == false and
@@ -73,7 +87,7 @@ pub async fn set_active_surface(
     store: tauri::State<'_, ShellPreferenceStore>,
     surface: Surface,
 ) -> Result<(), ShellError> {
-    assert_main_window(&window)?;
+    command_policy::policy_check("set_active_surface", window.label())?;
 
     // Persist to SQLite first so that a crash between the DB write and the
     // in-memory update leaves the stored value correct.
@@ -90,18 +104,6 @@ pub async fn set_active_surface(
     Ok(())
 }
 
-/// Enforces that shell commands can only be invoked from the main window.
-/// This is backend-side enforcement; the capability file is defense-in-depth.
-fn assert_main_window(window: &tauri::Window) -> Result<(), ShellError> {
-    if window.label() != "main" {
-        return Err(ShellError::UnauthorizedWindow(format!(
-            "shell commands require the main window, got {:?}",
-            window.label()
-        )));
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,5 +116,21 @@ mod tests {
             json.contains("INVALID_SURFACE"),
             "expected SCREAMING_SNAKE_CASE code: {json}"
         );
+    }
+
+    #[test]
+    fn policy_check_rejects_non_main_window_for_get_active_surface() {
+        let err: ShellError = command_policy::policy_check("get_active_surface", "evil")
+            .unwrap_err()
+            .into();
+        assert!(matches!(err, ShellError::UnauthorizedWindow(_)));
+    }
+
+    #[test]
+    fn policy_check_rejects_non_main_window_for_set_active_surface() {
+        let err: ShellError = command_policy::policy_check("set_active_surface", "evil")
+            .unwrap_err()
+            .into();
+        assert!(matches!(err, ShellError::UnauthorizedWindow(_)));
     }
 }
