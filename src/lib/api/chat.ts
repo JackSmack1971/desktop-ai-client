@@ -29,7 +29,13 @@ export type ChatEvent =
 	| { type: 'Delta'; text: string }
 	| { type: 'Done'; usage?: { prompt_tokens: number; completion_tokens: number }; model: string }
 	| { type: 'Error'; code: string; message: string }
-	| { type: 'ArtifactReady'; artifact_id: string; content_type: ArtifactContentType; preview: string };
+	| {
+			type: 'ArtifactReady';
+			conversation_id: string;
+			artifact_id: string;
+			content_type: ArtifactContentType;
+			preview: string;
+	  };
 
 /** A message in the conversation history. Role is constrained to the two valid values. */
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
