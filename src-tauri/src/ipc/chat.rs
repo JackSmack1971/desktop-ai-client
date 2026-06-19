@@ -75,6 +75,7 @@ pub enum ChatEvent {
     Error { code: String, message: String },
     /// Backend-owned artifact detected after stream completion.
     ArtifactReady {
+        conversation_id: String,
         artifact_id: String,
         content_type: ArtifactContentType,
         preview: String,
@@ -302,6 +303,7 @@ pub async fn chat_send(
                         match artifact_store.get_artifact_preview(&artifact_id) {
                             Ok(preview) => {
                                 let _ = channel.send(ChatEvent::ArtifactReady {
+                                    conversation_id: effective_conv_id.clone(),
                                     artifact_id: preview.artifact_id,
                                     content_type: preview.content_type,
                                     preview: preview.srcdoc,
@@ -672,6 +674,7 @@ mod tests {
     #[test]
     fn chat_event_artifact_ready_serializes_with_type_field() {
         let event = ChatEvent::ArtifactReady {
+            conversation_id: "conv-1".into(),
             artifact_id: "art-1".into(),
             content_type: ArtifactContentType::Html,
             preview: "<html></html>".into(),
@@ -684,6 +687,10 @@ mod tests {
         assert!(
             json.contains(r#""artifact_id":"art-1""#),
             "expected artifact_id field: {json}"
+        );
+        assert!(
+            json.contains(r#""conversation_id":"conv-1""#),
+            "expected conversation_id field: {json}"
         );
     }
 
