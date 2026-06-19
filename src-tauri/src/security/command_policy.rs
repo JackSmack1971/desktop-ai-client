@@ -7,49 +7,36 @@ pub enum PolicyError {
     UnknownCommand(String),
 }
 
-pub struct CommandPolicy {
-    table: &'static [(&'static str, &'static [&'static str])],
-}
+/// Only window in `tauri.conf.json`. Update this if a second window is added.
+const ALLOWED_WINDOW: &str = "main";
 
-impl CommandPolicy {
-    pub const fn new() -> Self {
-        Self {
-            table: &[
-                ("get_active_surface", &["main"]),
-                ("set_active_surface", &["main"]),
-                ("chat_send", &["main"]),
-                ("chat_cancel", &["main"]),
-                ("history_list", &["main"]),
-                ("history_get", &["main"]),
-                ("history_delete", &["main"]),
-                ("history_search", &["main"]),
-                ("privacy_set_provider_key", &["main"]),
-                ("privacy_get_credential_status", &["main"]),
-                ("privacy_clear_provider_key", &["main"]),
-                ("files_open_dialog", &["main"]),
-                ("files_read_token", &["main"]),
-                ("artifact_get", &["main"]),
-                ("artifact_dismiss", &["main"]),
-            ],
-        }
-    }
-
-    pub fn check(&self, command: &str, window_label: &str) -> Result<(), PolicyError> {
-        let Some((_, labels)) = self.table.iter().find(|(name, _)| *name == command) else {
-            return Err(PolicyError::UnknownCommand(command.to_string()));
-        };
-        if labels.iter().any(|label| *label == window_label) {
-            Ok(())
-        } else {
-            Err(PolicyError::UnauthorizedWindow(window_label.to_string()))
-        }
-    }
-}
-
-pub static POLICY: CommandPolicy = CommandPolicy::new();
+const COMMANDS: &[&str] = &[
+    "get_active_surface",
+    "set_active_surface",
+    "chat_send",
+    "chat_cancel",
+    "history_list",
+    "history_get",
+    "history_delete",
+    "history_search",
+    "privacy_set_provider_key",
+    "privacy_get_credential_status",
+    "privacy_clear_provider_key",
+    "files_open_dialog",
+    "files_read_token",
+    "artifact_get",
+    "artifact_dismiss",
+];
 
 pub fn policy_check(command: &str, window_label: &str) -> Result<(), PolicyError> {
-    POLICY.check(command, window_label)
+    if !COMMANDS.contains(&command) {
+        return Err(PolicyError::UnknownCommand(command.to_string()));
+    }
+    if window_label == ALLOWED_WINDOW {
+        Ok(())
+    } else {
+        Err(PolicyError::UnauthorizedWindow(window_label.to_string()))
+    }
 }
 
 /// Names of every command registered in the policy table.

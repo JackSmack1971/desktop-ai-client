@@ -69,13 +69,13 @@ pub async fn privacy_set_provider_key(
 pub async fn privacy_get_credential_status(
     window: tauri::Window,
     app_handle: tauri::AppHandle,
-    state: tauri::State<'_, AppState>,
+    _state: tauri::State<'_, AppState>,
     provider: String,
 ) -> Result<secrets::CredentialStatus, PrivacyError> {
     let result = (|| {
         command_policy::policy_check("privacy_get_credential_status", window.label())?;
         let provider_id = provider_from_string(provider)?;
-        Ok(secrets::get_credential_status(&state, provider_id))
+        Ok(secrets::get_credential_status(provider_id))
     })();
     audit_result(&app_handle, window.label(), "privacy_get_credential_status", result.is_ok());
     result
