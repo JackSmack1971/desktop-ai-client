@@ -33,9 +33,7 @@ impl From<command_policy::PolicyError> for ShellError {
             command_policy::PolicyError::UnauthorizedWindow(msg) => {
                 ShellError::UnauthorizedWindow(msg)
             }
-            command_policy::PolicyError::UnknownCommand(msg) => {
-                ShellError::UnauthorizedWindow(msg)
-            }
+            command_policy::PolicyError::UnknownCommand(msg) => ShellError::UnauthorizedWindow(msg),
         }
     }
 }
@@ -48,14 +46,11 @@ impl From<command_policy::PolicyError> for ShellError {
 /// Lock ordering: shell lock is acquired first, then sqlite lock (inside
 /// `store.load_active_surface()`). All callers must maintain this ordering
 /// to prevent deadlock.
-#[tauri::command]
-pub async fn get_active_surface(
-    window: tauri::Window,
-    state: tauri::State<'_, AppState>,
-    store: tauri::State<'_, ShellPreferenceStore>,
+#[doc(hidden)]
+pub async fn get_active_surface_inner(
+    state: &AppState,
+    store: &ShellPreferenceStore,
 ) -> Result<Surface, ShellError> {
-    command_policy::policy_check("get_active_surface", window.label())?;
-
     // Hold the shell lock for the entire check-read-write sequence so that
     // concurrent async invocations cannot both observe hydrated == false and
     // both issue a DB read, returning a stale value from the second caller.
@@ -76,10 +71,41 @@ pub async fn get_active_surface(
     Ok(shell.active_surface.clone())
 }
 
+#[tauri::command]
+pub async fn get_active_surface(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+    store: tauri::State<'_, ShellPreferenceStore>,
+) -> Result<Surface, ShellError> {
+    command_policy::policy_check("get_active_surface", window.label())?;
+    get_active_surface_inner(&state, &store).await
+}
+
 /// Sets the active surface and persists it to backend-owned SQLite storage.
 ///
 /// The frontend calls this whenever the user switches surfaces. The value
 /// is never written to browser storage; it lives only in the backend.
+#[doc(hidden)]
+pub async fn set_active_surface_inner(
+    state: &AppState,
+    store: &ShellPreferenceStore,
+    surface: Surface,
+) -> Result<(), ShellError> {
+    let mut shell = state
+        .shell
+        .lock()
+        .map_err(|e| ShellError::StorageError(format!("shell state lock poisoned: {e}")))?;
+    let previous_surface = shell.active_surface.clone();
+    shell.active_surface = surface;
+
+    if let Err(e) = store.save_active_surface(&shell.active_surface) {
+        shell.active_surface = previous_surface;
+        return Err(ShellError::StorageError(e.to_string()));
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn set_active_surface(
     window: tauri::Window,
@@ -88,20 +114,7 @@ pub async fn set_active_surface(
     surface: Surface,
 ) -> Result<(), ShellError> {
     command_policy::policy_check("set_active_surface", window.label())?;
-
-    // Persist to SQLite first so that a crash between the DB write and the
-    // in-memory update leaves the stored value correct.
-    store
-        .save_active_surface(&surface)
-        .map_err(|e| ShellError::StorageError(e.to_string()))?;
-
-    let mut shell = state
-        .shell
-        .lock()
-        .map_err(|e| ShellError::StorageError(format!("shell state lock poisoned: {e}")))?;
-    shell.active_surface = surface;
-
-    Ok(())
+    set_active_surface_inner(&state, &store, surface).await
 }
 
 #[cfg(test)]
