@@ -19,6 +19,18 @@ your row when done.
 | 008  | Add a CI workflow (typecheck, backend tests, dependency audits)                         | P2       | M      | 005 (soft), 007 (soft) | TODO                                                                                                                                                                                                                                                                                                                |
 | 009  | Add ESLint + Prettier with `lint`/`format` scripts                                      | P3       | S-M    | —                      | DONE                                                                                                                                                                                                                                                                                                                |
 | 010  | Scope `ArtifactReady` events to the conversation that produced them                     | P3       | S-M    | 001 (soft)             | TODO                                                                                                                                                                                                                                                                                                                |
+| Plan | Title | Priority | Effort | Depends on | Status |
+|------|-------|----------|--------|------------|--------|
+| 001 | Guard concurrent `sendMessage` against corrupting an in-flight chat stream | P1 | S | — | DONE |
+| 002 | Consolidate command-policy enforcement onto `command_policy::policy_check` | P1 | M | — | DONE |
+| 003 | Revoke file tokens after attachment content is read | P2 | S | — | DONE |
+| 004 | Cap attachment read size and reject non-text MIME types | P2 | S | — | DONE |
+| 005 | Add frontend (Vitest) + backend (mockito) test infra; cover chat streaming/cancellation | P1 | L | — | BLOCKED (Step 2: chat.ts/artifacts.ts/etc. use Svelte 5 runes in plain .ts files, which vite-plugin-svelte never compiles outside .svelte/.svelte.ts — ReferenceError on `$state` in Vitest AND in the real production browser bundle; pre-existing app bug, not introduced by this plan, out of scope to fix here) |
+| 006 | Escape FTS5 search queries so ordinary punctuation doesn't throw | P2 | S | — | DONE |
+| 007 | Remove duplicate npm lockfile, pin pnpm via `packageManager` | P3 | S | — | DONE |
+| 008 | Add a CI workflow (typecheck, backend tests, dependency audits) | P2 | M | 005 (soft), 007 (soft) | DONE |
+| 009 | Add ESLint + Prettier with `lint`/`format` scripts | P3 | S-M | — | TODO |
+| 010 | Scope `ArtifactReady` events to the conversation that produced them | P3 | S-M | 001 (soft) | TODO |
 
 Status values: TODO \| IN PROGRESS \| DONE \| BLOCKED (with one-line reason) \| REJECTED (with one-line rationale)
 
