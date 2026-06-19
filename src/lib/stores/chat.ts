@@ -15,6 +15,7 @@ import { chatSend, chatCancel } from '$lib/api/chat';
 import type { ChatEvent } from '$lib/api/chat';
 import { normalizeIpcError } from '$lib/api/errors';
 import { artifactsStore } from '$lib/stores/artifacts';
+import { historyStore } from '$lib/stores/history';
 
 /** The persisted shape of a single chat message, including streaming state. */
 export type ChatMessageState = {
@@ -115,7 +116,7 @@ function createChatStore() {
 				break;
 			}
 			case 'ArtifactReady': {
-				artifactsStore.receiveArtifact(event);
+				artifactsStore.receiveArtifact(event, historyStore.activeConversationId);
 				break;
 			}
 		}
@@ -163,7 +164,11 @@ function createChatStore() {
 		}>;
 
 		try {
-			await chatSend({ messages: apiMessages, onEvent: handleEvent });
+			await chatSend({
+				messages: apiMessages,
+				conversationId: historyStore.activeConversationId ?? undefined,
+				onEvent: handleEvent,
+			});
 		} catch (e) {
 			// invoke() rejection (e.g., CredentialError before stream starts).
 			error = normalizeIpcError(e);
