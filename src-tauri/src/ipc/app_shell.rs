@@ -60,9 +60,10 @@ pub async fn get_active_surface(
     // concurrent async invocations cannot both observe hydrated == false and
     // both issue a DB read, returning a stale value from the second caller.
     // Lock ordering: shell -> sqlite (ShellPreferenceStore acquires sqlite internally).
-    let mut shell = state.shell.lock().map_err(|e| {
-        ShellError::StorageError(format!("shell state lock poisoned: {e}"))
-    })?;
+    let mut shell = state
+        .shell
+        .lock()
+        .map_err(|e| ShellError::StorageError(format!("shell state lock poisoned: {e}")))?;
 
     if !shell.hydrated {
         // DB read while holding the shell lock; sqlite lock acquired inside here.
@@ -94,9 +95,10 @@ pub async fn set_active_surface(
         .save_active_surface(&surface)
         .map_err(|e| ShellError::StorageError(e.to_string()))?;
 
-    let mut shell = state.shell.lock().map_err(|e| {
-        ShellError::StorageError(format!("shell state lock poisoned: {e}"))
-    })?;
+    let mut shell = state
+        .shell
+        .lock()
+        .map_err(|e| ShellError::StorageError(format!("shell state lock poisoned: {e}")))?;
     shell.active_surface = surface;
 
     Ok(())
@@ -110,7 +112,10 @@ mod tests {
     fn shell_error_serializes_with_code_field() {
         let err = ShellError::InvalidSurface("bad".to_string());
         let json = serde_json::to_string(&err).unwrap();
-        assert!(json.contains("INVALID_SURFACE"), "expected SCREAMING_SNAKE_CASE code: {json}");
+        assert!(
+            json.contains("INVALID_SURFACE"),
+            "expected SCREAMING_SNAKE_CASE code: {json}"
+        );
     }
 
     #[test]

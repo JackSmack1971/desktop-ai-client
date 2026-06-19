@@ -259,7 +259,10 @@ mod tests {
 
     fn test_guard() -> MutexGuard<'static, ()> {
         static GUARD: OnceLock<Mutex<()>> = OnceLock::new();
-        GUARD.get_or_init(|| Mutex::new(())).lock().expect("test guard")
+        GUARD
+            .get_or_init(|| Mutex::new(()))
+            .lock()
+            .expect("test guard")
     }
 
     #[test]

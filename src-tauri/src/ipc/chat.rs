@@ -27,8 +27,8 @@ use crate::storage::sqlite::{ConversationStore, MessageStore};
 use mime_guess::from_path;
 use std::fs;
 use std::path::Path;
-use tauri::Manager;
 use tauri::ipc::Channel;
+use tauri::Manager;
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
@@ -338,7 +338,9 @@ pub async fn chat_send(
                 // channel errors after terminal event).
                 let conv_store = app_handle.state::<ConversationStore>();
                 if let Err(storage_err) = conv_store.mark_incomplete(&effective_conv_id) {
-                    eprintln!("[chat] failed to mark conversation incomplete on error: {storage_err}");
+                    eprintln!(
+                        "[chat] failed to mark conversation incomplete on error: {storage_err}"
+                    );
                 }
                 let _ = channel.send(ChatEvent::Error {
                     code: "PROVIDER_ERROR".into(),
@@ -453,47 +455,46 @@ async fn run_stream(
 
     // Drive the SSE stream, dispatching events through the channel and
     // accumulating Delta text for storage writes after completion.
-    let result = sse::drive_sse_stream(
-        response,
-        cancel_token,
-        move |event| {
-            match event {
-                sse::SseEvent::Delta { ref text } => {
-                    // Accumulate assistant text for storage write on completion.
-                    if let Ok(mut acc) = accumulated_clone.lock() {
-                        acc.push_str(text);
-                    }
-                    // Ignore send errors mid-stream; the channel is closed if
-                    // the frontend navigated away (Pitfall 2).
-                    let _ = channel_for_closure.send(ChatEvent::Delta { text: text.clone() });
+    let result = sse::drive_sse_stream(response, cancel_token, move |event| {
+        match event {
+            sse::SseEvent::Delta { ref text } => {
+                // Accumulate assistant text for storage write on completion.
+                if let Ok(mut acc) = accumulated_clone.lock() {
+                    acc.push_str(text);
                 }
-                sse::SseEvent::Done { usage, model: ref model_name } => {
-                    // Capture the resolved model name for the conversation row.
-                    if let Ok(mut m) = done_model_clone.lock() {
-                        m.clone_from(model_name);
-                    }
-                    let token_usage = usage.map(|u| TokenUsage {
-                        prompt_tokens: u.prompt_tokens,
-                        completion_tokens: u.completion_tokens,
-                    });
-                    let _ = channel_for_closure.send(ChatEvent::Done {
-                        usage: token_usage,
-                        model: model_name.clone(),
-                    });
-                }
-                sse::SseEvent::ProviderError { message } => {
-                    let _ = channel_for_closure.send(ChatEvent::Error {
-                        code: "PROVIDER_ERROR".into(),
-                        message,
-                    });
-                }
-                sse::SseEvent::Comment | sse::SseEvent::Unknown => {
-                    // Ignored.
-                }
+                // Ignore send errors mid-stream; the channel is closed if
+                // the frontend navigated away (Pitfall 2).
+                let _ = channel_for_closure.send(ChatEvent::Delta { text: text.clone() });
             }
-            Ok(())
-        },
-    )
+            sse::SseEvent::Done {
+                usage,
+                model: ref model_name,
+            } => {
+                // Capture the resolved model name for the conversation row.
+                if let Ok(mut m) = done_model_clone.lock() {
+                    m.clone_from(model_name);
+                }
+                let token_usage = usage.map(|u| TokenUsage {
+                    prompt_tokens: u.prompt_tokens,
+                    completion_tokens: u.completion_tokens,
+                });
+                let _ = channel_for_closure.send(ChatEvent::Done {
+                    usage: token_usage,
+                    model: model_name.clone(),
+                });
+            }
+            sse::SseEvent::ProviderError { message } => {
+                let _ = channel_for_closure.send(ChatEvent::Error {
+                    code: "PROVIDER_ERROR".into(),
+                    message,
+                });
+            }
+            sse::SseEvent::Comment | sse::SseEvent::Unknown => {
+                // Ignored.
+            }
+        }
+        Ok(())
+    })
     .await;
 
     // Extract accumulated values now that the stream closure has released them.
@@ -558,11 +559,15 @@ fn read_attachment(path: &Path) -> Result<String, ChatError> {
     let content = if mime_type == "text" || mime_subtype == "json" || mime_subtype == "xml" {
         fs::read_to_string(path).map_err(|e| ChatError::CredentialError(e.to_string()))?
     } else {
-        String::from_utf8_lossy(&fs::read(path).map_err(|e| ChatError::CredentialError(e.to_string()))?)
-            .into_owned()
+        String::from_utf8_lossy(
+            &fs::read(path).map_err(|e| ChatError::CredentialError(e.to_string()))?,
+        )
+        .into_owned()
     };
 
-    Ok(format!("Filename: {filename}\nMIME: {mime}\nContent:\n{content}"))
+    Ok(format!(
+        "Filename: {filename}\nMIME: {mime}\nContent:\n{content}"
+    ))
 }
 
 #[cfg(test)]
@@ -676,7 +681,10 @@ mod tests {
             json.contains(r#""type":"ArtifactReady""#),
             "expected type:ArtifactReady: {json}"
         );
-        assert!(json.contains(r#""artifact_id":"art-1""#), "expected artifact_id field: {json}");
+        assert!(
+            json.contains(r#""artifact_id":"art-1""#),
+            "expected artifact_id field: {json}"
+        );
     }
 
     // D-10 invariant verified: chat_send signature does not include api_key.

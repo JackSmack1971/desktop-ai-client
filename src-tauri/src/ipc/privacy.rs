@@ -45,7 +45,8 @@ fn provider_from_string(provider: String) -> Result<secrets::ProviderId, Privacy
 
 fn audit_result(app_handle: &tauri::AppHandle, window_label: &str, command: &str, ok: bool) {
     let status = if ok { "ok" } else { "error" };
-    let _ = audit_log::write_audit_entry(app_handle, AuditEntry::new(command, window_label, status));
+    let _ =
+        audit_log::write_audit_entry(app_handle, AuditEntry::new(command, window_label, status));
 }
 
 #[tauri::command]
@@ -61,7 +62,12 @@ pub async fn privacy_set_provider_key(
         let provider_id = provider_from_string(provider)?;
         secrets::store_provider_key(provider_id.account_label(), &key).map_err(PrivacyError::from)
     })();
-    audit_result(&app_handle, window.label(), "privacy_set_provider_key", result.is_ok());
+    audit_result(
+        &app_handle,
+        window.label(),
+        "privacy_set_provider_key",
+        result.is_ok(),
+    );
     result
 }
 
@@ -77,7 +83,12 @@ pub async fn privacy_get_credential_status(
         let provider_id = provider_from_string(provider)?;
         Ok(secrets::get_credential_status(provider_id))
     })();
-    audit_result(&app_handle, window.label(), "privacy_get_credential_status", result.is_ok());
+    audit_result(
+        &app_handle,
+        window.label(),
+        "privacy_get_credential_status",
+        result.is_ok(),
+    );
     result
 }
 
@@ -93,7 +104,12 @@ pub async fn privacy_clear_provider_key(
         let provider_id = provider_from_string(provider)?;
         secrets::delete_provider_key(provider_id.account_label()).map_err(PrivacyError::from)
     })();
-    audit_result(&app_handle, window.label(), "privacy_clear_provider_key", result.is_ok());
+    audit_result(
+        &app_handle,
+        window.label(),
+        "privacy_clear_provider_key",
+        result.is_ok(),
+    );
     result
 }
 

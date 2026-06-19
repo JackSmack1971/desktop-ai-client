@@ -15,6 +15,9 @@ Cargo.lock
 src-tauri/gen/
 src-tauri/target/
 
+# cargo-mutants shadow workspace
+.mutants-src-tauri/
+
 # Environment files (never commit secrets)
 .env
 .env.*
@@ -33,4 +36,7 @@ Thumbs.db
 npm-debug.log*
 
 # Claude Code ephemeral agent state
-.claude/worktrees/
+.claude/
+.tmp_issues/
+.team_experience.md
+advanced-test-plan.json

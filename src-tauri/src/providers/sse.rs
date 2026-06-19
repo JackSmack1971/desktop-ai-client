@@ -163,9 +163,7 @@ pub async fn drive_sse_stream(
 
         // Process every complete line in the buffer.
         while let Some(newline_pos) = line_buf.find('\n') {
-            let line = line_buf[..newline_pos]
-                .trim_end_matches('\r')
-                .to_string();
+            let line = line_buf[..newline_pos].trim_end_matches('\r').to_string();
             line_buf.drain(..=newline_pos);
 
             // Accumulate model and usage from each chunk for the Done event.

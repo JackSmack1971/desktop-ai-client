@@ -47,7 +47,9 @@ impl Default for SecretsState {
         let key = std::env::var("OPENROUTER_API_KEY")
             .ok()
             .map(|v| secrecy::SecretString::new(v.into()));
-        Self { openrouter_key: key }
+        Self {
+            openrouter_key: key,
+        }
     }
 }
 
@@ -150,14 +152,20 @@ mod tests {
     #[test]
     fn app_state_initializes_active_requests_empty() {
         let state = AppState::default();
-        let requests = state.active_requests.lock().expect("lock should not be poisoned");
+        let requests = state
+            .active_requests
+            .lock()
+            .expect("lock should not be poisoned");
         assert!(requests.is_empty(), "active_requests must start empty");
     }
 
     #[test]
     fn app_state_initializes_file_tokens_empty() {
         let state = AppState::default();
-        let file_tokens = state.file_tokens.lock().expect("lock should not be poisoned");
+        let file_tokens = state
+            .file_tokens
+            .lock()
+            .expect("lock should not be poisoned");
         assert!(file_tokens.is_empty(), "file_tokens must start empty");
     }
 }

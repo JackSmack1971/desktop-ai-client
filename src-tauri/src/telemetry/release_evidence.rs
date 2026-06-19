@@ -65,15 +65,17 @@ pub struct ReleaseEvidenceBundle {
     pub inventory_report: InventoryReport,
 }
 
-pub fn collect_release_evidence(workspace_root: impl AsRef<Path>) -> Result<ReleaseEvidenceBundle, ReleaseEvidenceError> {
+pub fn collect_release_evidence(
+    workspace_root: impl AsRef<Path>,
+) -> Result<ReleaseEvidenceBundle, ReleaseEvidenceError> {
     let workspace_root = workspace_root.as_ref();
     let paths = inventory::workspace_paths(workspace_root);
     let inventory_report = inventory::verify_inventory(&paths)?;
 
     if !inventory_report.is_clean() {
-        return Err(ReleaseEvidenceError::Inventory(inventory::InventoryError::Mismatch(
-            inventory_report.issues.join("; "),
-        )));
+        return Err(ReleaseEvidenceError::Inventory(
+            inventory::InventoryError::Mismatch(inventory_report.issues.join("; ")),
+        ));
     }
 
     let evidence_dir = workspace_root.join("release-evidence");
@@ -93,7 +95,8 @@ pub fn collect_release_evidence(workspace_root: impl AsRef<Path>) -> Result<Rele
     )?;
 
     let verify_log = logs_dir.join("verify-command-inventory.log");
-    let verify_command = "cargo run --manifest-path src-tauri/Cargo.toml --bin verify-command-inventory";
+    let verify_command =
+        "cargo run --manifest-path src-tauri/Cargo.toml --bin verify-command-inventory";
     let verify_status = run_and_capture(
         workspace_root,
         "cargo",
@@ -235,12 +238,19 @@ fn summary_markdown(manifest: &ReleaseEvidenceManifest, report: &InventoryReport
     out.push_str(&format!(
         "- registered commands: {}\n- inventory status: {}\n- release capabilities: {}\n\n",
         manifest.inventory_commands,
-        if manifest.inventory_clean { "clean" } else { "issues found" },
+        if manifest.inventory_clean {
+            "clean"
+        } else {
+            "issues found"
+        },
         report.release_capabilities.join(", ")
     ));
     out.push_str("## Runs\n\n");
     for run in &manifest.runs {
-        out.push_str(&format!("- {}: {} ({})\n", run.name, run.command, run.status));
+        out.push_str(&format!(
+            "- {}: {} ({})\n",
+            run.name, run.command, run.status
+        ));
     }
     out.push_str("\n## Categories\n\n");
     for category in &manifest.categories {
@@ -389,6 +399,9 @@ mod tests {
     fn rel_path_strips_workspace_root() {
         let workspace = PathBuf::from("C:/workspaces/desktop-ai-client");
         let path = workspace.join("release-evidence/manifest.toml");
-        assert_eq!(rel_path(&workspace, &path), "release-evidence/manifest.toml");
+        assert_eq!(
+            rel_path(&workspace, &path),
+            "release-evidence/manifest.toml"
+        );
     }
 }

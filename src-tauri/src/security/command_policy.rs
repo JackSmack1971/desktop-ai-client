@@ -46,7 +46,7 @@ pub fn policy_check(command: &str, window_label: &str) -> Result<(), PolicyError
 /// permission files, and capability files — closing the gap where this
 /// registry could silently drift from the others (ARCH-002).
 pub fn command_names() -> Vec<String> {
-    POLICY.table.iter().map(|(name, _)| name.to_string()).collect()
+    COMMANDS.iter().map(|name| (*name).to_string()).collect()
 }
 
 #[cfg(test)]

@@ -96,8 +96,7 @@ mod tests {
     #[test]
     fn default_model_is_correct() {
         assert_eq!(
-            DEFAULT_MODEL,
-            "anthropic/claude-sonnet-4-6",
+            DEFAULT_MODEL, "anthropic/claude-sonnet-4-6",
             "DEFAULT_MODEL constant must match D-13 decision"
         );
     }
@@ -109,7 +108,10 @@ mod tests {
             content: "hi".into(),
         };
         let json = serde_json::to_string(&msg).unwrap();
-        assert!(json.contains(r#""role":"user""#), "missing role field: {json}");
+        assert!(
+            json.contains(r#""role":"user""#),
+            "missing role field: {json}"
+        );
         assert!(
             json.contains(r#""content":"hi""#),
             "missing content field: {json}"

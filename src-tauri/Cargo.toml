@@ -35,6 +35,9 @@ tokio-util = { version = "0.7", features = ["rt"] }
 futures-util = "0.3"
 toml = "0.8"
 
+[dev-dependencies]
+proptest = "1"
+
 [features]
 # Custom features used to gate debug-only command registration.
 # In release builds, debug features must not be included.

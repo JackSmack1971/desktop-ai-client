@@ -115,9 +115,18 @@ impl InventoryReport {
             format!("inventory commands: {}", self.inventory_commands.len()),
             format!("compiled allowlist: {}", self.compiled_allowlist.len()),
             format!("permission grants: {}", self.permission_commands.len()),
-            format!("permission identifiers: {}", self.permission_identifiers.len()),
-            format!("capability permissions: {}", self.capability_permissions.len()),
-            format!("release capabilities: {}", self.release_capabilities.join(", ")),
+            format!(
+                "permission identifiers: {}",
+                self.permission_identifiers.len()
+            ),
+            format!(
+                "capability permissions: {}",
+                self.capability_permissions.len()
+            ),
+            format!(
+                "release capabilities: {}",
+                self.release_capabilities.join(", ")
+            ),
             format!("command_policy::COMMANDS: {}", self.policy_commands.len()),
         ];
 
@@ -139,7 +148,10 @@ pub fn workspace_paths(workspace_root: impl AsRef<Path>) -> InventoryPaths {
         release_capabilities: root.join("security").join("release-capabilities.toml"),
         main_rs: root.join("src-tauri").join("src").join("main.rs"),
         permissions_dir: root.join("src-tauri").join("permissions"),
-        capability_file: root.join("src-tauri").join("capabilities").join("main.json"),
+        capability_file: root
+            .join("src-tauri")
+            .join("capabilities")
+            .join("main.json"),
     }
 }
 
@@ -152,7 +164,9 @@ pub struct InventoryPaths {
     pub capability_file: PathBuf,
 }
 
-pub fn load_command_inventory(path: impl AsRef<Path>) -> Result<CommandInventoryFile, InventoryError> {
+pub fn load_command_inventory(
+    path: impl AsRef<Path>,
+) -> Result<CommandInventoryFile, InventoryError> {
     let path = path.as_ref();
     let raw = fs::read_to_string(path).map_err(|source| InventoryError::Io {
         path: path.to_path_buf(),
@@ -210,20 +224,21 @@ pub struct PermissionGrant {
     pub command: String,
 }
 
-pub fn registered_commands_from_main_rs(path: impl AsRef<Path>) -> Result<Vec<String>, InventoryError> {
+pub fn registered_commands_from_main_rs(
+    path: impl AsRef<Path>,
+) -> Result<Vec<String>, InventoryError> {
     let path = path.as_ref();
     let raw = fs::read_to_string(path).map_err(|source| InventoryError::Io {
         path: path.to_path_buf(),
         source,
     })?;
-    let start = raw
-        .find("tauri::generate_handler![")
-        .ok_or_else(|| InventoryError::Mismatch("tauri::generate_handler![ block not found".into()))?;
+    let start = raw.find("tauri::generate_handler![").ok_or_else(|| {
+        InventoryError::Mismatch("tauri::generate_handler![ block not found".into())
+    })?;
     let block_start = start + "tauri::generate_handler![".len();
-    let block_end = raw[block_start..]
-        .find(']')
-        .ok_or_else(|| InventoryError::Mismatch("closing bracket for generate_handler! block not found".into()))?
-        + block_start;
+    let block_end = raw[block_start..].find(']').ok_or_else(|| {
+        InventoryError::Mismatch("closing bracket for generate_handler! block not found".into())
+    })? + block_start;
     let block = &raw[block_start..block_end];
 
     let mut commands = Vec::new();
@@ -296,7 +311,9 @@ pub fn permission_grants_from_dir(
             .cmp(&right.identifier)
             .then_with(|| left.command.cmp(&right.command))
     });
-    collected.dedup_by(|left, right| left.identifier == right.identifier && left.command == right.command);
+    collected.dedup_by(|left, right| {
+        left.identifier == right.identifier && left.command == right.command
+    });
     Ok(collected)
 }
 
@@ -322,7 +339,12 @@ fn sorted_unique(values: impl IntoIterator<Item = String>) -> Vec<String> {
     set.into_iter().collect()
 }
 
-fn diff_report(left: &[String], right: &[String], left_name: &str, right_name: &str) -> Vec<String> {
+fn diff_report(
+    left: &[String],
+    right: &[String],
+    left_name: &str,
+    right_name: &str,
+) -> Vec<String> {
     let left_set: HashSet<_> = left.iter().collect();
     let right_set: HashSet<_> = right.iter().collect();
     let missing_from_right = left_set
@@ -359,13 +381,23 @@ pub fn verify_inventory(paths: &InventoryPaths) -> Result<InventoryReport, Inven
     let permission_grants = permission_grants_from_dir(&paths.permissions_dir)?;
     let capability_permissions = capability_permissions_from_file(&paths.capability_file)?;
 
-    let inventory_commands = sorted_unique(inventory.commands.iter().map(|entry| entry.name.clone()));
-    let inventory_expected_capabilities =
-        sorted_unique(inventory.commands.iter().map(|entry| entry.expected_capability.clone()));
+    let inventory_commands =
+        sorted_unique(inventory.commands.iter().map(|entry| entry.name.clone()));
+    let inventory_expected_capabilities = sorted_unique(
+        inventory
+            .commands
+            .iter()
+            .map(|entry| entry.expected_capability.clone()),
+    );
     let registered_commands = sorted_unique(registered_commands);
     let compiled_allowlist = sorted_unique(compiled_allowlist);
-    let permission_commands = sorted_unique(permission_grants.iter().map(|grant| grant.command.clone()));
-    let permission_identifiers = sorted_unique(permission_grants.iter().map(|grant| grant.identifier.clone()));
+    let permission_commands =
+        sorted_unique(permission_grants.iter().map(|grant| grant.command.clone()));
+    let permission_identifiers = sorted_unique(
+        permission_grants
+            .iter()
+            .map(|grant| grant.identifier.clone()),
+    );
     let capability_permissions = sorted_unique(capability_permissions);
     let release_capability_ids = sorted_unique(
         release_caps
@@ -421,7 +453,8 @@ pub fn verify_inventory(paths: &InventoryPaths) -> Result<InventoryReport, Inven
     }
 
     if !release_caps.dev_only_capabilities.is_empty() {
-        issues.push("dev_only_capabilities must remain empty in the current release catalog".into());
+        issues
+            .push("dev_only_capabilities must remain empty in the current release catalog".into());
     }
 
     for entry in &inventory.commands {
@@ -465,11 +498,11 @@ pub fn command_permission_name(command: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::sync::{Mutex, MutexGuard, OnceLock};
 
     fn unique_temp_dir(label: &str) -> PathBuf {
-        let stamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
         let path = std::env::temp_dir().join(format!("desktop-ai-client-{label}-{stamp}"));
@@ -479,6 +512,40 @@ mod tests {
 
     fn write_text(path: &Path, text: &str) {
         fs::write(path, text).unwrap();
+    }
+
+    fn temp_env_guard() -> MutexGuard<'static, ()> {
+        static GUARD: OnceLock<Mutex<()>> = OnceLock::new();
+        GUARD.get_or_init(|| Mutex::new(())).lock().unwrap()
+    }
+
+    struct AllowlistEnvSnapshot {
+        compiled: Option<String>,
+        legacy: Option<String>,
+    }
+
+    impl AllowlistEnvSnapshot {
+        fn set(value: &str) -> Self {
+            let compiled = std::env::var("TAURI_COMPILED_COMMAND_ALLOWLIST").ok();
+            let legacy = std::env::var("TAURI_COMMAND_ALLOWLIST").ok();
+            std::env::set_var("TAURI_COMPILED_COMMAND_ALLOWLIST", value);
+            std::env::remove_var("TAURI_COMMAND_ALLOWLIST");
+            Self { compiled, legacy }
+        }
+    }
+
+    impl Drop for AllowlistEnvSnapshot {
+        fn drop(&mut self) {
+            match &self.compiled {
+                Some(value) => std::env::set_var("TAURI_COMPILED_COMMAND_ALLOWLIST", value),
+                None => std::env::remove_var("TAURI_COMPILED_COMMAND_ALLOWLIST"),
+            }
+
+            match &self.legacy {
+                Some(value) => std::env::set_var("TAURI_COMMAND_ALLOWLIST", value),
+                None => std::env::remove_var("TAURI_COMMAND_ALLOWLIST"),
+            }
+        }
     }
 
     fn sample_inventory_toml() -> String {
@@ -541,7 +608,10 @@ fn main() {
 "#,
         );
         let commands = registered_commands_from_main_rs(&main_rs).unwrap();
-        assert_eq!(commands, vec!["chat_send".to_string(), "chat_cancel".to_string()]);
+        assert_eq!(
+            commands,
+            vec!["chat_send".to_string(), "chat_cancel".to_string()]
+        );
     }
 
     #[test]
@@ -552,7 +622,10 @@ fn main() {
         fs::create_dir_all(workspace.join("src-tauri/src")).unwrap();
         fs::create_dir_all(workspace.join("src-tauri/permissions")).unwrap();
         fs::create_dir_all(workspace.join("src-tauri/capabilities")).unwrap();
-        write_text(&workspace.join("security/command-inventory.toml"), &sample_inventory_toml());
+        write_text(
+            &workspace.join("security/command-inventory.toml"),
+            &sample_inventory_toml(),
+        );
         write_text(
             &workspace.join("security/release-capabilities.toml"),
             r#"
@@ -604,10 +677,14 @@ allow = ["chat_send"]
 }
 "#,
         );
-        std::env::set_var("TAURI_COMPILED_COMMAND_ALLOWLIST", "chat_send");
+        let _guard = temp_env_guard();
+        let _snapshot = AllowlistEnvSnapshot::set("chat_send");
         let report = verify_inventory(&workspace_paths(&workspace)).unwrap();
         assert!(!report.is_clean());
-        assert!(report.issues.iter().any(|issue| issue.contains("registered handler")));
+        assert!(report
+            .issues
+            .iter()
+            .any(|issue| issue.contains("registered handler")));
     }
 
     #[test]
@@ -618,7 +695,10 @@ allow = ["chat_send"]
         fs::create_dir_all(workspace.join("src-tauri/src")).unwrap();
         fs::create_dir_all(workspace.join("src-tauri/permissions")).unwrap();
         fs::create_dir_all(workspace.join("src-tauri/capabilities")).unwrap();
-        write_text(&workspace.join("security/command-inventory.toml"), &sample_inventory_toml());
+        write_text(
+            &workspace.join("security/command-inventory.toml"),
+            &sample_inventory_toml(),
+        );
         write_text(
             &workspace.join("security/release-capabilities.toml"),
             r#"
@@ -685,10 +765,14 @@ allow = ["files_open_dialog"]
 }
 "#,
         );
-        std::env::set_var("TAURI_COMPILED_COMMAND_ALLOWLIST", "chat_send,chat_cancel,files_open_dialog");
+        let _guard = temp_env_guard();
+        let _snapshot = AllowlistEnvSnapshot::set("chat_send,chat_cancel,files_open_dialog");
         let report = verify_inventory(&workspace_paths(&workspace)).unwrap();
         assert!(!report.is_clean());
-        assert!(report.issues.iter().any(|issue| issue.contains("registered handler")));
+        assert!(report
+            .issues
+            .iter()
+            .any(|issue| issue.contains("registered handler")));
     }
 
     #[test]
@@ -710,7 +794,9 @@ windows = ["main"]
 status = "release"
 "#,
         );
-        let release = load_release_capabilities(workspace.join("security/release-capabilities.toml")).unwrap();
+        let release =
+            load_release_capabilities(workspace.join("security/release-capabilities.toml"))
+                .unwrap();
         assert_eq!(release.selected_capabilities.len(), 1);
         assert!(release.dev_only_capabilities.is_empty());
         assert_eq!(release.selected_capabilities[0].identifier, "main-window");
@@ -722,8 +808,12 @@ status = "release"
             .parent()
             .unwrap()
             .to_path_buf();
-        let parsed = load_command_inventory(workspace_root.join("security/command-inventory.toml")).unwrap();
-        assert!(parsed.commands.iter().all(|command| !command.required_negative_tests.is_empty()));
+        let parsed =
+            load_command_inventory(workspace_root.join("security/command-inventory.toml")).unwrap();
+        assert!(parsed
+            .commands
+            .iter()
+            .all(|command| !command.required_negative_tests.is_empty()));
         assert!(parsed
             .commands
             .iter()
@@ -748,6 +838,44 @@ status = "release"
 
     #[test]
     fn capability_permission_name_helper_matches_command_name() {
-        assert_eq!(command_permission_name("files_read_token"), "allow-files-read-token");
+        assert_eq!(
+            command_permission_name("files_read_token"),
+            "allow-files-read-token"
+        );
+    }
+
+    #[test]
+    fn registered_commands_from_main_rs_handles_empty_handler_block() {
+        let dir = unique_temp_dir("inventory-empty-handler");
+        let path = dir.join("main.rs");
+        write_text(
+            &path,
+            r#"
+fn main() {
+    tauri::Builder::default().invoke_handler(tauri::generate_handler![
+    ]);
+}
+"#,
+        );
+
+        let commands = registered_commands_from_main_rs(&path).unwrap();
+        assert!(commands.is_empty());
+    }
+
+    #[test]
+    fn compiled_command_allowlist_ignores_separator_noise() {
+        let _guard = temp_env_guard();
+        let _snapshot =
+            AllowlistEnvSnapshot::set("  chat_send,\n, history_list  files_open_dialog  ");
+
+        let allowlist = compiled_command_allowlist();
+        assert_eq!(
+            allowlist,
+            vec![
+                "chat_send".to_string(),
+                "history_list".to_string(),
+                "files_open_dialog".to_string(),
+            ]
+        );
     }
 }

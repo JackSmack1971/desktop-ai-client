@@ -9,7 +9,10 @@ fn main() {
 
     match collect_release_evidence(&workspace_root) {
         Ok(bundle) => {
-            println!("release evidence written to {}", bundle.evidence_dir.display());
+            println!(
+                "release evidence written to {}",
+                bundle.evidence_dir.display()
+            );
             println!(
                 "inventory: {} command(s), clean={}",
                 bundle.manifest.inventory_commands, bundle.manifest.inventory_clean
