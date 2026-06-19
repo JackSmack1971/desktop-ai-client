@@ -40,3 +40,6 @@ npm-debug.log*
 .tmp_issues/
 .team_experience.md
 advanced-test-plan.json
+
+# Python virtualenv
+.venv/
