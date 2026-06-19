@@ -13,11 +13,16 @@
 /// independently of IPC.
 ///
 /// Run with: cargo test --workspace --all-targets
-use desktop_ai_client_lib::app_state::Surface;
+use desktop_ai_client_lib::app_state::{AppState, Surface};
+use desktop_ai_client_lib::ipc::app_shell::{get_active_surface_inner, set_active_surface_inner};
 use desktop_ai_client_lib::storage::migrations::run_migrations;
 use desktop_ai_client_lib::storage::sqlite::{ShellPreferenceStore, SqlitePool};
 use rusqlite::Connection;
+use std::sync::mpsc;
 use std::sync::Arc;
+use std::sync::Barrier;
+use std::thread;
+use std::time::Duration;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -191,4 +196,124 @@ fn shell_preference_all_surfaces_persist_correctly() {
             surface
         );
     }
+}
+
+// ---------------------------------------------------------------------------
+// shell_surface_commands_keep_lock_order
+// ---------------------------------------------------------------------------
+
+/// Verify that `set_active_surface` can make progress while another thread
+/// already holds the SQLite connection and that the old lock inversion does
+/// not deadlock with `get_active_surface`.
+///
+/// The blocker thread holds the SQLite mutex, the setter takes the shell lock
+/// first, and the getter then waits on the shell lock. If the old sqlite -> shell
+/// order comes back, the timeout below trips instead of hanging forever.
+#[test]
+fn shell_surface_commands_keep_lock_order() {
+    let pool = migrated_pool();
+    let app_state = AppState::default();
+    let store_state = ShellPreferenceStore::new(Arc::clone(&pool));
+
+    let barrier = Arc::new(Barrier::new(3));
+    let (release_tx, release_rx) = mpsc::channel::<()>();
+    let (blocker_ready_tx, blocker_ready_rx) = mpsc::channel::<()>();
+    let (setter_ready_tx, setter_ready_rx) = mpsc::channel::<()>();
+    let (getter_ready_tx, getter_ready_rx) = mpsc::channel::<()>();
+    let (setter_done_tx, setter_done_rx) = mpsc::channel::<Result<(), String>>();
+    let (getter_done_tx, getter_done_rx) = mpsc::channel::<Result<Surface, String>>();
+
+    thread::scope(|scope| {
+        let barrier_for_blocker = Arc::clone(&barrier);
+        let pool = Arc::clone(&pool);
+        scope.spawn(move || {
+            pool.with_conn(|_| {
+                blocker_ready_tx.send(()).expect("blocker ready signal");
+                barrier_for_blocker.wait();
+                release_rx
+                    .recv_timeout(Duration::from_secs(2))
+                    .expect("release signal");
+                Ok(())
+            })
+            .expect("blocker should keep the conn lock until released");
+        });
+
+        blocker_ready_rx
+            .recv_timeout(Duration::from_secs(2))
+            .expect("blocker should acquire the conn lock");
+
+        let shell_state_ref = &app_state;
+        let store_state_ref = &store_state;
+        let barrier_for_setter = Arc::clone(&barrier);
+        scope.spawn(move || {
+            setter_ready_tx.send(()).expect("setter ready signal");
+            barrier_for_setter.wait();
+            let result = tauri::async_runtime::block_on(set_active_surface_inner(
+                shell_state_ref,
+                store_state_ref,
+                Surface::History,
+            ))
+            .map_err(|e| e.to_string());
+            setter_done_tx
+                .send(result)
+                .expect("setter completion signal");
+        });
+
+        setter_ready_rx
+            .recv_timeout(Duration::from_secs(2))
+            .expect("setter should start");
+
+        barrier.wait();
+
+        let shell_lock_held = std::time::Instant::now();
+        while app_state.shell.try_lock().is_ok() {
+            if shell_lock_held.elapsed() > Duration::from_secs(2) {
+                panic!("setter never acquired the shell lock");
+            }
+            thread::yield_now();
+        }
+
+        let shell_state_ref = &app_state;
+        let store_state_ref = &store_state;
+        scope.spawn(move || {
+            getter_ready_tx.send(()).expect("getter ready signal");
+            let result = tauri::async_runtime::block_on(get_active_surface_inner(
+                shell_state_ref,
+                store_state_ref,
+            ))
+            .map_err(|e| e.to_string());
+            getter_done_tx
+                .send(result)
+                .expect("getter completion signal");
+        });
+
+        getter_ready_rx
+            .recv_timeout(Duration::from_secs(2))
+            .expect("getter should start");
+
+        release_tx.send(()).expect("release blocker");
+
+        assert_eq!(
+            setter_done_rx.recv_timeout(Duration::from_secs(2)).unwrap(),
+            Ok(())
+        );
+        assert_eq!(
+            getter_done_rx.recv_timeout(Duration::from_secs(2)).unwrap(),
+            Ok(Surface::History)
+        );
+    });
+
+    let persisted = store_state
+        .load_active_surface()
+        .expect("load after command should succeed");
+
+    assert_eq!(persisted, Some(Surface::History));
+    assert_eq!(
+        app_state
+            .shell
+            .lock()
+            .expect("shell lock should not be poisoned")
+            .active_surface,
+        Surface::History
+    );
 }
