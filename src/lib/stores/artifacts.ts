@@ -20,7 +20,16 @@ function createArtifactsStore() {
 		state = 'ready';
 	}
 
-	function receiveArtifact(event: Extract<ChatEvent, { type: 'ArtifactReady' }>): void {
+	function receiveArtifact(
+		event: Extract<ChatEvent, { type: 'ArtifactReady' }>,
+		activeConversationId: string | null,
+	): void {
+		if (
+			activeConversationId !== null &&
+			event.conversation_id !== activeConversationId
+		) {
+			return;
+		}
 		artifactId = event.artifact_id;
 		contentType = event.content_type;
 		preview = event.preview;
