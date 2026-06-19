@@ -6,7 +6,7 @@ This subtree owns frontend reactive state.
 
 Before editing code here, read:
 1. `../../../AGENTS.md`
-2. `../../../docs/privacy-boundaries.md` — stub.
+2. `../../../docs/privacy-boundaries.md`
 
 ## Purpose
 
@@ -26,11 +26,6 @@ Owns frontend reactive state for surface navigation (`surface.ts`), chat streami
 - Redefining `normalizeIpcError` locally instead of importing it from `$lib/api/errors` (see Pitfalls — this was fixed once already; don't reintroduce a local copy).
 - Mutating `messages`/`streamingId`/`requestId` from anywhere other than `chatStore.handleEvent`.
 - Rolling back optimistic state the same way in every store — `surface.ts::setSurface` rolls back to the prior value on IPC rejection; `chat.ts::sendMessage` instead removes the placeholder assistant message entirely on failure. These are deliberately different strategies per store, not a shared pattern to copy verbatim.
-
-## Pitfalls
-
-- `normalizeIpcError` used to be copy-pasted independently into `surface.ts`, `chat.ts`, `artifacts.ts`, and `settings.ts` (four near-identical bodies, despite an explicit "do not create a third copy" comment in `chat.ts`). It has since been consolidated into `$lib/api/errors.ts` and every store now imports it from there — if you see a local `function normalizeIpcError` reappear in any store, that's a regression, not a new pattern to follow.
-- `surfaceStore`'s `focusedIndex` reactivity bug (stale index after backend hydration) was a shipped defect, fixed in commit `b34acc2` ("WR-03 update focusedIndex reactively after backend hydration") — relevant to any change touching hydration timing in `surface.ts` or its consuming rail component.
 
 ## Related Context
 

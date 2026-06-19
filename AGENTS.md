@@ -6,6 +6,9 @@ Monorepo for the desktop client shell, the Tauri backend, and supporting docs an
 
 Read the nearest `AGENTS.md` before editing code in a subdirectory.
 
+- `src/lib/api/AGENTS.md` - Frontend IPC wrapper boundary
+- `src/lib/components/AGENTS.md` - Frontend presentation components
+- `src/lib/stores/AGENTS.md` - Frontend reactive state
 - `src-tauri/AGENTS.md` - Rust/Tauri backend and nested backend modules
 
 ## Global Invariants

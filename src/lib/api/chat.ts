@@ -1,9 +1,10 @@
 /**
  * Typed TypeScript wrapper over Tauri IPC for the chat streaming surface.
  *
- * This is the only file in the frontend that imports from `@tauri-apps/api/core`.
- * All other frontend modules import `chatSend`, `chatCancel`, and the `ChatEvent`
- * type from here. This keeps the Tauri API surface isolated and mockable.
+ * This module imports from `@tauri-apps/api/core` and keeps the chat IPC surface
+ * isolated and mockable. Other frontend modules should import `chatSend`,
+ * `chatCancel`, and the `ChatEvent` type from here instead of reaching for Tauri
+ * APIs directly.
  *
  * Security: this module never constructs or passes an `api_key` value. Credentials
  * stay backend-owned per D-10. The frontend only sends conversation content.
