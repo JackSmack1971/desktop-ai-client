@@ -27,28 +27,30 @@
 ## Current state
 
 - `.github/workflows/.gitkeep` is the only file under `.github/workflows/` — confirmed via directory listing.
-- `.github/ISSUE_TEMPLATE/` already has 7 populated templates (bug, anomaly, architecture, dead-code, security, tech-debt, test-gap) — this repo already has *some* GitHub automation conventions in place, just not CI.
+- `.github/ISSUE_TEMPLATE/` already has 7 populated templates (bug, anomaly, architecture, dead-code, security, tech-debt, test-gap) — this repo already has _some_ GitHub automation conventions in place, just not CI.
 - `package.json` scripts (current, before this plan): `dev`, `build`, `preview`, `check`, `check:watch`, `frontend:dev`, `frontend:build`, `tauri`. No `test` or `lint` script exists yet (see `plans/005-add-test-coverage.md` for `test`, `plans/009-add-lint-and-format.md` for `lint`).
 - `src-tauri/Cargo.toml`: `rust-version = "1.77"`, edition 2021. Notably, `keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }` — these are per-OS native backend features, meaning a Linux CI runner needs the Secret Service D-Bus dev libraries available (`libdbus-1-dev` on Debian/Ubuntu) for `cargo check`/`cargo test` to succeed; `rusqlite = { version = "0.31", features = ["bundled"] }` avoids needing a system SQLite library, which simplifies the Linux runner story.
 - No existing workflow file to model conventions after (this is the first one) — match GitHub Actions idiomatic style (checkout → setup toolchains → cache → install → run) rather than inventing a different structure.
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Frontend install | `pnpm install --frozen-lockfile` | exit 0 |
-| Frontend typecheck | `pnpm check` | exit 0 |
-| Backend compile check | `cargo check --manifest-path src-tauri/Cargo.toml --all-targets` | exit 0 |
-| Backend tests | `cargo test --manifest-path src-tauri/Cargo.toml` | all pass |
+| Purpose               | Command                                                                                                                                  | Expected on success                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Frontend install      | `pnpm install --frozen-lockfile`                                                                                                         | exit 0                                                       |
+| Frontend typecheck    | `pnpm check`                                                                                                                             | exit 0                                                       |
+| Backend compile check | `cargo check --manifest-path src-tauri/Cargo.toml --all-targets`                                                                         | exit 0                                                       |
+| Backend tests         | `cargo test --manifest-path src-tauri/Cargo.toml`                                                                                        | all pass                                                     |
 | Rust dependency audit | `cargo audit --manifest-path src-tauri/Cargo.toml` (requires `cargo install cargo-audit` first, or use the `rustsec/audit-check` action) | no unresolved advisories at or above the configured severity |
-| JS dependency audit | `pnpm audit --audit-level=high` | exit 0 (or document accepted exceptions) |
+| JS dependency audit   | `pnpm audit --audit-level=high`                                                                                                          | exit 0 (or document accepted exceptions)                     |
 
 ## Scope
 
 **In scope**:
+
 - New file: `.github/workflows/ci.yml`
 
 **Out of scope**:
+
 - Removing `.github/workflows/.gitkeep` — leave it; it's harmless alongside a real workflow file, and deleting placeholder files outside this plan's stated purpose is unnecessary churn.
 - Setting up release/publish workflows, code signing, or `cargo tauri build` packaging in CI — this plan is scoped to PR/push verification (check + test + audit), not release automation.
 - Adding a `lint`/`test` script to `package.json` if it doesn't exist yet — see the conditional logic in Step 2; this plan reads what scripts currently exist rather than assuming `plans/005`/`009` already landed.
@@ -119,6 +121,7 @@ jobs:
 ```
 
 Notes on this structure:
+
 - `libdbus-1-dev` is only needed on Linux for `keyring`'s `sync-secret-service` feature to compile — confirmed necessary from `Cargo.toml`'s feature list; Windows/macOS use their native credential stores (`windows-native`/`apple-native`) and don't need it.
 - The `backend` job runs a 3-OS matrix because `keyring`'s per-OS native features mean a Linux-only CI run would never catch a Windows- or macOS-specific compile break — this is a deliberate choice given the dependency, not unnecessary cost.
 - `rustsec/audit-check` is a maintained third-party action; if your environment cannot resolve third-party actions (e.g. an offline/air-gapped CI runner), substitute a manual `cargo install cargo-audit && cargo audit --manifest-path src-tauri/Cargo.toml` step instead — note the substitution in your final report.

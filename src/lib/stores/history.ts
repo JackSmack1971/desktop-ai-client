@@ -19,7 +19,7 @@ export interface ConversationSummary {
 	model: string;
 	status: 'active' | 'complete' | 'incomplete';
 	updatedAt: string; // ISO datetime string from Rust (camelCase per backend rule)
-	snippet?: string;  // only present for search results (FTS5 snippet() output)
+	snippet?: string; // only present for search results (FTS5 snippet() output)
 }
 
 function createHistoryStore() {
@@ -50,11 +50,15 @@ function createHistoryStore() {
 	 * The 300ms debounce is handled in the SearchBar component (D-07).
 	 */
 	async function search(query: string): Promise<void> {
-		if (!query.trim()) { return load(); }
+		if (!query.trim()) {
+			return load();
+		}
 		loading = true;
 		error = null;
 		try {
-			conversations = await invoke<ConversationSummary[]>('history_search', { query: query.trim() });
+			conversations = await invoke<ConversationSummary[]>('history_search', {
+				query: query.trim(),
+			});
 		} catch (e) {
 			error = normalizeIpcError(e);
 		} finally {
@@ -69,7 +73,7 @@ function createHistoryStore() {
 	 */
 	async function deleteConversation(id: string): Promise<void> {
 		const previous = conversations;
-		conversations = conversations.filter(c => c.id !== id); // optimistic remove
+		conversations = conversations.filter((c) => c.id !== id); // optimistic remove
 		try {
 			await invoke<void>('history_delete', { id });
 		} catch (e) {
@@ -88,10 +92,18 @@ function createHistoryStore() {
 	}
 
 	return {
-		get conversations() { return conversations; },
-		get loading() { return loading; },
-		get error() { return error; },
-		get activeConversationId() { return activeConversationId; },
+		get conversations() {
+			return conversations;
+		},
+		get loading() {
+			return loading;
+		},
+		get error() {
+			return error;
+		},
+		get activeConversationId() {
+			return activeConversationId;
+		},
 		load,
 		search,
 		deleteConversation,

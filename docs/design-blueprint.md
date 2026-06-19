@@ -5,6 +5,7 @@ This document defines how we want design agents to reason about UI, layout, and 
 ## Goal
 
 Design prompts should help agents:
+
 - create intentional layouts
 - avoid generic UI patterns
 - preserve the repo’s visual direction
@@ -18,6 +19,7 @@ Design prompts should help agents:
 Do not ask for "clean" or "modern" as the only direction.
 
 Instead define:
+
 - mood
 - typography direction
 - color direction
@@ -28,6 +30,7 @@ Instead define:
 ### 2. Make the design do one job
 
 Each design prompt should target one outcome:
+
 - dashboard
 - landing page
 - prompt library
@@ -42,6 +45,7 @@ Do not ask for multiple unrelated surfaces in one prompt unless the user explici
 The design should reflect the actual workflow and constraints of the system.
 
 If the agent is designing for:
+
 - memory management
 - prompt generation
 - agent coordination
@@ -54,6 +58,7 @@ then the UI should reveal those boundaries clearly.
 The most important thing should be the easiest thing to see.
 
 Design prompts should define:
+
 - primary action
 - secondary actions
 - supporting context
@@ -62,6 +67,7 @@ Design prompts should define:
 ### 5. Avoid generic agent UI
 
 Do not default to:
+
 - bland card grids
 - samey sidebars
 - generic purple gradients
@@ -71,6 +77,7 @@ Do not default to:
 ### 6. Keep motion meaningful
 
 Use motion only when it communicates state:
+
 - loading
 - transition
 - selection
@@ -82,6 +89,7 @@ Do not add motion just to look sophisticated.
 ### 7. Make systems explain themselves
 
 Design should show:
+
 - what the agent is doing
 - what memory it used
 - why a decision was made
@@ -98,6 +106,7 @@ Decorative choices are allowed only when they support the task.
 ### System prompt
 
 Use for:
+
 - design role
 - style boundaries
 - quality bar
@@ -106,6 +115,7 @@ Use for:
 ### Developer prompt
 
 Use for:
+
 - repo-specific UI structure
 - component constraints
 - tokens and theming
@@ -114,6 +124,7 @@ Use for:
 ### Task prompt
 
 Use for:
+
 - the exact screen or artifact to design
 - the goal of the design
 - the output format
@@ -122,6 +133,7 @@ Use for:
 ## Design prompt checklist
 
 Before shipping a design prompt, verify:
+
 - [ ] the screen has one main job
 - [ ] the visual direction is explicit
 - [ ] the agent knows what not to do
@@ -163,8 +175,8 @@ Output:
 ## When to update this blueprint
 
 Update this file when we discover:
+
 - a new UI pattern that works well for agents
 - a visual failure mode
 - a new accessibility requirement
 - a new component or screen family
-

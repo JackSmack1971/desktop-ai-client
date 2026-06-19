@@ -17,6 +17,7 @@ This folder holds the agent-facing context layer for the repo.
 ## Purpose
 
 These docs are here to:
+
 - give coding agents shared context
 - keep the system from drifting
 - capture the memory-loop design

@@ -9,14 +9,14 @@ A user can launch the app, land in a backend-owned workspace shell, switch betwe
 
 ## Architectural Decisions
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| Framework | Svelte 5 with runes and a SvelteKit shell | Matches the documented frontend direction and keeps the shell reactive without widening the UI boundary. |
-| Data layer | SQLite-backed shell preference store | Proves a real backend read/write path while keeping state backend-owned. |
-| Desktop framework | Tauri v2 | Preserves explicit IPC, command boundaries, and a small desktop runtime surface. |
-| Auth | None yet | Phase 1 is shell bootstrap; provider auth and secret handling belong to later phases. |
-| Deployment target | Local dev desktop run via `npm run dev` | Exercises the real desktop runtime instead of a mocked browser-only path. |
-| Directory layout | `src/lib/components`, `src/lib/stores`, `src-tauri/src/{ipc,storage,security,providers}` | Keeps ownership explicit and separates shell UI from backend policy modules. |
+| Decision          | Choice                                                                                   | Rationale                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Framework         | Svelte 5 with runes and a SvelteKit shell                                                | Matches the documented frontend direction and keeps the shell reactive without widening the UI boundary. |
+| Data layer        | SQLite-backed shell preference store                                                     | Proves a real backend read/write path while keeping state backend-owned.                                 |
+| Desktop framework | Tauri v2                                                                                 | Preserves explicit IPC, command boundaries, and a small desktop runtime surface.                         |
+| Auth              | None yet                                                                                 | Phase 1 is shell bootstrap; provider auth and secret handling belong to later phases.                    |
+| Deployment target | Local dev desktop run via `npm run dev`                                                  | Exercises the real desktop runtime instead of a mocked browser-only path.                                |
+| Directory layout  | `src/lib/components`, `src/lib/stores`, `src-tauri/src/{ipc,storage,security,providers}` | Keeps ownership explicit and separates shell UI from backend policy modules.                             |
 
 ## Stack Touched in Phase 1
 
@@ -43,4 +43,3 @@ Each later phase adds one vertical slice on top of this skeleton without alterin
 - Phase 4: privacy controls for secrets, file access, and telemetry
 - Phase 5: sandboxed artifact previews and recovery controls
 - Phase 6: release readiness with reviewed command inventory and adversarial evidence
-

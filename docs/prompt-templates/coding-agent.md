@@ -35,4 +35,3 @@ Output:
 - why it changed
 - any risks or open questions
 ```
-

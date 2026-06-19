@@ -39,4 +39,3 @@ Output:
 - rationale
 - any assumptions
 ```
-

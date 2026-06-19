@@ -1,6 +1,6 @@
 ---
 phase: 05-artifacts
-plan: "03"
+plan: '03'
 subsystem: ui
 tags:
   - accessibility
@@ -25,11 +25,11 @@ dependency_graph:
     - tests
 tech_stack:
   added:
-    - "none"
+    - 'none'
   patterns:
-    - "assertive error state with no iframe fallback"
-    - "focus-visible toolbar controls"
-    - "polite status messages for artifact lifecycle events"
+    - 'assertive error state with no iframe fallback'
+    - 'focus-visible toolbar controls'
+    - 'polite status messages for artifact lifecycle events'
 key_files:
   modified:
     - src/lib/components/surfaces/ArtifactsSurface.svelte
@@ -54,6 +54,7 @@ metrics:
 - **Files modified:** 3 relevant files
 
 ## Accomplishments
+
 - Added focus-visible chrome and toolbar semantics for the Artifacts surface.
 - Ensured idle/loading/error/dismissed states are explicit and the iframe is only rendered for sanitized ready previews.
 - Added polite live-region messaging for artifact readiness in Chat and assertive error messaging in Artifacts.
@@ -64,11 +65,13 @@ metrics:
 Not committed in this session; changes remain in the working tree.
 
 ## Files Created/Modified
+
 - `src/lib/components/surfaces/ArtifactsSurface.svelte` - roles, labels, focus styles, and fail-closed rendering.
 - `src/lib/components/surfaces/ChatSurface.svelte` - polite artifact-ready live region and navigation affordance.
 - `src/lib/stores/artifacts.ts` - status copy and dismissal/reload state transitions.
 
 ## Decisions Made
+
 - Kept error states visible and removed the iframe entirely outside the ready state.
 - Preserved host focus by returning focus to Reload after Stop dismisses the preview.
 - Kept the accessibility copy explicit rather than relying on the iframe or fallback documents.
@@ -76,15 +79,19 @@ Not committed in this session; changes remain in the working tree.
 ## Deviations from Plan
 
 One verification gap remains:
+
 - I completed automated verification, but I could not perform an actual interactive host-shell/manual keyboard smoke test from this terminal-only environment.
 
 ## Issues Encountered
+
 - None in implementation; only the manual runtime check is outstanding.
 
 ## Next Phase Readiness
+
 - Automated verification is green.
 - The remaining gap is a manual shell interaction check for the artifact preview controls and live regions.
 
 ---
-*Phase: 05-artifacts*
-*Completed: 2026-06-15*
+
+_Phase: 05-artifacts_
+_Completed: 2026-06-15_

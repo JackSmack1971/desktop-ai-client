@@ -1,10 +1,10 @@
-name: "Anomaly"
-description: "Track statistical outliers across continuous metrics and repository-derived signals."
-title: "[ANOMALY] "
+name: 'Anomaly'
+description: 'Track statistical outliers across continuous metrics and repository-derived signals.'
+title: '[ANOMALY] '
 labels:
-  - "source:agent"
-  - "status:needs-triage"
-  - "type:anomaly"
+  - 'source:agent'
+  - 'status:needs-triage'
+  - 'type:anomaly'
 body:
   - type: markdown
     attributes:
@@ -69,11 +69,11 @@ body:
   - type: dropdown
     id: escalation-priority
     attributes:
-      label: "Dynamic Escalation"
-      description: "Select priority based on statistical severity. Apply priority:p1 when |z| >= 3."
+      label: 'Dynamic Escalation'
+      description: 'Select priority based on statistical severity. Apply priority:p1 when |z| >= 3.'
       options:
-        - "No priority escalation"
-        - "priority:p1"
+        - 'No priority escalation'
+        - 'priority:p1'
       default: 0
     validations:
       required: true
@@ -81,42 +81,42 @@ body:
   - type: dropdown
     id: detection-method
     attributes:
-      label: "Detection Method"
-      description: "Select the statistical method used to classify the anomaly."
+      label: 'Detection Method'
+      description: 'Select the statistical method used to classify the anomaly.'
       options:
-        - "Z-score: |z| >= 2"
-        - "Z-score: |z| >= 3"
-        - "Robust IQR: >1.5×IQR outside [Q1,Q3]"
-        - "Zero-infra repository/system metadata signal"
+        - 'Z-score: |z| >= 2'
+        - 'Z-score: |z| >= 3'
+        - 'Robust IQR: >1.5×IQR outside [Q1,Q3]'
+        - 'Zero-infra repository/system metadata signal'
     validations:
       required: true
 
   - type: dropdown
     id: target-metric-class
     attributes:
-      label: "Target Metric Class"
-      description: "Classify the metric or repository-derived signal."
+      label: 'Target Metric Class'
+      description: 'Classify the metric or repository-derived signal.'
       options:
-        - "Code-quality density"
-        - "Latency p95/p99"
-        - "Error rate"
-        - "Capacity"
-        - "Resource saturation"
-        - "File length"
-        - "Function complexity"
-        - "PR diff size"
-        - "Test runtime"
-        - "TODO density"
-        - "Open-issue age"
-        - "Other continuous signal"
+        - 'Code-quality density'
+        - 'Latency p95/p99'
+        - 'Error rate'
+        - 'Capacity'
+        - 'Resource saturation'
+        - 'File length'
+        - 'Function complexity'
+        - 'PR diff size'
+        - 'Test runtime'
+        - 'TODO density'
+        - 'Open-issue age'
+        - 'Other continuous signal'
     validations:
       required: true
 
   - type: textarea
     id: statistical-tuple
     attributes:
-      label: "1. Statistical Tuple"
-      description: "Provide the mandatory anomaly tuple: (signal, μ, σ, current, z, cause hypothesis, scope)."
+      label: '1. Statistical Tuple'
+      description: 'Provide the mandatory anomaly tuple: (signal, μ, σ, current, z, cause hypothesis, scope).'
       placeholder: |
         Statistical tuple:
           signal:
@@ -132,8 +132,8 @@ body:
   - type: textarea
     id: forensic-evidence-trace
     attributes:
-      label: "2. Forensic Evidence Trace"
-      description: "Provide timestamp, log output, metric aggregation query, repository metadata command, or supporting calculation."
+      label: '2. Forensic Evidence Trace'
+      description: 'Provide timestamp, log output, metric aggregation query, repository metadata command, or supporting calculation.'
       placeholder: |
         Evidence:
         - Timestamp:
@@ -146,8 +146,8 @@ body:
   - type: textarea
     id: state-delta-assertion
     attributes:
-      label: "3. State Delta Assertion (FSV Style)"
-      description: "Declare the Expected vs Observed state using FSV-style Source of Truth comparison."
+      label: '3. State Delta Assertion (FSV Style)'
+      description: 'Declare the Expected vs Observed state using FSV-style Source of Truth comparison.'
       placeholder: |
         Expected:
           SoT baseline:
@@ -165,8 +165,8 @@ body:
   - type: textarea
     id: blast-radius-definition
     attributes:
-      label: "4. Blast Radius Definition"
-      description: "Scope the operational, user, system, or repository impact of the anomaly."
+      label: '4. Blast Radius Definition'
+      description: 'Scope the operational, user, system, or repository impact of the anomaly.'
       placeholder: |
         Impacted scope:
         - Metric/signal:
@@ -180,8 +180,8 @@ body:
   - type: textarea
     id: execution-directive
     attributes:
-      label: "5. Execution Directive"
-      description: "Suggest the next action for the polling, pickup, or verification agent."
+      label: '5. Execution Directive'
+      description: 'Suggest the next action for the polling, pickup, or verification agent.'
       placeholder: |
         Suggested next action:
         - investigate further
@@ -197,8 +197,8 @@ body:
   - type: textarea
     id: traceability-footer
     attributes:
-      label: "6. Traceability Footer"
-      description: "Append execution identity metadata for deterministic multi-agent synchronization."
+      label: '6. Traceability Footer'
+      description: 'Append execution identity metadata for deterministic multi-agent synchronization.'
       value: |
         ---
         Executing agent: agent:

@@ -53,36 +53,36 @@ Deferred to future release. Tracked but not in current roadmap.
 
 Explicitly excluded. Documented to prevent scope creep.
 
-| Feature | Reason |
-|---------|--------|
-| Raw SQL execution from the frontend | Persistence must stay behind typed backend commands |
-| Unrestricted remote assets in privileged windows | Production attack surface must stay narrow |
-| Frontend secret reads from Stronghold or equivalent vaults | Secret storage stays backend-owned |
-| Raw JavaScript-returned path reads | File access must use Rust-owned selection or tokens |
+| Feature                                                    | Reason                                              |
+| ---------------------------------------------------------- | --------------------------------------------------- |
+| Raw SQL execution from the frontend                        | Persistence must stay behind typed backend commands |
+| Unrestricted remote assets in privileged windows           | Production attack surface must stay narrow          |
+| Frontend secret reads from Stronghold or equivalent vaults | Secret storage stays backend-owned                  |
+| Raw JavaScript-returned path reads                         | File access must use Rust-owned selection or tokens |
 
 ## Traceability
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| SHELL-01 | Phase 1 | Complete |
-| SHELL-02 | Phase 1 | Complete |
-| ROUTE-01 | Phase 2 | Complete |
-| ROUTE-02 | Phase 2 | Complete |
-| HIST-01 | Phase 3 | Pending |
-| HIST-02 | Phase 3 | Pending |
-| HIST-03 | Phase 3 | Pending |
-| SEC-01 | Phase 4 | Pending |
-| SEC-02 | Phase 4 | Pending |
-| SEC-03 | Phase 4 | Pending |
-| ARTF-01 | Phase 5 | Complete |
-| ARTF-02 | Phase 5 | Complete |
-| ARTF-03 | Phase 5 | Complete |
-| REL-01 | Phase 6 | Complete |
-| REL-02 | Phase 6 | Complete |
-| PLAT-01 | Deferred | Deferred |
-| PLAT-02 | Deferred | Deferred |
+| Requirement | Phase    | Status   |
+| ----------- | -------- | -------- |
+| SHELL-01    | Phase 1  | Complete |
+| SHELL-02    | Phase 1  | Complete |
+| ROUTE-01    | Phase 2  | Complete |
+| ROUTE-02    | Phase 2  | Complete |
+| HIST-01     | Phase 3  | Pending  |
+| HIST-02     | Phase 3  | Pending  |
+| HIST-03     | Phase 3  | Pending  |
+| SEC-01      | Phase 4  | Pending  |
+| SEC-02      | Phase 4  | Pending  |
+| SEC-03      | Phase 4  | Pending  |
+| ARTF-01     | Phase 5  | Complete |
+| ARTF-02     | Phase 5  | Complete |
+| ARTF-03     | Phase 5  | Complete |
+| REL-01      | Phase 6  | Complete |
+| REL-02      | Phase 6  | Complete |
+| PLAT-01     | Deferred | Deferred |
+| PLAT-02     | Deferred | Deferred |
 
 **Coverage:**
 
@@ -93,5 +93,6 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Deferred: 2
 
 ---
-*Requirements defined: 2026-06-13*
-*Last updated: 2026-06-16 after Phase 06 completion*
+
+_Requirements defined: 2026-06-13_
+_Last updated: 2026-06-16 after Phase 06 completion_

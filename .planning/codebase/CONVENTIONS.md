@@ -7,6 +7,7 @@
 ### Module Organization
 
 Top-level modules declared in `src-tauri/src/lib.rs`:
+
 - `app_state` — shared runtime state structs and enums
 - `ipc` — all frontend-facing command handlers, one domain per submodule
 - `providers` — model provider routing, capabilities, SSE transport
@@ -23,6 +24,7 @@ Each submodule uses `pub mod <name>;` declared in the parent `mod.rs` or `lib.rs
 **Enums:** `PascalCase` with `snake_case` serde rename — `Surface` serializes as `"chat"`, `"history"`, etc. via `#[serde(rename_all = "snake_case")]`
 
 **Error enums:** `PascalCase` with `SCREAMING_SNAKE_CASE` serde code field:
+
 ```rust
 #[derive(Debug, thiserror::Error, serde::Serialize)]
 #[serde(tag = "code", content = "message", rename_all = "SCREAMING_SNAKE_CASE")]
@@ -47,6 +49,7 @@ pub enum ShellError {
 - `debug_assert!` is used for dev-only invariant checks (e.g., migration id character set in `src-tauri/src/storage/migrations.rs`).
 
 Example pattern (`src-tauri/src/ipc/app_shell.rs`):
+
 ```rust
 let mut shell = state.shell.lock().map_err(|e| {
     ShellError::StorageError(format!("shell state lock poisoned: {e}"))
@@ -88,14 +91,17 @@ let mut shell = state.shell.lock().map_err(|e| {
 Stores are factory functions returning plain objects with reactive getters. No Svelte 4 `writable`/`readable`.
 
 Pattern from `src/lib/stores/surface.ts`:
+
 ```typescript
 function createSurfaceStore() {
-    let surface = $state<Surface>('chat');
-    return {
-        get surface() { return surface; },
-        hydrate,
-        setSurface
-    };
+	let surface = $state<Surface>('chat');
+	return {
+		get surface() {
+			return surface;
+		},
+		hydrate,
+		setSurface,
+	};
 }
 export const surfaceStore = createSurfaceStore();
 ```
@@ -115,14 +121,15 @@ IPC errors are normalized via a `normalizeIpcError(e: unknown): string` helper b
 ### Optimistic Update Pattern
 
 Stores apply an optimistic update before the IPC call, then roll back on failure:
+
 ```typescript
 const previous = surface;
-surface = next;  // optimistic
+surface = next; // optimistic
 try {
-    await invoke<void>('set_active_surface', { surface: next });
+	await invoke<void>('set_active_surface', { surface: next });
 } catch (e) {
-    surface = previous;  // rollback
-    error = normalizeIpcError(e);
+	surface = previous; // rollback
+	error = normalizeIpcError(e);
 }
 ```
 
@@ -170,4 +177,4 @@ try {
 
 ---
 
-*Convention analysis: 2026-06-13*
+_Convention analysis: 2026-06-13_

@@ -7,6 +7,7 @@
 ## Phase Boundary
 
 Enforce the privacy boundary for secrets, file access, and telemetry. This phase implements:
+
 - `security::secrets` — replace Phase 2's env-var `EnvSecretStore` with `KeyringSecretStore` (OS keychain via `keyring` crate). Caller interface unchanged.
 - `security::file_tokens` — session-scoped opaque token system. Backend opens native OS file picker, mints UUID tokens; frontend never holds raw paths.
 - `security::redaction` — unconditional redaction of secrets, file paths, and content-bearing data before any log or telemetry write.
@@ -60,27 +61,33 @@ This phase does NOT include: `security::artifact_sandbox` (Phase 5), full Settin
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Phase Scope and Requirements
+
 - `.planning/ROADMAP.md` — Phase 4 goal, success criteria (SEC-01, SEC-02, SEC-03)
 - `.planning/REQUIREMENTS.md` — SEC-01, SEC-02, SEC-03 definitions
 
 ### Architecture and Patterns
+
 - `.planning/codebase/ARCHITECTURE.md` — Security module responsibilities (§Component Responsibilities), IPC boundary enforcement (§Privacy and Security Boundaries), file intake data flow (§Data Flow: File Intake), command registration invariant (§Tauri Command Surface), error handling patterns (§Error Handling), threading/lock ordering (§Architectural Constraints)
 - `src-tauri/src/ipc/app_shell.rs` — Canonical IPC patterns: `ShellError` typed error enum with `thiserror + serde`, `assert_main_window` window-label enforcement. New `PrivacyError` and `FilesError` must follow the same serialization shape.
 
 ### Security and Privacy Authority
+
 - `docs/Tauri_Svelte_AI_App_Architecture_Adversarial_Hardened_v5.md` — **Primary authority** for IPC boundary invariants, secret handling rules, file access constraints, and redaction requirements. Read before designing any Phase 4 interface.
 - `docs/privacy-boundaries.md` — Stub; populate before implementation. Focus areas: secrets handling, file content visibility, telemetry redaction, local storage scope.
 - `docs/threat-model.md` — Stub; populate before implementation. Focus areas: secret exposure, hostile renderer behavior, file access boundary violations.
 
 ### Phase 2 Context (upstream decisions Phase 4 must honor)
+
 - `.planning/phases/02-routing/02-CONTEXT.md` — D-07 (Phase 4 replaces secrets backing store), D-08 (`get_provider_key()` + `get_credential_status()` caller signatures locked), D-10 (hard invariant: IPC commands must NEVER accept `api_key` parameter)
 
 ### Scaffolded Files to Implement
+
 - `src-tauri/src/security/secrets.rs` — Phase 2 stub (fully implemented). Phase 4 replaces `SecretsState` backing with `KeyringSecretStore`; `ProviderId`, `SecretsError`, `CredentialStatus`, and the two public functions are locked.
 - `src-tauri/src/security/file_tokens.rs` — Scaffold; implement `mint_token()`, `resolve_token()`, `revoke_token()` against `AppState.file_tokens` map.
 - `src-tauri/src/security/redaction.rs` — Scaffold; implement redaction for the three categories (secrets, paths, content-bearing data).
@@ -93,15 +100,18 @@ This phase does NOT include: `security::artifact_sandbox` (Phase 5), full Settin
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
+
 - `src-tauri/src/ipc/app_shell.rs` — `assert_main_window()` helper; `ShellError` enum with `thiserror + serde + #[serde(tag = "code", content = "message", rename_all = "SCREAMING_SNAKE_CASE")]` derive pattern. Copy for `PrivacyError`, `FilesError`.
 - `src-tauri/src/security/secrets.rs` — Already fully implemented in Phase 2. `ProviderId` enum, `SecretsError`, `CredentialStatus`, `get_provider_key()`, `get_credential_status()` — callers unchanged. Phase 4 replaces the `SecretsState` struct's backing store only.
 - `src-tauri/src/storage/sqlite.rs` — `SqlitePool` and `AppState` management patterns. File token map (`Mutex<HashMap<TokenId, PathBuf>>`) must be added as a new field in `src-tauri/src/app_state.rs`.
 - `src/lib/stores/surface.ts` — `normalizeIpcError()` for frontend IPC error normalization. Settings UI must use the same pattern.
 
 ### Established Patterns
+
 - **IPC error shape:** `{ code: "SCREAMING_SNAKE_CASE", message: string }` — all Phase 4 error enums must serialize to this shape.
 - **Window-label enforcement:** Phase 4 replaces the per-handler `assert_main_window` call with `command_policy::policy_check()` which performs the same check via the allow-table.
 - **Typed structs with `deny_unknown_fields`:** All Phase 4 IPC request structs use `#[serde(deny_unknown_fields)]` to prevent forbidden parameter smuggling.
@@ -109,6 +119,7 @@ This phase does NOT include: `security::artifact_sandbox` (Phase 5), full Settin
 - **Command registration invariant:** Every new command must appear in `tauri::generate_handler![...]` (main.rs) AND a `src-tauri/capabilities/*.json` grant.
 
 ### Integration Points
+
 - `src-tauri/src/main.rs` — Must register all Phase 4 IPC commands in `tauri::generate_handler![...]`.
 - `src-tauri/src/app_state.rs` — Must extend `AppState` with `file_tokens: Mutex<HashMap<TokenId, PathBuf>>`.
 - `src-tauri/capabilities/main.json` — Must add allow grants for all new Phase 4 commands.
@@ -144,5 +155,5 @@ None — discussion stayed within phase scope.
 
 ---
 
-*Phase: 04-privacy*
-*Context gathered: 2026-06-15*
+_Phase: 04-privacy_
+_Context gathered: 2026-06-15_

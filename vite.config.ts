@@ -16,22 +16,23 @@ export default defineConfig({
 		strictPort: true,
 		host: TAURI_DEV_HOST,
 		watch: {
-			usePolling: false
-		}
+			usePolling: false,
+		},
 	},
 
 	build: {
 		// Tauri uses Chromium on Windows, Firefox engine on Linux, WebKit on macOS.
-		target: process.env.TAURI_ENV_PLATFORM === 'windows'
-			? 'chrome105'
-			: process.env.TAURI_ENV_PLATFORM === 'macos'
-			? 'safari13'
-			: 'firefox115',
+		target:
+			process.env.TAURI_ENV_PLATFORM === 'windows'
+				? 'chrome105'
+				: process.env.TAURI_ENV_PLATFORM === 'macos'
+					? 'safari13'
+					: 'firefox115',
 		// Source maps in development; strip them in production to avoid exposing paths.
 		sourcemap: !!process.env.TAURI_ENV_DEBUG,
-		reportCompressedSize: true
+		reportCompressedSize: true,
 	},
 
 	// Expose env vars to the frontend selectively. Do not expose secrets.
-	envPrefix: ['VITE_', 'TAURI_ENV_']
+	envPrefix: ['VITE_', 'TAURI_ENV_'],
 });

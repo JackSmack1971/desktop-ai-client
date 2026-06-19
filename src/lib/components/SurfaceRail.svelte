@@ -19,9 +19,9 @@
 	import { surfaceStore, type Surface } from '$lib/stores/surface';
 
 	const surfaces: Array<{ id: Surface; label: string; icon: string }> = [
-		{ id: 'chat',      label: 'Chat',      icon: '💬' },
-		{ id: 'history',   label: 'History',   icon: '📋' },
-		{ id: 'settings',  label: 'Settings',  icon: '⚙️' },
+		{ id: 'chat', label: 'Chat', icon: '💬' },
+		{ id: 'history', label: 'History', icon: '📋' },
+		{ id: 'settings', label: 'Settings', icon: '⚙️' },
 		{ id: 'artifacts', label: 'Artifacts', icon: '📦' },
 	];
 
@@ -41,7 +41,7 @@
 
 	/** Button element refs — populated by bind:this in {#each}. */
 	let buttonRefs: Array<HTMLButtonElement | null> = $state(
-		new Array(surfaces.length).fill(null)
+		new Array(surfaces.length).fill(null),
 	);
 
 	function activate(surface: Surface) {
@@ -93,12 +93,8 @@
 	}
 </script>
 
-<div
-	role="tablist"
-	aria-label="Workspace surfaces"
-	aria-orientation="vertical"
->
-	{#each surfaces as { id, label, icon }, index}
+<div role="tablist" aria-label="Workspace surfaces" aria-orientation="vertical">
+	{#each surfaces as { id, label, icon }, index (id)}
 		<button
 			bind:this={buttonRefs[index]}
 			class="rail-button"
@@ -119,13 +115,21 @@
 	{/each}
 
 	{#if surfaceStore.loading}
-		<div class="rail-status" aria-live="polite" aria-label="Loading surface preferences">
+		<div
+			class="rail-status"
+			aria-live="polite"
+			aria-label="Loading surface preferences"
+		>
 			<span aria-hidden="true">…</span>
 		</div>
 	{/if}
 
 	{#if surfaceStore.error}
-		<div class="rail-status rail-status--error" role="alert" aria-live="assertive">
+		<div
+			class="rail-status rail-status--error"
+			role="alert"
+			aria-live="assertive"
+		>
 			<span class="sr-only">Surface preference error: offline mode</span>
 		</div>
 	{/if}
@@ -146,7 +150,9 @@
 		cursor: pointer;
 		padding: 0;
 		gap: 2px;
-		transition: background-color 0.15s ease, color 0.15s ease;
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease;
 		position: relative;
 	}
 

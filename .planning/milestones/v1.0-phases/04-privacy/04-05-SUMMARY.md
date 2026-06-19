@@ -17,4 +17,3 @@ Implemented the Rust-owned file picker surface:
 Verification:
 
 - `cargo test --manifest-path src-tauri/Cargo.toml -- ipc::files::tests`
-

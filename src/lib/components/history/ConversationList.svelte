@@ -12,8 +12,8 @@
 	interface Props {
 		conversations: ConversationSummary[];
 		loading: boolean;
-		ondelete: (id: string) => void;
-		onselect: (id: string) => void;
+		ondelete: (_id: string) => void;
+		onselect: (_id: string) => void;
 	}
 
 	let { conversations, loading, ondelete, onselect }: Props = $props();
@@ -32,7 +32,8 @@
 		<div class="empty-state">
 			<p class="empty-heading">No conversations yet</p>
 			<p class="empty-body">
-				Your conversations will appear here after your first chat. Start a new chat to begin.
+				Your conversations will appear here after your first chat. Start a new
+				chat to begin.
 			</p>
 		</div>
 	{:else}

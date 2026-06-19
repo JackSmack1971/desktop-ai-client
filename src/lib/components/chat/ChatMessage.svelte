@@ -32,17 +32,18 @@
 		class:assistant-bubble={!isUser}
 		class:error-bubble={isError}
 	>
-		<span
-			class="message-content"
-			class:dimmed={isIncomplete}
-		>{content}</span>
+		<span class="message-content" class:dimmed={isIncomplete}>{content}</span>
 
 		{#if streaming}
 			<span class="cursor" aria-hidden="true">|</span>
 		{/if}
 
 		{#if isIncomplete}
-			<span class="cancelled-badge" role="status" aria-label="Response was cancelled">(Cancelled)</span>
+			<span
+				class="cancelled-badge"
+				role="status"
+				aria-label="Response was cancelled">(Cancelled)</span
+			>
 		{/if}
 	</div>
 </div>
@@ -107,8 +108,13 @@
 	}
 
 	@keyframes blink {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0; }
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0;
+		}
 	}
 
 	/* Amber cancelled badge (D-06) */

@@ -8,14 +8,16 @@
 	 */
 
 	interface Props {
-		onquery: (q: string) => void;
+		onquery: (_q: string) => void;
 		disabled?: boolean;
 	}
 
 	let { onquery, disabled = false }: Props = $props();
 
 	let text = $state('');
-	let debounceTimer = $state<ReturnType<typeof setTimeout> | undefined>(undefined);
+	let debounceTimer = $state<ReturnType<typeof setTimeout> | undefined>(
+		undefined,
+	);
 
 	function handleInput(): void {
 		clearTimeout(debounceTimer);
@@ -57,7 +59,10 @@
 		padding: 0 16px;
 		color: #e0e0e0;
 		font-size: 14px;
-		font-family: system-ui, -apple-system, sans-serif;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
 		outline: none;
 		box-sizing: border-box;
 	}

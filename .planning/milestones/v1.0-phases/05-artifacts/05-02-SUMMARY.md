@@ -1,6 +1,6 @@
 ---
 phase: 05-artifacts
-plan: "02"
+plan: '02'
 subsystem: ui
 tags:
   - svelte5
@@ -24,11 +24,11 @@ dependency_graph:
     - src/routes
 tech_stack:
   added:
-    - "none"
+    - 'none'
   patterns:
-    - "getter-only Svelte 5 artifact lifecycle store"
-    - "host chrome controls outside iframe sandbox"
-    - "surface-store navigation for artifact reveal"
+    - 'getter-only Svelte 5 artifact lifecycle store'
+    - 'host chrome controls outside iframe sandbox'
+    - 'surface-store navigation for artifact reveal'
 key_files:
   created:
     - src/lib/api/artifacts.ts
@@ -58,6 +58,7 @@ metrics:
 - **Files modified:** 6 relevant files
 
 ## Accomplishments
+
 - Added typed frontend wrappers for `artifact_get` and `artifact_dismiss`.
 - Built a dedicated artifact store that tracks ready/loading/dismissed/error states and only holds sanitized preview srcdoc.
 - Replaced the Artifacts surface scaffold with a host-controlled preview shell, reload/stop chrome, and explicit empty/loading/error/dismissed states.
@@ -68,6 +69,7 @@ metrics:
 Not committed in this session; changes remain in the working tree.
 
 ## Files Created/Modified
+
 - `src/lib/api/artifacts.ts` - typed artifact IPC wrappers.
 - `src/lib/stores/artifacts.ts` - artifact lifecycle and reload/dismiss state machine.
 - `src/lib/api/chat.ts` - `ArtifactReady` event type and attachment token parameter.
@@ -76,6 +78,7 @@ Not committed in this session; changes remain in the working tree.
 - `src/lib/components/surfaces/ChatSurface.svelte` - artifact-ready navigation affordance.
 
 ## Decisions Made
+
 - Kept reload as a backend re-fetch of sanitized preview data rather than a cached re-render.
 - Kept stop as a host-side dismissal that invalidates in-flight reloads and clears the preview.
 - Used the shared surface store for navigation rather than direct route mutation.
@@ -85,12 +88,15 @@ Not committed in this session; changes remain in the working tree.
 None - frontend slice followed the UI contract.
 
 ## Issues Encountered
+
 - None beyond the backend permission manifest issue resolved in the 05-01 slice.
 
 ## Next Phase Readiness
+
 - The preview surface is wired and typechecks cleanly.
 - The sandboxed iframe only renders when the store has a sanitized preview.
 
 ---
-*Phase: 05-artifacts*
-*Completed: 2026-06-15*
+
+_Phase: 05-artifacts_
+_Completed: 2026-06-15_

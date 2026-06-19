@@ -15,13 +15,13 @@ created: 2026-06-15
 
 ## Design System
 
-| Property | Value |
-|----------|-------|
-| Tool | none |
-| Preset | not applicable |
-| Component library | none (plain scoped CSS, Svelte 5 components) |
-| Icon library | none (Unicode/emoji glyphs used in SurfaceRail; no external icon library) |
-| Font | system-ui, -apple-system, sans-serif |
+| Property          | Value                                                                     |
+| ----------------- | ------------------------------------------------------------------------- |
+| Tool              | none                                                                      |
+| Preset            | not applicable                                                            |
+| Component library | none (plain scoped CSS, Svelte 5 components)                              |
+| Icon library      | none (Unicode/emoji glyphs used in SurfaceRail; no external icon library) |
+| Font              | system-ui, -apple-system, sans-serif                                      |
 
 **Source:** Detected from `AppShell.svelte` font-family declaration and absence of `components.json`, `tailwind.config.*`, or any CSS framework dependency in `package.json`. This project uses plain Svelte scoped `<style>` blocks with hardcoded design tokens.
 
@@ -33,17 +33,18 @@ created: 2026-06-15
 
 Declared values (must be multiples of 4). Derived from measurements across `AppShell.svelte`, `ChatSurface.svelte`, `HistorySurface.svelte`, `ArtifactsSurface.svelte` scaffold, and `SurfaceRail.svelte`.
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| xs | 4px | Rail button gap, icon-label gap within rail buttons |
-| sm | 8px | Rail vertical padding, surface body padding-y, status region padding |
-| md | 16px | Surface header padding-y, surface body padding-x, error banner padding |
-| lg | 24px | Surface header padding-x, search area padding-x |
-| xl | 32px | Major layout breaks (reserved, not yet in use) |
-| 2xl | 48px | Page-level vertical spacing (reserved) |
-| 3xl | 64px | Reserved for future full-page layouts |
+| Token | Value | Usage                                                                  |
+| ----- | ----- | ---------------------------------------------------------------------- |
+| xs    | 4px   | Rail button gap, icon-label gap within rail buttons                    |
+| sm    | 8px   | Rail vertical padding, surface body padding-y, status region padding   |
+| md    | 16px  | Surface header padding-y, surface body padding-x, error banner padding |
+| lg    | 24px  | Surface header padding-x, search area padding-x                        |
+| xl    | 32px  | Major layout breaks (reserved, not yet in use)                         |
+| 2xl   | 48px  | Page-level vertical spacing (reserved)                                 |
+| 3xl   | 64px  | Reserved for future full-page layouts                                  |
 
 Exceptions:
+
 - Rail button touch target: 48px × 48px (accessibility minimum for icon-only interactive elements; exceeds the 8-point scale by design)
 - Rail width: 56px (fixed; inherits from Phase 1 AppShell layout; do not change)
 - Artifact chrome toolbar height: 48px (matches rail button touch target; provides visual alignment)
@@ -54,14 +55,15 @@ Exceptions:
 
 ## Typography
 
-| Role | Size | Weight | Line Height |
-|------|------|--------|-------------|
-| Body | 14px | 400 (regular) | 1.5 |
-| Label | 13px | 400 (regular) | 1.4 |
-| Heading | 16px | 600 (semibold) | 1.2 |
-| Micro | 9px | 400 (regular) | 1.0 |
+| Role    | Size | Weight         | Line Height |
+| ------- | ---- | -------------- | ----------- |
+| Body    | 14px | 400 (regular)  | 1.5         |
+| Label   | 13px | 400 (regular)  | 1.4         |
+| Heading | 16px | 600 (semibold) | 1.2         |
+| Micro   | 9px  | 400 (regular)  | 1.0         |
 
 Notes:
+
 - Body (14px/400): used for message text, placeholder copy, conversation rows, error banners. Source: `surface-placeholder` in `ArtifactsSurface.svelte` scaffold, `history-error` in `HistorySurface.svelte`.
 - Label (13px/400): used for error banners, metadata, secondary copy. Source: `chat-error` in `ChatSurface.svelte`.
 - Heading (16px/600): used for `surface-title` in every surface header. Source: `ArtifactsSurface.svelte`, `ChatSurface.svelte`, `HistorySurface.svelte`.
@@ -73,19 +75,20 @@ Notes:
 
 ## Color
 
-| Role | Value | Usage |
-|------|-------|-------|
-| Dominant (60%) | #0f0f0f | App shell background, primary surface backgrounds |
-| Secondary (30%) | #1a1a1a | Rail background, card/panel backgrounds, toolbar backgrounds, search area |
-| Accent (10%) | #4a9eff | Active rail indicator, focus outlines, primary interactive affordances |
-| Border | #2a2a2a | Surface header dividers, rail border-right, panel separations |
-| Destructive | #cc4444 | Error state text, dismiss/stop actions when irreversible |
-| Muted text | #888 | Inactive rail button color, placeholder text |
-| Inactive text | #666 | Empty state copy, secondary descriptive text |
-| Primary text | #e0e0e0 | Surface title, message body, all primary readable text |
-| Warning | #e0a020 | Chat-level warning copy (retained from Phase 2; not used in artifact chrome) |
+| Role            | Value   | Usage                                                                        |
+| --------------- | ------- | ---------------------------------------------------------------------------- |
+| Dominant (60%)  | #0f0f0f | App shell background, primary surface backgrounds                            |
+| Secondary (30%) | #1a1a1a | Rail background, card/panel backgrounds, toolbar backgrounds, search area    |
+| Accent (10%)    | #4a9eff | Active rail indicator, focus outlines, primary interactive affordances       |
+| Border          | #2a2a2a | Surface header dividers, rail border-right, panel separations                |
+| Destructive     | #cc4444 | Error state text, dismiss/stop actions when irreversible                     |
+| Muted text      | #888    | Inactive rail button color, placeholder text                                 |
+| Inactive text   | #666    | Empty state copy, secondary descriptive text                                 |
+| Primary text    | #e0e0e0 | Surface title, message body, all primary readable text                       |
+| Warning         | #e0a020 | Chat-level warning copy (retained from Phase 2; not used in artifact chrome) |
 
 Accent (#4a9eff) reserved for:
+
 1. Focus-visible outline on all interactive elements (2px solid, 2px offset)
 2. Active rail button icon and indicator bar
 3. Reload button hover/active state in artifact chrome toolbar
@@ -95,6 +98,7 @@ Accent (#4a9eff) reserved for:
 Accent must NOT be used for: general borders, heading text, body copy, disabled states, or error states.
 
 Destructive (#cc4444) reserved for:
+
 1. Stop button icon/label in artifact chrome toolbar
 2. Error state text in the artifact surface (when CSP cannot be applied or fetch fails)
 3. Confirmation badge when a stop action will discard an unsaved preview (not applicable Phase 5 — no editable artifacts)
@@ -129,6 +133,7 @@ Layout: identical structure to `ChatSurface.svelte` and `HistorySurface.svelte`.
 ```
 
 States:
+
 - `idle`: Show empty state (no artifact loaded). Surface header shows only "Artifacts" title.
 - `loading`: Artifact fetch in progress. Toolbar buttons disabled. Show loading indicator in surface-body.
 - `ready`: iframe shows sanitized srcdoc. Toolbar shows Reload + Stop buttons (Stop is enabled).
@@ -137,10 +142,10 @@ States:
 
 ### Artifact Chrome Toolbar (inside surface-header, right-aligned)
 
-| Element | Copy | State visibility |
-|---------|------|-----------------|
-| Reload button | "Reload" | Visible in `ready`, `dismissed`, `error` |
-| Stop button | "Stop" | Visible and enabled in `ready`; hidden in `idle`, `dismissed`, `error` |
+| Element       | Copy     | State visibility                                                       |
+| ------------- | -------- | ---------------------------------------------------------------------- |
+| Reload button | "Reload" | Visible in `ready`, `dismissed`, `error`                               |
+| Stop button   | "Stop"   | Visible and enabled in `ready`; hidden in `idle`, `dismissed`, `error` |
 
 - Both buttons are outside the sandboxed iframe (host chrome — cannot be blocked by artifact content)
 - Reload: triggers `artifact_get` IPC call, replaces iframe srcdoc
@@ -152,12 +157,12 @@ States:
 
 Displayed when an artifact is loaded. Shows the content type of the active artifact.
 
-| Content Type | Badge Label |
-|-------------|-------------|
-| HTML | "HTML" |
-| SVG | "SVG" |
-| Plain Text | "Text" |
-| Code | "Code · {language}" (e.g. "Code · Python") |
+| Content Type | Badge Label                                |
+| ------------ | ------------------------------------------ |
+| HTML         | "HTML"                                     |
+| SVG          | "SVG"                                      |
+| Plain Text   | "Text"                                     |
+| Code         | "Code · {language}" (e.g. "Code · Python") |
 
 Badge styling: 13px/400, background #2a2a2a, color #4a9eff (HTML) or #888 (SVG, Text, Code), border-radius 4px, padding 2px 8px, margin-left 8px.
 
@@ -183,13 +188,13 @@ This is not a separate component — it is a conditional block inside `ChatSurfa
 
 All controls outside the iframe must be keyboard accessible per ARTF-03.
 
-| Interaction | Key | Behavior |
-|------------|-----|----------|
-| Reach toolbar | Tab | Focus moves from rail to surface-header toolbar after `main-content` receives focus |
-| Activate Reload | Enter / Space | Triggers artifact_get IPC, replaces srcdoc |
-| Activate Stop | Enter / Space | Empties srcdoc, aborts IPC, transitions to dismissed |
-| Navigate between toolbar buttons | Tab / Shift+Tab | Standard tab order within toolbar |
-| Focus return after stop | Auto | Focus stays on Stop button position; button becomes hidden; focus moves to Reload |
+| Interaction                      | Key             | Behavior                                                                            |
+| -------------------------------- | --------------- | ----------------------------------------------------------------------------------- |
+| Reach toolbar                    | Tab             | Focus moves from rail to surface-header toolbar after `main-content` receives focus |
+| Activate Reload                  | Enter / Space   | Triggers artifact_get IPC, replaces srcdoc                                          |
+| Activate Stop                    | Enter / Space   | Empties srcdoc, aborts IPC, transitions to dismissed                                |
+| Navigate between toolbar buttons | Tab / Shift+Tab | Standard tab order within toolbar                                                   |
+| Focus return after stop          | Auto            | Focus stays on Stop button position; button becomes hidden; focus moves to Reload   |
 
 ### Screen Reader Contracts
 
@@ -213,26 +218,27 @@ Implementation: `{#if artifactState.state === 'error'}` block replaces the ifram
 
 ## Copywriting Contract
 
-| Element | Copy |
-|---------|------|
-| Surface title | "Artifacts" |
-| Empty state heading | "No artifact yet" |
-| Empty state body | "Send a message asking Claude to generate HTML, SVG, or code. The result will appear here." |
-| Loading state | "Loading artifact…" |
-| Error state — fetch failed | "Could not load artifact. Check the app connection and try reloading." |
-| Error state — CSP not applicable | "Artifact could not be displayed safely. Reload to try again." |
-| Reload button label | "Reload" |
-| Reload button aria-label | "Reload artifact" |
-| Stop button label | "Stop" |
-| Stop button aria-label | "Stop artifact preview" |
-| Artifact indicator in Chat | "Artifact ready — View artifact" |
-| Content-type badge — HTML | "HTML" |
-| Content-type badge — SVG | "SVG" |
-| Content-type badge — Plain text | "Text" |
-| Content-type badge — Code (with language) | "Code · {language}" |
-| Content-type badge — Code (unknown language) | "Code" |
+| Element                                      | Copy                                                                                        |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Surface title                                | "Artifacts"                                                                                 |
+| Empty state heading                          | "No artifact yet"                                                                           |
+| Empty state body                             | "Send a message asking Claude to generate HTML, SVG, or code. The result will appear here." |
+| Loading state                                | "Loading artifact…"                                                                         |
+| Error state — fetch failed                   | "Could not load artifact. Check the app connection and try reloading."                      |
+| Error state — CSP not applicable             | "Artifact could not be displayed safely. Reload to try again."                              |
+| Reload button label                          | "Reload"                                                                                    |
+| Reload button aria-label                     | "Reload artifact"                                                                           |
+| Stop button label                            | "Stop"                                                                                      |
+| Stop button aria-label                       | "Stop artifact preview"                                                                     |
+| Artifact indicator in Chat                   | "Artifact ready — View artifact"                                                            |
+| Content-type badge — HTML                    | "HTML"                                                                                      |
+| Content-type badge — SVG                     | "SVG"                                                                                       |
+| Content-type badge — Plain text              | "Text"                                                                                      |
+| Content-type badge — Code (with language)    | "Code · {language}"                                                                         |
+| Content-type badge — Code (unknown language) | "Code"                                                                                      |
 
 Destructive actions in Phase 5:
+
 - **Stop**: transitions to `dismissed` state, clears active preview. This is recoverable (Reload restores from backend). No confirmation dialog required — Stop is recoverable.
 - No irreversible destructive actions in Phase 5 (no delete, no permanent dismiss). No confirmation dialogs needed.
 
@@ -244,11 +250,11 @@ This section is normative for the executor. Deviations require explicit sign-off
 
 ```html
 <iframe
-  title="Artifact preview"
-  class="artifact-frame"
-  srcdoc={artifactPreview}
-  sandbox="allow-same-origin"
-  role="document"
+	title="Artifact preview"
+	class="artifact-frame"
+	srcdoc="{artifactPreview}"
+	sandbox="allow-same-origin"
+	role="document"
 ></iframe>
 ```
 
@@ -264,10 +270,10 @@ This section is normative for the executor. Deviations require explicit sign-off
 
 ## Registry Safety
 
-| Registry | Blocks Used | Safety Gate |
-|----------|-------------|-------------|
-| shadcn official | none | not applicable — shadcn not initialized |
-| third-party | none | not applicable |
+| Registry        | Blocks Used | Safety Gate                             |
+| --------------- | ----------- | --------------------------------------- |
+| shadcn official | none        | not applicable — shadcn not initialized |
+| third-party     | none        | not applicable                          |
 
 No registry is in use. This project uses plain Svelte scoped CSS. Registry vetting gate: not applicable.
 
