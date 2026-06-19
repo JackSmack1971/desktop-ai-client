@@ -50,6 +50,13 @@ fn main() {
         .join(",");
     println!("cargo:rustc-env=TAURI_COMPILED_COMMAND_ALLOWLIST={allowlist}");
 
+    fs::create_dir_all(workspace_root.join("dist")).unwrap_or_else(|err| {
+        panic!(
+            "failed to create {}: {err}",
+            workspace_root.join("dist").display()
+        )
+    });
+
     tauri_build::build();
 }
 
