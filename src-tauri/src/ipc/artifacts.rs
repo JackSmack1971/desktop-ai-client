@@ -49,12 +49,15 @@ pub async fn artifact_get(
     command_policy::policy_check("artifact_get", window.label())?;
     assert_main_window(&window)?;
 
-    let preview: ArtifactPreview = store
-        .get_artifact_preview(&artifact_id)
-        .map_err(|e| match e {
-            crate::storage::artifacts::ArtifactStoreError::NotFound(id) => ArtifactError::NotFound(id),
-            other => ArtifactError::StorageError(other.to_string()),
-        })?;
+    let preview: ArtifactPreview =
+        store
+            .get_artifact_preview(&artifact_id)
+            .map_err(|e| match e {
+                crate::storage::artifacts::ArtifactStoreError::NotFound(id) => {
+                    ArtifactError::NotFound(id)
+                }
+                other => ArtifactError::StorageError(other.to_string()),
+            })?;
 
     if preview.srcdoc.trim().is_empty() {
         return Err(ArtifactError::StorageError(

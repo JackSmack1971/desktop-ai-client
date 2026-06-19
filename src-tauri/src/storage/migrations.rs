@@ -150,11 +150,13 @@ pub fn run_migrations(conn: &Connection, app_version: &str) -> rusqlite::Result<
 
     for migration in MIGRATIONS {
         // Skip migrations that already succeeded.
-        let already_applied: bool = conn.query_row(
-            "SELECT success FROM schema_migrations WHERE id = ?1",
-            params![migration.id],
-            |row| row.get::<_, bool>(0),
-        ).unwrap_or(false);
+        let already_applied: bool = conn
+            .query_row(
+                "SELECT success FROM schema_migrations WHERE id = ?1",
+                params![migration.id],
+                |row| row.get::<_, bool>(0),
+            )
+            .unwrap_or(false);
 
         if already_applied {
             continue;
@@ -165,7 +167,10 @@ pub fn run_migrations(conn: &Connection, app_version: &str) -> rusqlite::Result<
 
         // Validate id is a safe SQL identifier before embedding it.
         debug_assert!(
-            migration.id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'),
+            migration
+                .id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_'),
             "migration id must be alphanumeric/underscore only: {:?}",
             migration.id
         );
@@ -214,7 +219,11 @@ mod tests {
         let applied = run_migrations(&conn, "0.1.0").unwrap();
         // schema_migrations is bootstrapped outside the MIGRATIONS slice;
         // only the domain migrations (currently 4) are counted here.
-        assert_eq!(applied, MIGRATIONS.len(), "all migrations should apply on a fresh db");
+        assert_eq!(
+            applied,
+            MIGRATIONS.len(),
+            "all migrations should apply on a fresh db"
+        );
     }
 
     #[test]
@@ -250,7 +259,11 @@ mod tests {
 
     #[test]
     fn migrations_count_is_four() {
-        assert_eq!(MIGRATIONS.len(), 4, "expected 4 migrations after phase 5 additions");
+        assert_eq!(
+            MIGRATIONS.len(),
+            4,
+            "expected 4 migrations after phase 5 additions"
+        );
     }
 
     #[test]
@@ -310,7 +323,10 @@ mod tests {
             "INSERT INTO conversations (id, title, status) VALUES ('conv-bad', 'T', 'invalid')",
             [],
         );
-        assert!(bad.is_err(), "conversations.status CHECK constraint should reject 'invalid'");
+        assert!(
+            bad.is_err(),
+            "conversations.status CHECK constraint should reject 'invalid'"
+        );
     }
 
     #[test]
@@ -331,11 +347,8 @@ mod tests {
         .unwrap();
 
         // Delete the conversation — messages should cascade.
-        conn.execute(
-            "DELETE FROM conversations WHERE id = 'conv-cascade'",
-            [],
-        )
-        .unwrap();
+        conn.execute("DELETE FROM conversations WHERE id = 'conv-cascade'", [])
+            .unwrap();
 
         let count: i64 = conn
             .query_row(
@@ -373,7 +386,10 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        assert!(count > 0, "FTS5 table should contain the inserted message content");
+        assert!(
+            count > 0,
+            "FTS5 table should contain the inserted message content"
+        );
     }
 
     #[test]

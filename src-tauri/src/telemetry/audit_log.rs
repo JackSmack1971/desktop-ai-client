@@ -22,14 +22,20 @@ impl AuditEntry {
     }
 }
 
-pub fn write_audit_entry(app_handle: &tauri::AppHandle, entry: AuditEntry) -> Result<(), io::Error> {
+pub fn write_audit_entry(
+    app_handle: &tauri::AppHandle,
+    entry: AuditEntry,
+) -> Result<(), io::Error> {
     let log_dir = app_handle
         .path()
         .app_log_dir()
         .map_err(|e| io::Error::other(e.to_string()))?;
     fs::create_dir_all(&log_dir)?;
     let log_path = log_dir.join("audit.log");
-    let mut file = OpenOptions::new().create(true).append(true).open(log_path)?;
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log_path)?;
     let line = serde_json::to_string(&entry).map_err(|e| io::Error::other(e.to_string()))?;
     writeln!(file, "{line}")?;
     Ok(())

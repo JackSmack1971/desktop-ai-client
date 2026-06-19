@@ -389,10 +389,7 @@ mod tests {
 
         // Save and reload.
         store.save_active_surface(&Surface::History).unwrap();
-        assert_eq!(
-            store.load_active_surface().unwrap(),
-            Some(Surface::History)
-        );
+        assert_eq!(store.load_active_surface().unwrap(), Some(Surface::History));
 
         // Overwrite and confirm the new value is returned.
         store.save_active_surface(&Surface::Artifacts).unwrap();
@@ -452,7 +449,9 @@ mod tests {
         let conv_store = ConversationStore::new(pool.clone());
         let msg_store = MessageStore::new(pool);
 
-        conv_store.create_conversation("conv-c", "Msg Chat").unwrap();
+        conv_store
+            .create_conversation("conv-c", "Msg Chat")
+            .unwrap();
 
         msg_store
             .insert_message("msg-1", "conv-c", "user", "Hello")

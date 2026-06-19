@@ -101,8 +101,8 @@ impl FtsStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rusqlite::Connection;
     use crate::storage::migrations::run_migrations;
+    use rusqlite::Connection;
 
     fn in_memory_pool() -> std::sync::Arc<SqlitePool> {
         let conn = Connection::open_in_memory().unwrap();
@@ -136,7 +136,10 @@ mod tests {
         .unwrap();
 
         let results = store.search("rusqlite").unwrap();
-        assert!(!results.is_empty(), "search should return at least one result");
+        assert!(
+            !results.is_empty(),
+            "search should return at least one result"
+        );
         let r = &results[0];
         assert_eq!(r.id, "conv-fts");
         assert_eq!(r.title, "FTS Test Conv");
@@ -164,6 +167,9 @@ mod tests {
         .unwrap();
 
         let results = store.search("xyzzy_not_in_db").unwrap();
-        assert!(results.is_empty(), "search for absent term should return empty vec");
+        assert!(
+            results.is_empty(),
+            "search for absent term should return empty vec"
+        );
     }
 }

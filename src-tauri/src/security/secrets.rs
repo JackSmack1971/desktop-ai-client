@@ -1,3 +1,7 @@
+#[cfg(test)]
+use secrecy::ExposeSecret;
+#[cfg(test)]
+use std::collections::HashMap;
 /// Provider credential access for the backend-owned keychain boundary.
 ///
 /// Phase 4 stores provider credentials in the OS keychain via `keyring`.
@@ -8,10 +12,6 @@
 /// Debug/Display output automatically. Never call .expose_secret() inside
 /// log macros, error format strings, or IPC response fields.
 use std::str::FromStr;
-#[cfg(test)]
-use secrecy::ExposeSecret;
-#[cfg(test)]
-use std::collections::HashMap;
 #[cfg(test)]
 use std::sync::{Mutex, OnceLock};
 
@@ -259,7 +259,10 @@ mod tests {
 
     fn test_guard() -> MutexGuard<'static, ()> {
         static GUARD: OnceLock<Mutex<()>> = OnceLock::new();
-        GUARD.get_or_init(|| Mutex::new(())).lock().expect("test guard")
+        GUARD
+            .get_or_init(|| Mutex::new(()))
+            .lock()
+            .expect("test guard")
     }
 
     #[test]

@@ -55,8 +55,8 @@ impl RetentionStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rusqlite::Connection;
     use crate::storage::migrations::run_migrations;
+    use rusqlite::Connection;
 
     fn in_memory_pool() -> std::sync::Arc<SqlitePool> {
         let conn = Connection::open_in_memory().unwrap();

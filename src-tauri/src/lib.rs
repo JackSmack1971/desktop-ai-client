@@ -13,3 +13,6 @@ pub mod providers;
 pub mod security;
 pub mod storage;
 pub mod telemetry;
+
+#[cfg(test)]
+mod ipc_inventory_prop_tests;

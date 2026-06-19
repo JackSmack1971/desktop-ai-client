@@ -3,8 +3,8 @@ use crate::security::{command_policy, file_tokens};
 use mime_guess::from_path;
 use std::fs;
 use std::path::Path;
-use uuid::Uuid;
 use tauri_plugin_dialog::DialogExt;
+use uuid::Uuid;
 
 #[derive(Debug, thiserror::Error, serde::Serialize)]
 #[serde(tag = "code", content = "message", rename_all = "SCREAMING_SNAKE_CASE")]

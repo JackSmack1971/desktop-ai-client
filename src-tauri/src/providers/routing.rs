@@ -94,7 +94,10 @@ mod tests {
     #[test]
     fn select_model_returns_default_when_none() {
         let model = select_model(None);
-        assert_eq!(model, DEFAULT_MODEL, "should return DEFAULT_MODEL when no override");
+        assert_eq!(
+            model, DEFAULT_MODEL,
+            "should return DEFAULT_MODEL when no override"
+        );
     }
 
     #[test]

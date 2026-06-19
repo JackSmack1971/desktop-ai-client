@@ -13,10 +13,9 @@
 /// independently of IPC.
 ///
 /// Run with: cargo test --workspace --all-targets
-
 use desktop_ai_client_lib::app_state::Surface;
-use desktop_ai_client_lib::storage::sqlite::{ShellPreferenceStore, SqlitePool};
 use desktop_ai_client_lib::storage::migrations::run_migrations;
+use desktop_ai_client_lib::storage::sqlite::{ShellPreferenceStore, SqlitePool};
 use rusqlite::Connection;
 use std::sync::Arc;
 
@@ -27,8 +26,7 @@ use std::sync::Arc;
 /// Opens an in-memory SQLite connection with the required pragmas applied and
 /// all schema migrations run.  Returns a pool ready for use by `ShellPreferenceStore`.
 fn migrated_pool() -> Arc<SqlitePool> {
-    let conn = Connection::open_in_memory()
-        .expect("in-memory database should always open");
+    let conn = Connection::open_in_memory().expect("in-memory database should always open");
 
     conn.execute_batch(
         "PRAGMA journal_mode = WAL;
@@ -56,7 +54,8 @@ fn shell_preference_write_read_round_trip() {
     let pool = migrated_pool();
     let store = ShellPreferenceStore::new(pool);
 
-    store.save_active_surface(&Surface::History)
+    store
+        .save_active_surface(&Surface::History)
         .expect("save_active_surface should succeed");
 
     let loaded = store
@@ -103,9 +102,11 @@ fn shell_preference_overwrite_replaces_stored_value() {
     let pool = migrated_pool();
     let store = ShellPreferenceStore::new(pool);
 
-    store.save_active_surface(&Surface::Settings)
+    store
+        .save_active_surface(&Surface::Settings)
         .expect("first save should succeed");
-    store.save_active_surface(&Surface::Artifacts)
+    store
+        .save_active_surface(&Surface::Artifacts)
         .expect("overwrite save should succeed");
 
     let loaded = store
@@ -136,7 +137,8 @@ fn shell_preference_restores_non_default_surface_on_startup() {
     // Session 1: user navigated to History and the shell persisted it.
     {
         let store = ShellPreferenceStore::new(Arc::clone(&pool));
-        store.save_active_surface(&Surface::History)
+        store
+            .save_active_surface(&Surface::History)
             .expect("session 1 save should succeed");
     }
 
@@ -174,7 +176,8 @@ fn shell_preference_all_surfaces_persist_correctly() {
         let pool = migrated_pool();
         let store = ShellPreferenceStore::new(pool);
 
-        store.save_active_surface(&surface)
+        store
+            .save_active_surface(&surface)
             .unwrap_or_else(|e| panic!("save {:?} failed: {e}", surface));
 
         let loaded = store

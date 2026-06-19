@@ -104,3 +104,10 @@ Plans:
 - [x] PLAN.md — reviewed command inventory, deny-by-inventory verifier, and first-pass release evidence bundle
 
 **Execution:** Complete — inventory, verifier, evidence bundle, and release trackers updated on 2026-06-16.
+
+## Deferred (post-v1.0 backlog)
+
+These were considered during v1.0 and explicitly scoped out rather than left as silent gaps:
+
+- **Database export/import backup** (`src-tauri/src/storage/backup.rs`) — stays a scaffold placeholder. Phase 3 (History) decided this is user-facing backup/export, not the WAL-based crash recovery SQLite already handles automatically. No requirement in this milestone calls for it; pick it up as its own phase when export/import is actually needed.
+- **Richer streaming-protocol contract** (per-stream `attempt_id`/`sequence`/capability-request-partial hashing, multi-provider fallback policy, resumable retry tokens — as described in `.claude/rules/backend.md`) — not implemented. The current `ChatEvent` contract (`Ack`/`Delta`/`Done`/`Error`/`ArtifactReady` plus `chat_cancel`) satisfies ROUTE-02 as written (ordered output, partial-output preservation, cancellation) with a single hardcoded provider (OpenRouter) and no fallback path. The richer contract only earns its complexity once a second provider or fallback/resume policy is introduced — do not build it ahead of that need.
