@@ -19,4 +19,3 @@ Verification:
 
 - `cargo build --manifest-path src-tauri/Cargo.toml`
 - `cargo test --manifest-path src-tauri/Cargo.toml -- security::secrets::tests app_state::tests`
-

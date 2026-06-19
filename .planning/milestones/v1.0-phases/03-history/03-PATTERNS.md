@@ -6,20 +6,20 @@
 
 ## File Classification
 
-| New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
-|---|---|---|---|---|
-| `src-tauri/src/ipc/history.rs` | controller | request-response (CRUD) | `src-tauri/src/ipc/chat.rs` | role-match |
-| `src-tauri/src/storage/fts.rs` | service | transform (query builder) | `src-tauri/src/storage/sqlite.rs` | role-match |
-| `src-tauri/src/storage/retention.rs` | service | CRUD | `src-tauri/src/storage/sqlite.rs` | role-match |
-| `src-tauri/src/storage/migrations.rs` | config | batch | `src-tauri/src/storage/migrations.rs` (self, append) | exact |
-| `src-tauri/src/main.rs` | config | request-response | `src-tauri/src/main.rs` (self, extend) | exact |
-| `src-tauri/capabilities/main.json` | config | — | `src-tauri/capabilities/main.json` (self, extend) | exact |
-| `src/lib/components/surfaces/HistorySurface.svelte` | component | request-response | `src/lib/components/surfaces/ChatSurface.svelte` | exact |
-| `src/lib/components/history/SearchBar.svelte` | component | event-driven | `src/lib/components/chat/ChatInput.svelte` | role-match |
-| `src/lib/components/history/ConversationList.svelte` | component | request-response | `src/lib/components/surfaces/ChatSurface.svelte` | role-match |
-| `src/lib/components/history/ConversationRow.svelte` | component | request-response | `src/lib/components/chat/ChatMessage.svelte` | role-match |
-| `src/lib/stores/history.ts` | store | request-response | `src/lib/stores/surface.ts` | exact |
-| `src-tauri/src/ipc/chat.rs` | controller | request-response (streaming) | `src-tauri/src/ipc/chat.rs` (self, extend) | exact |
+| New/Modified File                                    | Role       | Data Flow                    | Closest Analog                                       | Match Quality |
+| ---------------------------------------------------- | ---------- | ---------------------------- | ---------------------------------------------------- | ------------- |
+| `src-tauri/src/ipc/history.rs`                       | controller | request-response (CRUD)      | `src-tauri/src/ipc/chat.rs`                          | role-match    |
+| `src-tauri/src/storage/fts.rs`                       | service    | transform (query builder)    | `src-tauri/src/storage/sqlite.rs`                    | role-match    |
+| `src-tauri/src/storage/retention.rs`                 | service    | CRUD                         | `src-tauri/src/storage/sqlite.rs`                    | role-match    |
+| `src-tauri/src/storage/migrations.rs`                | config     | batch                        | `src-tauri/src/storage/migrations.rs` (self, append) | exact         |
+| `src-tauri/src/main.rs`                              | config     | request-response             | `src-tauri/src/main.rs` (self, extend)               | exact         |
+| `src-tauri/capabilities/main.json`                   | config     | —                            | `src-tauri/capabilities/main.json` (self, extend)    | exact         |
+| `src/lib/components/surfaces/HistorySurface.svelte`  | component  | request-response             | `src/lib/components/surfaces/ChatSurface.svelte`     | exact         |
+| `src/lib/components/history/SearchBar.svelte`        | component  | event-driven                 | `src/lib/components/chat/ChatInput.svelte`           | role-match    |
+| `src/lib/components/history/ConversationList.svelte` | component  | request-response             | `src/lib/components/surfaces/ChatSurface.svelte`     | role-match    |
+| `src/lib/components/history/ConversationRow.svelte`  | component  | request-response             | `src/lib/components/chat/ChatMessage.svelte`         | role-match    |
+| `src/lib/stores/history.ts`                          | store      | request-response             | `src/lib/stores/surface.ts`                          | exact         |
+| `src-tauri/src/ipc/chat.rs`                          | controller | request-response (streaming) | `src-tauri/src/ipc/chat.rs` (self, extend)           | exact         |
 
 ---
 
@@ -30,12 +30,14 @@
 **Analog:** `src-tauri/src/ipc/chat.rs` and `src-tauri/src/ipc/app_shell.rs`
 
 **Imports pattern** (from `app_shell.rs` lines 1-14, `chat.rs` lines 14-19):
+
 ```rust
 use crate::app_state::AppState;
 use crate::storage::sqlite::SqlitePool; // swapped for ConversationStore/MessageStore
 ```
 
 **Error enum pattern** (`app_shell.rs` lines 18-27, `chat.rs` lines 69-82):
+
 ```rust
 #[derive(Debug, thiserror::Error, serde::Serialize)]
 #[serde(tag = "code", content = "message", rename_all = "SCREAMING_SNAKE_CASE")]
@@ -48,9 +50,11 @@ pub enum HistoryError {
     UnauthorizedWindow(String),
 }
 ```
+
 Serializes to `{ "code": "STORAGE_ERROR", "message": "..." }` — same shape as `ShellError` and `ChatError`.
 
 **Window guard pattern** (`app_shell.rs` lines 92-100, `chat.rs` lines 84-94):
+
 ```rust
 fn assert_main_window(window: &tauri::Window) -> Result<(), HistoryError> {
     if window.label() != "main" {
@@ -64,6 +68,7 @@ fn assert_main_window(window: &tauri::Window) -> Result<(), HistoryError> {
 ```
 
 **Command skeleton pattern** (`app_shell.rs` lines 37-62):
+
 ```rust
 #[tauri::command]
 pub async fn history_list(
@@ -77,9 +82,11 @@ pub async fn history_list(
         .map_err(|e| HistoryError::StorageError(e.to_string()))
 }
 ```
+
 Repeat skeleton for `history_get`, `history_delete`, `history_search`. Each asserts the main window, delegates to the typed store, and maps `rusqlite::Error` to `HistoryError`.
 
 **Test pattern** (`app_shell.rs` lines 103-113, `chat.rs` lines 326-421):
+
 ```rust
 #[cfg(test)]
 mod tests {
@@ -101,6 +108,7 @@ mod tests {
 **Analog:** `src-tauri/src/storage/sqlite.rs`
 
 **Typed store wrapper pattern** (`sqlite.rs` lines 76-82):
+
 ```rust
 pub struct FtsStore {
     pool: std::sync::Arc<SqlitePool>,
@@ -115,6 +123,7 @@ impl FtsStore {
 ```
 
 **with_conn delegation pattern** (`sqlite.rs` lines 86-98):
+
 ```rust
 pub fn search(&self, query: &str) -> rusqlite::Result<Vec<SearchResult>> {
     self.pool.with_conn(|conn| {
@@ -144,6 +153,7 @@ The `setup_fts_table` method runs DDL inside `run_migrations`; do NOT call it fr
 **Analog:** `src-tauri/src/storage/sqlite.rs` (`ShellPreferenceStore`)
 
 **Typed store wrapper pattern** (`sqlite.rs` lines 76-82, 86-98):
+
 ```rust
 pub struct RetentionStore {
     pool: std::sync::Arc<SqlitePool>,
@@ -184,6 +194,7 @@ impl RetentionStore {
 **Analog:** self (`src-tauri/src/storage/migrations.rs`)
 
 **Migration entry pattern** (`migrations.rs` lines 33-45):
+
 ```rust
 pub static MIGRATIONS: &[Migration] = &[
     Migration {
@@ -262,6 +273,7 @@ pub static MIGRATIONS: &[Migration] = &[
 ```
 
 **Runner invariants** (`migrations.rs` lines 51-116):
+
 - Each entry wrapped in `SAVEPOINT migration_{id} … RELEASE SAVEPOINT migration_{id}` by the runner — no need to add explicit transaction in the SQL string.
 - After adding migrations, add a test asserting `MIGRATIONS.len()` equals the expected count.
 
@@ -272,6 +284,7 @@ pub static MIGRATIONS: &[Migration] = &[
 **Analog:** self (`src-tauri/src/main.rs`)
 
 **Registration pattern** (`main.rs` lines 13-14, 39-56):
+
 ```rust
 // At top of main.rs — add new store imports:
 use storage::sqlite::{ConversationStore, MessageStore, ShellPreferenceStore, SqlitePool};
@@ -303,24 +316,26 @@ app.manage(FtsStore::new(pool.clone()));
 **Analog:** self (`src-tauri/capabilities/main.json`)
 
 **Permission entry pattern** (`main.json` lines 7-15):
+
 ```json
 {
-  "permissions": [
-    "core:default",
-    "opener:default",
-    "core:app:allow-app-hide",
-    "core:window:allow-start-dragging",
-    "allow-get-active-surface",
-    "allow-set-active-surface",
-    "allow-chat-send",
-    "allow-chat-cancel",
-    "allow-history-list",
-    "allow-history-get",
-    "allow-history-delete",
-    "allow-history-search"
-  ]
+	"permissions": [
+		"core:default",
+		"opener:default",
+		"core:app:allow-app-hide",
+		"core:window:allow-start-dragging",
+		"allow-get-active-surface",
+		"allow-set-active-surface",
+		"allow-chat-send",
+		"allow-chat-cancel",
+		"allow-history-list",
+		"allow-history-get",
+		"allow-history-delete",
+		"allow-history-search"
+	]
 }
 ```
+
 Each new `allow-history-*` entry requires a corresponding permission file under `src-tauri/permissions/` (created with `pnpm tauri permission new`).
 
 ---
@@ -330,28 +345,29 @@ Each new `allow-history-*` entry requires a corresponding permission file under 
 **Analog:** `src/lib/components/surfaces/ChatSurface.svelte`
 
 **Surface layout pattern** (`ChatSurface.svelte` lines 1-130):
+
 ```svelte
 <script lang="ts">
-  import { historyStore } from '$lib/stores/history';
-  import SearchBar from '$lib/components/history/SearchBar.svelte';
-  import ConversationList from '$lib/components/history/ConversationList.svelte';
+	import { historyStore } from '$lib/stores/history';
+	import SearchBar from '$lib/components/history/SearchBar.svelte';
+	import ConversationList from '$lib/components/history/ConversationList.svelte';
 </script>
 
 <div class="surface history-surface" role="region" aria-label="History">
-  <header class="surface-header">
-    <h1 class="surface-title">History</h1>
-  </header>
-  <div class="surface-body">
-    <SearchBar onquery={(q) => void historyStore.search(q)} />
-    {#if historyStore.error}
-      <p class="history-error" role="alert">{historyStore.error}</p>
-    {/if}
-    <ConversationList
-      conversations={historyStore.conversations}
-      loading={historyStore.loading}
-      ondelete={(id) => void historyStore.deleteConversation(id)}
-    />
-  </div>
+	<header class="surface-header">
+		<h1 class="surface-title">History</h1>
+	</header>
+	<div class="surface-body">
+		<SearchBar onquery={(q) => void historyStore.search(q)} />
+		{#if historyStore.error}
+			<p class="history-error" role="alert">{historyStore.error}</p>
+		{/if}
+		<ConversationList
+			conversations={historyStore.conversations}
+			loading={historyStore.loading}
+			ondelete={(id) => void historyStore.deleteConversation(id)}
+		/>
+	</div>
 </div>
 ```
 
@@ -364,38 +380,42 @@ Each new `allow-history-*` entry requires a corresponding permission file under 
 **Analog:** `src/lib/components/chat/ChatInput.svelte`
 
 **Props + $state pattern** (`ChatInput.svelte` lines 10-27):
+
 ```svelte
 <script lang="ts">
-  interface Props {
-    onquery: (q: string) => void;
-    disabled?: boolean;
-  }
-  let { onquery, disabled = false }: Props = $props();
+	interface Props {
+		onquery: (q: string) => void;
+		disabled?: boolean;
+	}
+	let { onquery, disabled = false }: Props = $props();
 
-  let text = $state('');
-  let debounceTimer = $state<ReturnType<typeof setTimeout> | undefined>(undefined);
+	let text = $state('');
+	let debounceTimer = $state<ReturnType<typeof setTimeout> | undefined>(
+		undefined,
+	);
 
-  function handleInput(): void {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      onquery(text.trim());
-    }, 300); // D-07: 300 ms debounce
-  }
+	function handleInput(): void {
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			onquery(text.trim());
+		}, 300); // D-07: 300 ms debounce
+	}
 </script>
 ```
 
 **Cleanup pattern** — return clearTimeout from `$effect` if the timer is managed reactively; otherwise clear in the input handler as above.
 
 **Input element pattern** (`ChatInput.svelte` lines 38-47):
+
 ```svelte
 <input
-  type="search"
-  class="search-input"
-  bind:value={text}
-  oninput={handleInput}
-  {disabled}
-  placeholder="Search conversations…"
-  aria-label="Search conversation history"
+	type="search"
+	class="search-input"
+	bind:value={text}
+	oninput={handleInput}
+	{disabled}
+	placeholder="Search conversations…"
+	aria-label="Search conversation history"
 />
 ```
 
@@ -406,31 +426,38 @@ Each new `allow-history-*` entry requires a corresponding permission file under 
 **Analog:** `src/lib/components/surfaces/ChatSurface.svelte` (message list section, lines 44-67)
 
 **Keyed each + loading pattern** (`ChatSurface.svelte` lines 52-67):
+
 ```svelte
 <script lang="ts">
-  import type { ConversationSummary } from '$lib/stores/history';
-  import ConversationRow from '$lib/components/history/ConversationRow.svelte';
+	import type { ConversationSummary } from '$lib/stores/history';
+	import ConversationRow from '$lib/components/history/ConversationRow.svelte';
 
-  interface Props {
-    conversations: ConversationSummary[];
-    loading: boolean;
-    ondelete: (id: string) => void;
-  }
-  let { conversations, loading, ondelete }: Props = $props();
+	interface Props {
+		conversations: ConversationSummary[];
+		loading: boolean;
+		ondelete: (id: string) => void;
+	}
+	let { conversations, loading, ondelete }: Props = $props();
 </script>
 
-<div class="conversation-list" role="list" aria-label="Conversations" aria-busy={loading}>
-  {#each conversations as conv (conv.id)}
-    <ConversationRow {conv} ondelete={() => ondelete(conv.id)} />
-  {/each}
-  {#if loading}
-    <p class="list-loading" aria-live="polite">Loading…</p>
-  {/if}
-  {#if !loading && conversations.length === 0}
-    <p class="list-empty">No conversations found.</p>
-  {/if}
+<div
+	class="conversation-list"
+	role="list"
+	aria-label="Conversations"
+	aria-busy={loading}
+>
+	{#each conversations as conv (conv.id)}
+		<ConversationRow {conv} ondelete={() => ondelete(conv.id)} />
+	{/each}
+	{#if loading}
+		<p class="list-loading" aria-live="polite">Loading…</p>
+	{/if}
+	{#if !loading && conversations.length === 0}
+		<p class="list-empty">No conversations found.</p>
+	{/if}
 </div>
 ```
+
 Stable key `conv.id` required (frontend rules: give every `{#each}` block a stable key for mutable lists).
 
 ---
@@ -461,75 +488,85 @@ import { invoke } from '@tauri-apps/api/core';
 // Re-use the same normalizeIpcError helper — copy from surface.ts lines 32-40
 // or import it if it becomes a shared utility.
 function normalizeIpcError(e: unknown): string {
-    if (typeof e === 'string') return e;
-    if (e && typeof e === 'object') {
-        const obj = e as Record<string, unknown>;
-        if (typeof obj['message'] === 'string') return obj['message'];
-        if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
-    }
-    return 'An unexpected error occurred.';
+	if (typeof e === 'string') return e;
+	if (e && typeof e === 'object') {
+		const obj = e as Record<string, unknown>;
+		if (typeof obj['message'] === 'string') return obj['message'];
+		if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
+	}
+	return 'An unexpected error occurred.';
 }
 
 export interface ConversationSummary {
-    id: string;
-    title: string;
-    model: string;
-    status: 'active' | 'complete' | 'incomplete';
-    updatedAt: string;      // ISO datetime string from Rust (camelCase per backend rule)
-    snippet?: string;       // only present for search results
+	id: string;
+	title: string;
+	model: string;
+	status: 'active' | 'complete' | 'incomplete';
+	updatedAt: string; // ISO datetime string from Rust (camelCase per backend rule)
+	snippet?: string; // only present for search results
 }
 
 function createHistoryStore() {
-    let conversations = $state<ConversationSummary[]>([]);
-    let loading = $state(false);
-    let error = $state<string | null>(null);
+	let conversations = $state<ConversationSummary[]>([]);
+	let loading = $state(false);
+	let error = $state<string | null>(null);
 
-    // Pattern: async function, set loading true, call invoke, catch with normalizeIpcError
-    async function load(): Promise<void> {
-        loading = true;
-        error = null;
-        try {
-            conversations = await invoke<ConversationSummary[]>('history_list');
-        } catch (e) {
-            error = normalizeIpcError(e);
-        } finally {
-            loading = false;
-        }
-    }
+	// Pattern: async function, set loading true, call invoke, catch with normalizeIpcError
+	async function load(): Promise<void> {
+		loading = true;
+		error = null;
+		try {
+			conversations = await invoke<ConversationSummary[]>('history_list');
+		} catch (e) {
+			error = normalizeIpcError(e);
+		} finally {
+			loading = false;
+		}
+	}
 
-    async function search(query: string): Promise<void> {
-        if (!query) { return load(); }
-        loading = true;
-        error = null;
-        try {
-            conversations = await invoke<ConversationSummary[]>('history_search', { query });
-        } catch (e) {
-            error = normalizeIpcError(e);
-        } finally {
-            loading = false;
-        }
-    }
+	async function search(query: string): Promise<void> {
+		if (!query) {
+			return load();
+		}
+		loading = true;
+		error = null;
+		try {
+			conversations = await invoke<ConversationSummary[]>('history_search', {
+				query,
+			});
+		} catch (e) {
+			error = normalizeIpcError(e);
+		} finally {
+			loading = false;
+		}
+	}
 
-    async function deleteConversation(id: string): Promise<void> {
-        // Optimistic remove (same pattern as setSurface optimistic update in surface.ts lines 74-86)
-        const previous = conversations;
-        conversations = conversations.filter(c => c.id !== id);
-        try {
-            await invoke<void>('history_delete', { id });
-        } catch (e) {
-            conversations = previous; // rollback
-            error = normalizeIpcError(e);
-        }
-    }
+	async function deleteConversation(id: string): Promise<void> {
+		// Optimistic remove (same pattern as setSurface optimistic update in surface.ts lines 74-86)
+		const previous = conversations;
+		conversations = conversations.filter((c) => c.id !== id);
+		try {
+			await invoke<void>('history_delete', { id });
+		} catch (e) {
+			conversations = previous; // rollback
+			error = normalizeIpcError(e);
+		}
+	}
 
-    return {
-        get conversations() { return conversations; },
-        get loading() { return loading; },
-        get error() { return error; },
-        load,
-        search,
-        deleteConversation,
-    };
+	return {
+		get conversations() {
+			return conversations;
+		},
+		get loading() {
+			return loading;
+		},
+		get error() {
+			return error;
+		},
+		load,
+		search,
+		deleteConversation,
+	};
 }
 
 export const historyStore = createHistoryStore();
@@ -542,6 +579,7 @@ export const historyStore = createHistoryStore();
 **Analog:** self
 
 **Extension point** (`chat.rs` lines 122-124):
+
 ```rust
 // Phase 2 stub — conversation_id accepted but ignored:
 let _ = &conversation_id;
@@ -559,8 +597,10 @@ The conversation write must happen inside the spawned task (after `Done` event) 
 ## Shared Patterns
 
 ### Window-label enforcement
+
 **Source:** `src-tauri/src/ipc/app_shell.rs` lines 92-100 and `src-tauri/src/ipc/chat.rs` lines 84-94
 **Apply to:** `ipc/history.rs` (all four history commands)
+
 ```rust
 fn assert_main_window(window: &tauri::Window) -> Result<(), HistoryError> {
     if window.label() != "main" {
@@ -574,79 +614,94 @@ fn assert_main_window(window: &tauri::Window) -> Result<(), HistoryError> {
 ```
 
 ### Typed error enum (IPC shape)
+
 **Source:** `src-tauri/src/ipc/app_shell.rs` lines 18-27
 **Apply to:** `ipc/history.rs`
+
 ```rust
 #[derive(Debug, thiserror::Error, serde::Serialize)]
 #[serde(tag = "code", content = "message", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum HistoryError { ... }
 ```
+
 Serializes to `{ "code": "SCREAMING_SNAKE_CASE", "message": "..." }`.
 
 ### `with_conn` delegation
+
 **Source:** `src-tauri/src/storage/sqlite.rs` lines 56-68 (definition), lines 86-98 (use in `ShellPreferenceStore`)
 **Apply to:** `ConversationStore`, `MessageStore`, `RetentionStore`, `FtsStore`
+
 ```rust
 self.pool.with_conn(|conn| {
     // all DB work here; never hold this closure across an .await
     Ok(result)
 })
 ```
+
 Never call `with_conn` from IPC handlers directly — only from typed store methods.
 
 ### `normalizeIpcError` (frontend)
+
 **Source:** `src/lib/stores/surface.ts` lines 32-40
 **Apply to:** `src/lib/stores/history.ts`
+
 ```typescript
 function normalizeIpcError(e: unknown): string {
-    if (typeof e === 'string') return e;
-    if (e && typeof e === 'object') {
-        const obj = e as Record<string, unknown>;
-        if (typeof obj['message'] === 'string') return obj['message'];
-        if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
-    }
-    return 'An unexpected error occurred.';
+	if (typeof e === 'string') return e;
+	if (e && typeof e === 'object') {
+		const obj = e as Record<string, unknown>;
+		if (typeof obj['message'] === 'string') return obj['message'];
+		if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
+	}
+	return 'An unexpected error occurred.';
 }
 ```
 
 ### Svelte 5 rune store factory
+
 **Source:** `src/lib/stores/surface.ts` lines 42-114
 **Apply to:** `src/lib/stores/history.ts`
 Pattern: `function createXxxStore() { let x = $state(...); ... return { get x() { return x; }, ... }; } export const xxxStore = createXxxStore();`
 
 ### Surface CSS shell
+
 **Source:** `src/lib/components/surfaces/ChatSurface.svelte` lines 84-119 and `src/lib/components/surfaces/HistorySurface.svelte` lines 21-55
 **Apply to:** `HistorySurface.svelte` (already present in scaffold — extend, do not replace)
 Classes: `.surface`, `.surface-header`, `.surface-title`, `.surface-body` — same flex-column, 100% height layout across all surfaces.
 
 ### Optimistic update with rollback
+
 **Source:** `src/lib/stores/surface.ts` lines 74-87
 **Apply to:** `historyStore.deleteConversation`
+
 ```typescript
 const previous = conversations;
-conversations = conversations.filter(c => c.id !== id); // optimistic remove
+conversations = conversations.filter((c) => c.id !== id); // optimistic remove
 try {
-    await invoke<void>('history_delete', { id });
+	await invoke<void>('history_delete', { id });
 } catch (e) {
-    conversations = previous; // rollback on failure
-    error = normalizeIpcError(e);
+	conversations = previous; // rollback on failure
+	error = normalizeIpcError(e);
 }
 ```
 
 ### State injection via `app_handle.state<T>()` inside spawned tasks
+
 **Source:** `src-tauri/src/ipc/chat.rs` lines 197-199
 **Apply to:** `ipc/chat.rs` Phase 3 storage write (inside the spawned task)
+
 ```rust
 let inner_state = app_handle.state::<ConversationStore>();
 ```
+
 `tauri::State<'_>` is not `'static` — never move it into a `tokio::spawn` closure. Always re-acquire from `AppHandle` inside the task.
 
 ---
 
 ## No Analog Found
 
-| File | Role | Data Flow | Reason |
-|---|---|---|---|
+| File                                                   | Role    | Data Flow | Reason                                                                                        |
+| ------------------------------------------------------ | ------- | --------- | --------------------------------------------------------------------------------------------- |
 | `src-tauri/src/storage/fts.rs` (FTS5 DDL specifically) | service | transform | No FTS5 tables exist in codebase yet; DDL pattern comes from SQLite FTS5 docs and RESEARCH.md |
 
 The `FtsStore` wrapper itself follows `ShellPreferenceStore` patterns exactly. Only the FTS5-specific SQL (virtual table DDL, `snippet()` auxiliary function, `MATCH` syntax) has no codebase precedent.

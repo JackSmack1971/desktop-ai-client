@@ -17,8 +17,12 @@
 		}
 	}
 
-	let showReload = $derived(artifactsStore.hasArtifact && artifactsStore.state !== 'idle');
-	let showStop = $derived(artifactsStore.state === 'ready' || artifactsStore.state === 'loading');
+	let showReload = $derived(
+		artifactsStore.hasArtifact && artifactsStore.state !== 'idle',
+	);
+	let showStop = $derived(
+		artifactsStore.state === 'ready' || artifactsStore.state === 'loading',
+	);
 	let contentTypeLabel = $derived(artifactsStore.contentTypeLabel);
 </script>
 
@@ -29,7 +33,8 @@
 			{#if contentTypeLabel}
 				<span
 					class="artifact-badge"
-					class:artifact-badge--html={artifactsStore.contentType?.type === 'Html'}
+					class:artifact-badge--html={artifactsStore.contentType?.type ===
+						'Html'}
 					aria-label={`${contentTypeLabel} artifact`}
 				>
 					{contentTypeLabel}
@@ -71,15 +76,24 @@
 			<div class="state-panel state-panel--empty">
 				<p class="state-heading">No artifact yet</p>
 				<p class="state-copy">
-					Send a message asking Claude to generate HTML, SVG, or code. The result will appear here.
+					Send a message asking Claude to generate HTML, SVG, or code. The
+					result will appear here.
 				</p>
 			</div>
 		{:else if artifactsStore.state === 'loading'}
-			<div class="state-panel state-panel--loading" role="status" aria-live="polite">
+			<div
+				class="state-panel state-panel--loading"
+				role="status"
+				aria-live="polite"
+			>
 				<p class="state-heading">Loading artifact…</p>
 			</div>
 		{:else if artifactsStore.state === 'error'}
-			<div class="state-panel state-panel--error" role="alert" aria-live="assertive">
+			<div
+				class="state-panel state-panel--error"
+				role="alert"
+				aria-live="assertive"
+			>
 				<p class="state-heading">
 					Could not load artifact. Check the app connection and try reloading.
 				</p>
@@ -88,9 +102,15 @@
 				</p>
 			</div>
 		{:else if artifactsStore.state === 'dismissed'}
-			<div class="state-panel state-panel--dismissed" role="status" aria-live="polite">
+			<div
+				class="state-panel state-panel--dismissed"
+				role="status"
+				aria-live="polite"
+			>
 				<p class="state-heading">Artifact dismissed</p>
-				<p class="state-copy">Reload to restore the preview from the backend.</p>
+				<p class="state-copy">
+					Reload to restore the preview from the backend.
+				</p>
 			</div>
 		{:else if artifactsStore.isReady}
 			<iframe
@@ -101,7 +121,11 @@
 				role="document"
 			></iframe>
 		{:else}
-			<div class="state-panel state-panel--error" role="alert" aria-live="assertive">
+			<div
+				class="state-panel state-panel--error"
+				role="alert"
+				aria-live="assertive"
+			>
 				<p class="state-heading">Artifact could not be displayed safely.</p>
 			</div>
 		{/if}
@@ -175,7 +199,10 @@
 		font-size: 13px;
 		font-weight: 500;
 		cursor: pointer;
-		transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease,
+			border-color 0.15s ease;
 	}
 
 	.toolbar-button:hover:not(:disabled) {

@@ -42,7 +42,10 @@ function createSurfaceStore() {
 			surface = persisted;
 		} catch (e) {
 			// In development or before backend initializes, fall back gracefully.
-			console.warn('[surface-store] Failed to load active surface from backend:', e);
+			console.warn(
+				'[surface-store] Failed to load active surface from backend:',
+				e,
+			);
 			error = normalizeIpcError(e);
 			// Default is already 'chat' from the $state initializer.
 		} finally {
@@ -66,14 +69,23 @@ function createSurfaceStore() {
 			// Roll back the optimistic update if the backend call fails.
 			surface = previous;
 			error = normalizeIpcError(e);
-			console.warn('[surface-store] Failed to persist active surface to backend:', e);
+			console.warn(
+				'[surface-store] Failed to persist active surface to backend:',
+				e,
+			);
 		}
 	}
 
 	return {
-		get surface() { return surface; },
-		get loading() { return loading; },
-		get error() { return error; },
+		get surface() {
+			return surface;
+		},
+		get loading() {
+			return loading;
+		},
+		get error() {
+			return error;
+		},
 		/**
 		 * Human-readable status message describing the current shell state.
 		 * Used by StatusRegion to announce state changes to assistive technology.
@@ -84,7 +96,7 @@ function createSurfaceStore() {
 			return `${SURFACE_LABELS[surface] ?? surface} surface active`;
 		},
 		hydrate,
-		setSurface
+		setSurface,
 	};
 }
 

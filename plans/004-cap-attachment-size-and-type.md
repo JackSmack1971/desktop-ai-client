@@ -22,7 +22,7 @@
 
 ## Why this matters
 
-`read_attachment` in `src-tauri/src/ipc/chat.rs` reads the *entire* contents of any file the user attaches into memory, with no size ceiling, and splices it directly into the system-prompt-adjacent message sent to OpenRouter. There's no explicit type allow-list either — anything that isn't sniffed as `text/*`, `*/json`, or `*/xml` falls through to `String::from_utf8_lossy`, which silently mangles binary content (images, PDFs, executables) into a "readable" string rather than rejecting it. Two distinct problems: (1) a very large file causes an unbounded read into process memory and an unbounded outbound HTTP payload to a third-party API, and (2) non-text files get garbage-decoded and shipped to the provider instead of being rejected with a clear error.
+`read_attachment` in `src-tauri/src/ipc/chat.rs` reads the _entire_ contents of any file the user attaches into memory, with no size ceiling, and splices it directly into the system-prompt-adjacent message sent to OpenRouter. There's no explicit type allow-list either — anything that isn't sniffed as `text/*`, `*/json`, or `*/xml` falls through to `String::from_utf8_lossy`, which silently mangles binary content (images, PDFs, executables) into a "readable" string rather than rejecting it. Two distinct problems: (1) a very large file causes an unbounded read into process memory and an unbounded outbound HTTP payload to a third-party API, and (2) non-text files get garbage-decoded and shipped to the provider instead of being rejected with a clear error.
 
 ## Current state
 
@@ -55,17 +55,19 @@ Note the existing (slightly mis-named, but pre-existing — do not "fix" it as p
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Compile check | `cargo check --manifest-path src-tauri/Cargo.toml` | exit 0, no errors |
-| Run tests | `cargo test --manifest-path src-tauri/Cargo.toml --lib ipc::chat` | all pass |
+| Purpose       | Command                                                           | Expected on success |
+| ------------- | ----------------------------------------------------------------- | ------------------- |
+| Compile check | `cargo check --manifest-path src-tauri/Cargo.toml`                | exit 0, no errors   |
+| Run tests     | `cargo test --manifest-path src-tauri/Cargo.toml --lib ipc::chat` | all pass            |
 
 ## Scope
 
 **In scope** (the only file you should modify):
+
 - `src-tauri/src/ipc/chat.rs` — only the `read_attachment` function and its test module.
 
 **Out of scope** (do NOT touch, even though related):
+
 - `src-tauri/src/ipc/files.rs` (`files_read_token`) — a separate read path with separate UX requirements (e.g. it may legitimately need to read non-text files for preview purposes); do not add the same restriction there without a separate design decision.
 - Frontend file-picker UI (`ChatInput.svelte` or any attachment-picker component) — adding a client-side size warning before upload is a reasonable follow-up but is a UX change, not this bug fix; out of scope here.
 - The MIME-sniffing library/logic itself (`mime_guess::from_path`) — keep using it as-is; this plan only adds a size check and tightens what happens when the type isn't text-like.
@@ -191,6 +193,7 @@ Verification: `cargo test --manifest-path src-tauri/Cargo.toml --lib ipc::chat` 
 ## STOP conditions
 
 Stop and report back (do not improvise) if:
+
 - `read_attachment`'s signature or surrounding code no longer matches the excerpt above.
 - You determine 2 MiB is clearly wrong for this product's actual use case (e.g. there's a documented requirement elsewhere for larger attachments) — report instead of guessing a different number; this plan's constant is a reasonable default, not a researched requirement.
 

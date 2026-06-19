@@ -46,11 +46,11 @@ The codebase map shows the current backend layout and confirms that the applicat
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Structure the roadmap as vertical MVP slices | Delivers end-to-end value early and keeps each phase testable | Pending |
+| Decision                                                                            | Rationale                                                           | Outcome |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------- |
+| Structure the roadmap as vertical MVP slices                                        | Delivers end-to-end value early and keeps each phase testable       | Pending |
 | Treat cloud inference as a routed backend capability rather than a frontend concern | Preserves privacy and keeps provider logic behind the Rust boundary | Pending |
-| Keep secrets and raw file access backend-owned | Prevents the frontend from becoming a trust boundary escape hatch | Pending |
+| Keep secrets and raw file access backend-owned                                      | Prevents the frontend from becoming a trust boundary escape hatch   | Pending |
 
 ## Evolution
 
@@ -61,4 +61,5 @@ This document will evolve as the implementation moves from scaffold to working p
 Phase 06 (release) complete — reviewed command inventory, deny-by-inventory verifier, and first-pass release evidence bundle are implemented and verified. Compilation alone is no longer treated as release-ready.
 
 ---
-*Last updated: 2026-06-16 after Phase 06 completion*
+
+_Last updated: 2026-06-16 after Phase 06 completion_

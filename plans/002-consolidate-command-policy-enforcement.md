@@ -73,24 +73,26 @@ The observable behavior is identical today (every local check also pins to `"mai
   ```
   and then each command body starts with `command_policy::policy_check("privacy_set_provider_key", window.label())?;` (line 60) — the `?` operator uses the `From` impl automatically.
 - Note: `artifacts.rs:49-50` and `artifacts.rs:80-81` currently call **both** `command_policy::policy_check(...)` and the local `assert_main_window(&window)?` back-to-back — fully redundant once policy_check is in place. This plan removes that redundancy too (see Step 5).
-- None of `ShellError`, `ChatError`, `HistoryError` currently have a `PolicyViolation`-equivalent variant for the `UnknownCommand` case — they all already have `UnauthorizedWindow(String)`, but mapping `PolicyError::UnknownCommand` needs *some* variant. Reuse the existing `StorageError(String)` variant on `ShellError`/`HistoryError` for this (matching how `ArtifactError::from` maps `UnknownCommand` to `ArtifactError::StorageError` at `artifacts.rs:21` — an existing precedent in this codebase, slightly odd naming but consistent). For `ChatError`, reuse `ProviderError(String)` (no `StorageError` variant exists there) since it's the closest existing "unexpected backend condition" bucket.
+- None of `ShellError`, `ChatError`, `HistoryError` currently have a `PolicyViolation`-equivalent variant for the `UnknownCommand` case — they all already have `UnauthorizedWindow(String)`, but mapping `PolicyError::UnknownCommand` needs _some_ variant. Reuse the existing `StorageError(String)` variant on `ShellError`/`HistoryError` for this (matching how `ArtifactError::from` maps `UnknownCommand` to `ArtifactError::StorageError` at `artifacts.rs:21` — an existing precedent in this codebase, slightly odd naming but consistent). For `ChatError`, reuse `ProviderError(String)` (no `StorageError` variant exists there) since it's the closest existing "unexpected backend condition" bucket.
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Compile check | `cargo check --manifest-path src-tauri/Cargo.toml` | exit 0, no errors |
-| Run tests | `cargo test --manifest-path src-tauri/Cargo.toml` | all tests pass |
+| Purpose       | Command                                            | Expected on success |
+| ------------- | -------------------------------------------------- | ------------------- |
+| Compile check | `cargo check --manifest-path src-tauri/Cargo.toml` | exit 0, no errors   |
+| Run tests     | `cargo test --manifest-path src-tauri/Cargo.toml`  | all tests pass      |
 
 ## Scope
 
 **In scope** (the only files you should modify):
+
 - `src-tauri/src/ipc/app_shell.rs`
 - `src-tauri/src/ipc/chat.rs`
 - `src-tauri/src/ipc/history.rs`
 - `src-tauri/src/ipc/artifacts.rs` (remove the now-fully-redundant local `assert_main_window` calls only — see Step 5)
 
 **Out of scope** (do NOT touch, even though related):
+
 - `src-tauri/src/security/command_policy.rs` — its `COMMANDS`/`ALLOWED_WINDOW`/`policy_check` implementation is correct and is the thing every other file should converge onto; do not change its logic.
 - `src-tauri/src/ipc/privacy.rs` and `src-tauri/src/ipc/files.rs` — already correct, used as the exemplar; no changes needed.
 - `security/command-inventory.toml` and `src-tauri/capabilities/main.json` — capability/inventory files are a separate defense-in-depth layer; this plan only consolidates the Rust-side window check, not the capability manifest.
@@ -106,6 +108,7 @@ The observable behavior is identical today (every local check also pins to `"mai
 ### Step 1: `app_shell.rs` — add `From<PolicyError>`, call `policy_check`, delete `assert_main_window`
 
 In `src-tauri/src/ipc/app_shell.rs`:
+
 1. Add `use crate::security::command_policy;` to the imports (alongside the existing `use crate::app_state::{AppState, Surface};` and `use crate::storage::sqlite::ShellPreferenceStore;`).
 2. Add, right after the `ShellError` enum definition:
    ```rust
@@ -130,6 +133,7 @@ In `src-tauri/src/ipc/app_shell.rs`:
 ### Step 2: `chat.rs` — same pattern
 
 In `src-tauri/src/ipc/chat.rs`:
+
 1. Add `use crate::security::command_policy;` to the imports.
 2. Add, right after the `ChatError` enum definition (after line 100):
    ```rust
@@ -155,6 +159,7 @@ In `src-tauri/src/ipc/chat.rs`:
 ### Step 3: `history.rs` — same pattern, 4 call sites
 
 In `src-tauri/src/ipc/history.rs`:
+
 1. Add `use crate::security::command_policy;` to the imports.
 2. Add, right after the `HistoryError` enum definition (after line 29):
    ```rust
@@ -235,6 +240,7 @@ Verification: `cargo test --manifest-path src-tauri/Cargo.toml --lib security::c
 ## STOP conditions
 
 Stop and report back (do not improvise) if:
+
 - Any of `app_shell.rs`, `chat.rs`, `history.rs`, `artifacts.rs` no longer matches the line numbers/structure described above — re-read the live file before guessing.
 - A test you cannot identify breaks after deleting one of the `assert_main_window` functions — do not delete a function that a test still references without first updating that test.
 - You discover a 5th IPC module (beyond the 6 named here) that also has its own local window-check duplicate — report it; it likely needs the same fix but wasn't in scope for this plan's recon.

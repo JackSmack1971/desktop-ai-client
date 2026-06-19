@@ -5,6 +5,7 @@
 This repository is being set up to support coding agents that work on a long-running, memory-aware system.
 
 The core idea is simple:
+
 - keep the agent focused on one task at a time
 - persist only the useful lessons
 - verify before promoting memory
@@ -13,6 +14,7 @@ The core idea is simple:
 ## Current direction
 
 The current design direction is a memory-first agent system with:
+
 - working memory for the active task
 - episodic memory for run summaries and outcomes
 - procedural memory for reusable methods
@@ -43,4 +45,3 @@ The current design direction is a memory-first agent system with:
 - over-retrieving stale or low-value memories
 - widening the system into multiple roles too early
 - changing the memory format without a migration plan
-

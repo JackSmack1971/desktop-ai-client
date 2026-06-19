@@ -14,6 +14,7 @@ awaiting human testing
 ## Tests
 
 ### 1. Keyboard and screen-reader smoke test for the artifact preview shell
+
 expected: Reload and Stop are reachable from the host chrome, focus returns to Reload after Stop, the iframe only appears for a sanitized preview, and the Artifacts/Chat live regions announce state changes correctly.
 result: pending
 

@@ -22,7 +22,7 @@
 
 ## Why this matters
 
-`FtsStore::search` binds the user's raw search text directly into a SQLite FTS5 `MATCH` expression. FTS5 treats the bound value as a *query expression*, not a plain literal — characters like unbalanced `"`, a leading `-`, or a bare boolean operator (`AND`/`OR`/`NOT`) have special syntactic meaning and cause SQLite to return a syntax error rather than "no results." `ipc::history::history_search` maps any such error straight into `HistoryError::StorageError(e.to_string())`, and the frontend's `normalizeIpcError` displays that message verbatim — so a user who types something as ordinary as `"unterminated` or a lone `-` into the search box sees a raw internal SQLite error message instead of an empty results list or a friendly "no matches."
+`FtsStore::search` binds the user's raw search text directly into a SQLite FTS5 `MATCH` expression. FTS5 treats the bound value as a _query expression_, not a plain literal — characters like unbalanced `"`, a leading `-`, or a bare boolean operator (`AND`/`OR`/`NOT`) have special syntactic meaning and cause SQLite to return a syntax error rather than "no results." `ipc::history::history_search` maps any such error straight into `HistoryError::StorageError(e.to_string())`, and the frontend's `normalizeIpcError` displays that message verbatim — so a user who types something as ordinary as `"unterminated` or a lone `-` into the search box sees a raw internal SQLite error message instead of an empty results list or a friendly "no matches."
 
 ## Current state
 
@@ -50,23 +50,25 @@ pub fn search(&self, query: &str) -> rusqlite::Result<Vec<SearchResult>> {
 }
 ```
 
-`query` is bound as `?1` twice — both as a literal value (correctly avoiding SQL injection, per the file's own security-invariant doc comment at line 8-9) but its *content* is still interpreted as FTS5 query syntax by SQLite's FTS5 extension, which is a different concern from SQL injection.
+`query` is bound as `?1` twice — both as a literal value (correctly avoiding SQL injection, per the file's own security-invariant doc comment at line 8-9) but its _content_ is still interpreted as FTS5 query syntax by SQLite's FTS5 extension, which is a different concern from SQL injection.
 
 `src-tauri/src/ipc/history.rs:178-201` (`history_search`) calls `store.search(&query)` and maps `Err` to `HistoryError::StorageError(e.to_string())` — no special-casing of FTS5 syntax errors today.
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Compile check | `cargo check --manifest-path src-tauri/Cargo.toml` | exit 0 |
-| Run tests | `cargo test --manifest-path src-tauri/Cargo.toml --lib storage::fts` | all pass |
+| Purpose       | Command                                                              | Expected on success |
+| ------------- | -------------------------------------------------------------------- | ------------------- |
+| Compile check | `cargo check --manifest-path src-tauri/Cargo.toml`                   | exit 0              |
+| Run tests     | `cargo test --manifest-path src-tauri/Cargo.toml --lib storage::fts` | all pass            |
 
 ## Scope
 
 **In scope** (the only file you should modify):
+
 - `src-tauri/src/storage/fts.rs`
 
 **Out of scope** (do NOT touch, even though related):
+
 - `src-tauri/src/ipc/history.rs` — no change needed there; once `FtsStore::search` itself treats arbitrary input as a safe literal phrase, no special error-mapping is needed at the IPC layer.
 - The `snippet()` highlighting logic or the 50-row limit — unrelated, leave as-is.
 - Any change to FTS5 ranking/relevance behavior — out of scope; this plan only changes how the raw query string is escaped before being treated as an FTS5 expression, not the ranking algorithm.
@@ -185,8 +187,9 @@ Verification: `cargo test --manifest-path src-tauri/Cargo.toml --lib storage::ft
 ## STOP conditions
 
 Stop and report back (do not improvise) if:
+
 - `FtsStore::search`'s SQL text or bind-parameter structure no longer matches the excerpt above.
-- The new tests reveal that escaping breaks the *existing* passing test `fts_search_returns_result_with_snippet` (i.e., normal single-word searches stop matching) — this would mean the escaping function has a bug; do not ship a fix that breaks existing search behavior.
+- The new tests reveal that escaping breaks the _existing_ passing test `fts_search_returns_result_with_snippet` (i.e., normal single-word searches stop matching) — this would mean the escaping function has a bug; do not ship a fix that breaks existing search behavior.
 
 ## Maintenance notes
 

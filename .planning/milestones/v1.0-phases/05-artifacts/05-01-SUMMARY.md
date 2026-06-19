@@ -1,6 +1,6 @@
 ---
 phase: 05-artifacts
-plan: "01"
+plan: '01'
 subsystem: database
 tags:
   - tauri-v2
@@ -24,11 +24,11 @@ dependency_graph:
     - src-tauri/permissions
 tech_stack:
   added:
-    - "none"
+    - 'none'
   patterns:
-    - "backend-owned artifact detection after ChatEvent::Done"
-    - "sanitize + CSP wrap before preview crosses IPC"
-    - "append-only artifacts migration with typed store"
+    - 'backend-owned artifact detection after ChatEvent::Done'
+    - 'sanitize + CSP wrap before preview crosses IPC'
+    - 'append-only artifacts migration with typed store'
 key_files:
   created:
     - src-tauri/src/storage/artifacts.rs
@@ -44,11 +44,11 @@ key_files:
     - src-tauri/src/main.rs
     - src-tauri/capabilities/main.json
 decisions:
-  - "Stored artifact rows in SQLite with a simple discriminator + language column instead of a JSON blob so the schema stays queryable and the frontend never sees raw source."
-  - "Kept artifact detection backend-owned and emitted ArtifactReady only after the stream completed and the artifact was persisted."
+  - 'Stored artifact rows in SQLite with a simple discriminator + language column instead of a JSON blob so the schema stays queryable and the frontend never sees raw source.'
+  - 'Kept artifact detection backend-owned and emitted ArtifactReady only after the stream completed and the artifact was persisted.'
 patterns-established:
-  - "ArtifactStore owns persistence and preview regeneration."
-  - "artifact_get re-sanitizes/re-wraps from backend source of truth."
+  - 'ArtifactStore owns persistence and preview regeneration.'
+  - 'artifact_get re-sanitizes/re-wraps from backend source of truth.'
 requirements-completed:
   - ARTF-01
 metrics:
@@ -68,6 +68,7 @@ metrics:
 - **Files modified:** 8 relevant files plus new permission/IPC/store modules
 
 ## Accomplishments
+
 - Implemented `security::artifact_sandbox` with sanitization for scripts, inline handlers, and `javascript:` URLs, plus strict CSP wrapping.
 - Added the `artifacts` SQLite migration and a typed `ArtifactStore` that persists raw source backend-side and re-serves sanitized previews.
 - Extended `chat_send` to resolve attachment tokens backend-side, detect artifacts only after `Done`, persist them, and emit `ArtifactReady`.
@@ -78,6 +79,7 @@ metrics:
 Not committed in this session; changes remain in the working tree.
 
 ## Files Created/Modified
+
 - `src-tauri/src/security/artifact_sandbox.rs` - sanitizer + CSP wrapper for preview srcdoc.
 - `src-tauri/src/storage/artifacts.rs` - typed artifact store, preview regeneration, and detection helper.
 - `src-tauri/src/storage/migrations.rs` - append-only artifacts table migration.
@@ -88,6 +90,7 @@ Not committed in this session; changes remain in the working tree.
 - `src-tauri/capabilities/main.json` - main-window grants for artifact commands.
 
 ## Decisions Made
+
 - Kept artifact preview generation entirely backend-owned.
 - Stored artifact content type as a simple DB discriminator plus language column.
 - Used a no-script `srcdoc` wrapper with a strict CSP and no `allow-same-origin` sandbox token.
@@ -97,12 +100,15 @@ Not committed in this session; changes remain in the working tree.
 None - plan executed as specified for the backend slice.
 
 ## Issues Encountered
+
 - Tauri permission manifests needed an explicit `src-tauri/permissions/artifacts.toml` entry before the new capability grant would compile.
 
 ## Next Phase Readiness
+
 - Backend artifact storage and IPC are in place for the frontend preview surface.
 - Automated backend tests and cargo check pass.
 
 ---
-*Phase: 05-artifacts*
-*Completed: 2026-06-15*
+
+_Phase: 05-artifacts_
+_Completed: 2026-06-15_

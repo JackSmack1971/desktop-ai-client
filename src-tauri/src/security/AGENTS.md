@@ -5,6 +5,7 @@ This subtree owns secrets, redaction, sandboxing, and command policy.
 ## Read first
 
 Before editing code here, read:
+
 1. `../../../AGENTS.md`
 2. `../../../docs/threat-model.md`
 3. `../../../docs/privacy-boundaries.md`
@@ -16,4 +17,3 @@ Before editing code here, read:
 - Redact sensitive data before it reaches logs or telemetry.
 - Keep command policy separate from provider routing.
 - Keep artifact sandboxing explicit and narrow.
-

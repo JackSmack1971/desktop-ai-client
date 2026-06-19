@@ -67,7 +67,11 @@
 	</header>
 
 	<div class="surface-body">
-		<section class="credentials-section" role="group" aria-labelledby="credentials-heading">
+		<section
+			class="credentials-section"
+			role="group"
+			aria-labelledby="credentials-heading"
+		>
 			<h2 id="credentials-heading" class="section-heading">API Credentials</h2>
 
 			<div class="credential-card">
@@ -75,19 +79,30 @@
 
 				<div class="status-row" aria-live="polite">
 					{#if privacyStore.loading}
-						<span class="status-indicator status-indicator--loading" aria-hidden="true"></span>
+						<span
+							class="status-indicator status-indicator--loading"
+							aria-hidden="true"
+						></span>
 						<span class="status-text status-text--muted">Checking…</span>
 					{:else if privacyStore.status === 'CONFIGURED'}
-						<span class="status-indicator status-indicator--configured" aria-hidden="true"></span>
+						<span
+							class="status-indicator status-indicator--configured"
+							aria-hidden="true"
+						></span>
 						<span class="status-text">API key configured</span>
 					{:else}
-						<span class="status-indicator status-indicator--missing" aria-hidden="true"></span>
+						<span
+							class="status-indicator status-indicator--missing"
+							aria-hidden="true"
+						></span>
 						<span class="status-text status-text--muted">No API key set</span>
 					{/if}
 				</div>
 
 				{#if hasLoaded && privacyStore.status === 'MISSING' && !privacyStore.loading}
-					<p class="empty-state">Paste your OpenRouter API key below to enable AI features.</p>
+					<p class="empty-state">
+						Paste your OpenRouter API key below to enable AI features.
+					</p>
 
 					<form class="key-form" onsubmit={handleSave}>
 						<input
@@ -140,7 +155,8 @@
 					>
 						<div class="remove-confirm__heading">Remove API key?</div>
 						<p class="remove-confirm__body">
-							This will clear the key from the OS keychain. You will need to re-enter it to use AI features.
+							This will clear the key from the OS keychain. You will need to
+							re-enter it to use AI features.
 						</p>
 						<div class="remove-confirm__actions">
 							<button

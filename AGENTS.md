@@ -19,11 +19,9 @@ Read the nearest `AGENTS.md` before editing code in a subdirectory.
 
 - Prefer the smallest correct change, update docs when behavior or boundaries change, and verify with the narrowest meaningful command set.
 
-
 ==================================
 
-Universal Agent Constitution
-============================
+# Universal Agent Constitution
 
     ENGINEERING CONSTITUTION
 
@@ -40,5 +38,3 @@ Universal Agent Constitution
     10. Completion requires traceable evidence.
     11. Failed approaches must not be repeated without new evidence.
     12. Agents may recommend, but tools and artifacts establish facts.
-
-

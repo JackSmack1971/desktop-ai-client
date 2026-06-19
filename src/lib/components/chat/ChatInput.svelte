@@ -8,7 +8,7 @@
 	 */
 
 	interface Props {
-		onsubmit: (text: string) => void;
+		onsubmit: (_text: string) => void;
 		disabled: boolean;
 		showCancel: boolean;
 		oncancel: () => void;
@@ -43,8 +43,7 @@
 		{disabled}
 		placeholder="Type a message…"
 		rows={1}
-		aria-label="Message input"
-	></textarea>
+		aria-label="Message input"></textarea>
 
 	<div class="chat-input-actions">
 		{#if showCancel}
@@ -58,12 +57,7 @@
 			</button>
 		{/if}
 
-		<button
-			type="submit"
-			class="btn-send"
-			{disabled}
-			aria-label="Send message"
-		>
+		<button type="submit" class="btn-send" {disabled} aria-label="Send message">
 			{#if disabled}
 				Sending…
 			{:else}

@@ -1,11 +1,11 @@
-name: "Security Finding"
-description: "Track vulnerabilities, cryptographic weaknesses, and active exploitation vectors."
-title: "[SEC] "
+name: 'Security Finding'
+description: 'Track vulnerabilities, cryptographic weaknesses, and active exploitation vectors.'
+title: '[SEC] '
 labels:
-  - "source:agent"
-  - "status:needs-triage"
-  - "type:security"
-  - "priority:p1"
+  - 'source:agent'
+  - 'status:needs-triage'
+  - 'type:security'
+  - 'priority:p1'
 body:
   - type: markdown
     attributes:
@@ -65,11 +65,11 @@ body:
   - type: dropdown
     id: priority-override
     attributes:
-      label: "Priority Override"
-      description: "Select the current incident priority. Use P0 only for immediate or active exploitation risk."
+      label: 'Priority Override'
+      description: 'Select the current incident priority. Use P0 only for immediate or active exploitation risk.'
       options:
-        - "priority:p1"
-        - "priority:p0"
+        - 'priority:p1'
+        - 'priority:p0'
       default: 0
     validations:
       required: true
@@ -77,47 +77,47 @@ body:
   - type: dropdown
     id: security-category
     attributes:
-      label: "Security Category"
-      description: "Classify the vulnerability or weakness."
+      label: 'Security Category'
+      description: 'Classify the vulnerability or weakness.'
       options:
-        - "Cryptography weakness"
-        - "Injection vector"
-        - "Authentication or authorization boundary failure"
-        - "Input validation failure"
-        - "Output encoding failure"
-        - "CSRF protection failure"
-        - "Information disclosure"
-        - "Missing security headers or TLS protection"
-        - "Secrets management"
-        - "Other security weakness"
+        - 'Cryptography weakness'
+        - 'Injection vector'
+        - 'Authentication or authorization boundary failure'
+        - 'Input validation failure'
+        - 'Output encoding failure'
+        - 'CSRF protection failure'
+        - 'Information disclosure'
+        - 'Missing security headers or TLS protection'
+        - 'Secrets management'
+        - 'Other security weakness'
     validations:
       required: true
 
   - type: checkboxes
     id: credential-advisory-gate
     attributes:
-      label: "Credential Advisory Gate"
-      description: "Confirm this issue does not expose active credential-class material."
+      label: 'Credential Advisory Gate'
+      description: 'Confirm this issue does not expose active credential-class material.'
       options:
-        - label: "This issue does not contain active secrets, tokens, keys, credentials, session cookies, or production exploit payloads."
+        - label: 'This issue does not contain active secrets, tokens, keys, credentials, session cookies, or production exploit payloads.'
           required: true
-        - label: "If active leaked credentials are involved, a GitHub Security Advisory will be used instead of this issue template."
+        - label: 'If active leaked credentials are involved, a GitHub Security Advisory will be used instead of this issue template.'
           required: true
 
   - type: input
     id: forensic-evidence-trace
     attributes:
-      label: "1. Forensic Evidence Trace"
-      description: "Provide sanitized evidence: file:line, diff reference, detector fingerprint, git SHA, or scanner finding. Do not paste active secrets."
-      placeholder: "Example: api/handler.py:142; semgrep fingerprint py-eval-handler-142; commit abc1234..."
+      label: '1. Forensic Evidence Trace'
+      description: 'Provide sanitized evidence: file:line, diff reference, detector fingerprint, git SHA, or scanner finding. Do not paste active secrets.'
+      placeholder: 'Example: api/handler.py:142; semgrep fingerprint py-eval-handler-142; commit abc1234...'
     validations:
       required: true
 
   - type: textarea
     id: state-delta-assertion
     attributes:
-      label: "2. State Delta Assertion (FSV Style)"
-      description: "Declare the Expected vs Observed security state using FSV-style Source of Truth comparison."
+      label: '2. State Delta Assertion (FSV Style)'
+      description: 'Declare the Expected vs Observed security state using FSV-style Source of Truth comparison.'
       placeholder: |
         Expected:
           SoT: Security boundary should prevent ...
@@ -135,8 +135,8 @@ body:
   - type: textarea
     id: blast-radius-definition
     attributes:
-      label: "3. Blast Radius Definition"
-      description: "Scope the vulnerability impact, such as data exfiltration, privilege escalation, account takeover, lateral movement, denial of service, or integrity loss."
+      label: '3. Blast Radius Definition'
+      description: 'Scope the vulnerability impact, such as data exfiltration, privilege escalation, account takeover, lateral movement, denial of service, or integrity loss.'
       placeholder: |
         Impacted scope:
         - Component/file/endpoint:
@@ -150,8 +150,8 @@ body:
   - type: textarea
     id: reproduction-sequence
     attributes:
-      label: "4. Reproduction Sequence"
-      description: "List sanitized deterministic steps required to trigger or verify the exploit condition. Do not include active exploit payloads against production."
+      label: '4. Reproduction Sequence'
+      description: 'List sanitized deterministic steps required to trigger or verify the exploit condition. Do not include active exploit payloads against production.'
       placeholder: |
         1. Checkout commit ...
         2. Run scanner/test ...
@@ -163,8 +163,8 @@ body:
   - type: textarea
     id: execution-directive
     attributes:
-      label: "5. Execution Directive"
-      description: "Suggest the next action for the polling, pickup, or incident-response agent."
+      label: '5. Execution Directive'
+      description: 'Suggest the next action for the polling, pickup, or incident-response agent.'
       placeholder: |
         Suggested next action:
         - investigate further
@@ -181,8 +181,8 @@ body:
   - type: textarea
     id: traceability-footer
     attributes:
-      label: "6. Traceability Footer"
-      description: "Append execution identity metadata for deterministic multi-agent synchronization."
+      label: '6. Traceability Footer'
+      description: 'Append execution identity metadata for deterministic multi-agent synchronization.'
       value: |
         ---
         Executing agent: agent:

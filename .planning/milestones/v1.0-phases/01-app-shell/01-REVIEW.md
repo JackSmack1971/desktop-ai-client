@@ -79,17 +79,19 @@ Four blockers were identified:
 ```svelte
 <!-- src/routes/+layout.svelte — corrected -->
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { surfaceStore } from '$lib/stores/surface';
+	import { onMount } from 'svelte';
+	import { surfaceStore } from '$lib/stores/surface';
 
-  interface Props {
-    children?: import('svelte').Snippet;
-  }
-  let { children }: Props = $props();
+	interface Props {
+		children?: import('svelte').Snippet;
+	}
+	let { children }: Props = $props();
 
-  onMount(() => {
-    surfaceStore.hydrate().catch((e) => console.error('surface hydration failed', e));
-  });
+	onMount(() => {
+		surfaceStore
+			.hydrate()
+			.catch((e) => console.error('surface hydration failed', e));
+	});
 </script>
 
 {@render children?.()}
@@ -245,7 +247,10 @@ If recovery is required, define a thin error type that can carry both `rusqlite:
 
 ```ts
 let focusedIndex = $state(
-    (() => { const idx = surfaces.findIndex((s) => s.id === activeSurface); return idx === -1 ? 0 : idx; })()
+	(() => {
+		const idx = surfaces.findIndex((s) => s.id === activeSurface);
+		return idx === -1 ? 0 : idx;
+	})(),
 );
 ```
 
@@ -255,8 +260,8 @@ let focusedIndex = $state(
 
 ```ts
 $effect(() => {
-    const idx = surfaces.findIndex((s) => s.id === activeSurface);
-    if (idx !== -1) focusedIndex = idx;
+	const idx = surfaces.findIndex((s) => s.id === activeSurface);
+	if (idx !== -1) focusedIndex = idx;
 });
 ```
 
@@ -274,13 +279,13 @@ This also fixes the IIFE initialization — replace the IIFE with `let focusedIn
 
 ```typescript
 function normalizeIpcError(e: unknown): string {
-    if (typeof e === 'string') return e;
-    if (e && typeof e === 'object') {
-        const obj = e as Record<string, unknown>;
-        if (typeof obj['message'] === 'string') return obj['message'];
-        if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
-    }
-    return 'An unexpected error occurred.';
+	if (typeof e === 'string') return e;
+	if (e && typeof e === 'object') {
+		const obj = e as Record<string, unknown>;
+		if (typeof obj['message'] === 'string') return obj['message'];
+		if (typeof obj['code'] === 'string') return `Error: ${obj['code']}`;
+	}
+	return 'An unexpected error occurred.';
 }
 
 // Replace:  error = String(e);
@@ -312,10 +317,10 @@ function normalizeIpcError(e: unknown): string {
 ```typescript
 // surface.ts — add export keyword
 export const SURFACE_LABELS: Record<Surface, string> = {
-    chat: 'Chat',
-    history: 'History',
-    settings: 'Settings',
-    artifacts: 'Artifacts',
+	chat: 'Chat',
+	history: 'History',
+	settings: 'Settings',
+	artifacts: 'Artifacts',
 };
 ```
 

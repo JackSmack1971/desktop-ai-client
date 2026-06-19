@@ -1,7 +1,7 @@
 ---
-phase: "01-app-shell"
-plan: "02"
-subsystem: "app-shell"
+phase: '01-app-shell'
+plan: '02'
+subsystem: 'app-shell'
 tags:
   - tauri-v2
   - svelte5
@@ -29,16 +29,16 @@ dependency_graph:
     - src-tauri/tests
 tech_stack:
   added:
-    - "ARIA tablist/tab/tabpanel pattern — surface rail + panel accessibility structure"
-    - "Roving tabindex — keyboard focus management within the surface rail"
-    - "aria-live polite status region — non-interrupting surface switch announcements"
-    - "skip-to-content link — keyboard bypass for the navigation rail"
-    - "SqlitePool::from_connection() — test-only constructor for pre-migrated in-memory DBs"
+    - 'ARIA tablist/tab/tabpanel pattern — surface rail + panel accessibility structure'
+    - 'Roving tabindex — keyboard focus management within the surface rail'
+    - 'aria-live polite status region — non-interrupting surface switch announcements'
+    - 'skip-to-content link — keyboard bypass for the navigation rail'
+    - 'SqlitePool::from_connection() — test-only constructor for pre-migrated in-memory DBs'
   patterns:
-    - "ARIA APG roving tabindex for vertical tab navigation"
-    - "Dual announcement strategy: aria-live region + visible status bar in sync"
-    - "Activate-to-panel focus movement: Enter/Space in rail moves focus to main content"
-    - "Cargo integration test at src-tauri/tests/ for storage-layer smoke coverage"
+    - 'ARIA APG roving tabindex for vertical tab navigation'
+    - 'Dual announcement strategy: aria-live region + visible status bar in sync'
+    - 'Activate-to-panel focus movement: Enter/Space in rail moves focus to main content'
+    - 'Cargo integration test at src-tauri/tests/ for storage-layer smoke coverage'
 key_files:
   created:
     - src/lib/components/WorkspaceShell.svelte
@@ -52,15 +52,15 @@ key_files:
     - src/routes/+page.svelte
     - src-tauri/src/storage/sqlite.rs
 decisions:
-  - "Placed cargo integration tests at src-tauri/tests/ (not top-level tests/rust/) because Cargo only discovers integration tests inside the crate under test"
-  - "Used ARIA tablist/tab/tabpanel pattern (not nav/button) for the surface rail to correctly express the tab-panel relationship in the AT tree"
-  - "Roving tabindex chosen over focus-management-via-js so arrow key behavior follows ARIA APG recommendations for composite widgets"
-  - "StatusRegion uses aria-live=polite to avoid interrupting speech on rapid surface switches"
-  - "WorkspaceShell exposes a skip-to-content link that appears on focus so keyboard-only users can bypass the nav rail"
-  - "SqlitePool::from_connection() added as public constructor so integration tests can use pre-migrated in-memory SQLite without file I/O"
+  - 'Placed cargo integration tests at src-tauri/tests/ (not top-level tests/rust/) because Cargo only discovers integration tests inside the crate under test'
+  - 'Used ARIA tablist/tab/tabpanel pattern (not nav/button) for the surface rail to correctly express the tab-panel relationship in the AT tree'
+  - 'Roving tabindex chosen over focus-management-via-js so arrow key behavior follows ARIA APG recommendations for composite widgets'
+  - 'StatusRegion uses aria-live=polite to avoid interrupting speech on rapid surface switches'
+  - 'WorkspaceShell exposes a skip-to-content link that appears on focus so keyboard-only users can bypass the nav rail'
+  - 'SqlitePool::from_connection() added as public constructor so integration tests can use pre-migrated in-memory SQLite without file I/O'
 metrics:
-  duration: "~18m"
-  completed_date: "2026-06-13"
+  duration: '~18m'
+  completed_date: '2026-06-13'
   completed_tasks: 2
   total_tasks: 2
   files_created: 5
@@ -115,12 +115,14 @@ Added backend integration tests that verify the shell preference persistence con
 ### Auto-fixed Issues
 
 **1. [Rule 3 - Blocking] Integration test relocated from `tests/rust/` to `src-tauri/tests/`**
+
 - **Found during:** Task 2
 - **Issue:** Cargo only discovers integration tests under the crate they test. The path `tests/rust/app_shell.rs` is in the repo root, which is not a crate. `cargo test --workspace --all-targets` would not find or run it. The plan's acceptance criterion requires the test to be executable by cargo.
 - **Fix:** Created the executable test at `src-tauri/tests/app_shell.rs`. Left a reference stub at `tests/rust/app_shell.rs` pointing to the actual location.
 - **Files modified:** `src-tauri/tests/app_shell.rs` (new), `tests/rust/app_shell.rs` (new stub)
 
 **2. [Rule 2 - Missing functionality] Added `SqlitePool::from_connection()` constructor**
+
 - **Found during:** Task 2 — integration tests need to build a `SqlitePool` from a pre-migrated in-memory connection via the public API
 - **Issue:** The existing unit tests in `sqlite.rs` use `SqlitePool { conn: Mutex::new(conn) }` directly (private field access within the same module). Integration tests in `src-tauri/tests/` can only use the public API. No public constructor existed for this pattern.
 - **Fix:** Added `pub fn from_connection(conn: Connection) -> Self` with a doc comment noting it is intended for test use; production code continues to use `open()`.
@@ -134,16 +136,17 @@ The `cargo test --workspace --all-targets` verification was not run in this exec
 
 ## Verification Results
 
-| Check | Status | Notes |
-|-------|--------|-------|
-| `npm run check` | PASSED | 275 files, 0 errors, 0 warnings |
-| `cargo test --workspace --all-targets` | NOT RUN | Rust/Cargo not installed in execution environment. Tests are structurally correct; will pass when Cargo is available. |
-| Keyboard-only navigation | DESIGN VERIFIED | Roving tabindex + Enter/Space + focus-to-panel implemented; runtime verification requires Tauri. |
-| Status region announcements | DESIGN VERIFIED | aria-live polite region in WorkspaceShell and StatusRegion; AT verification requires runtime. |
+| Check                                  | Status          | Notes                                                                                                                 |
+| -------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `npm run check`                        | PASSED          | 275 files, 0 errors, 0 warnings                                                                                       |
+| `cargo test --workspace --all-targets` | NOT RUN         | Rust/Cargo not installed in execution environment. Tests are structurally correct; will pass when Cargo is available. |
+| Keyboard-only navigation               | DESIGN VERIFIED | Roving tabindex + Enter/Space + focus-to-panel implemented; runtime verification requires Tauri.                      |
+| Status region announcements            | DESIGN VERIFIED | aria-live polite region in WorkspaceShell and StatusRegion; AT verification requires runtime.                         |
 
 ## Threat Flags
 
 No new threat surface outside the plan's intended shell layer. Changes are:
+
 - CSS/layout/ARIA attribute only (no IPC changes)
 - One new public method on `SqlitePool` that wraps an existing connection — does not widen SQL access, expose secrets, or add new storage paths
 - Integration tests operate only on in-memory SQLite — no file I/O, no network
@@ -163,5 +166,6 @@ Files verified present:
 - tests/rust/app_shell.rs: FOUND
 
 Commits verified:
+
 - 832c7eb: feat(01-02): make surface navigation accessible and status-aware
 - 608012d: feat(01-02): add shell smoke coverage for preference round trip and startup hydration

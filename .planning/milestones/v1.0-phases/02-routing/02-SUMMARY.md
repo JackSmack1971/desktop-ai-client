@@ -1,7 +1,7 @@
 ---
-phase: "02-routing"
-plan: "02"
-subsystem: "provider-routing"
+phase: '02-routing'
+plan: '02'
+subsystem: 'provider-routing'
 tags:
   - tauri-v2
   - svelte5
@@ -30,20 +30,20 @@ dependency_graph:
     - src/lib/components/surfaces/ChatSurface.svelte
 tech_stack:
   added:
-    - "reqwest 0.13 (json, stream features) — async HTTP client for OpenRouter SSE"
-    - "secrecy 0.10 (alloc feature) — SecretString with automatic zeroize-on-drop"
-    - "tokio-util 0.7 (rt feature) — CancellationToken for per-request cancellation"
-    - "futures-util 0.3 — StreamExt::next() for bytes_stream polling"
-    - "tokio sync feature — CancellationToken internal requirement"
+    - 'reqwest 0.13 (json, stream features) — async HTTP client for OpenRouter SSE'
+    - 'secrecy 0.10 (alloc feature) — SecretString with automatic zeroize-on-drop'
+    - 'tokio-util 0.7 (rt feature) — CancellationToken for per-request cancellation'
+    - 'futures-util 0.3 — StreamExt::next() for bytes_stream polling'
+    - 'tokio sync feature — CancellationToken internal requirement'
   patterns:
-    - "Channel<ChatEvent> streaming transport from Rust to Svelte (D-01)"
-    - "SecretString expose-then-rewrap pattern for spawn boundary (Pitfall 7)"
-    - "CancellationToken registry in AppState HashMap (T-02-04)"
-    - "assert_main_window on all chat commands (backend enforcement + capability defense-in-depth)"
-    - "SSE line buffering across TCP chunks (Pitfall 8)"
-    - "AppHandle re-acquisition inside tokio::spawn (Pitfall 1)"
-    - "Svelte 5 $state/$derived runes for chat store"
-    - "Hybrid loading UX: skeleton -> streaming bubble on first Delta (D-05)"
+    - 'Channel<ChatEvent> streaming transport from Rust to Svelte (D-01)'
+    - 'SecretString expose-then-rewrap pattern for spawn boundary (Pitfall 7)'
+    - 'CancellationToken registry in AppState HashMap (T-02-04)'
+    - 'assert_main_window on all chat commands (backend enforcement + capability defense-in-depth)'
+    - 'SSE line buffering across TCP chunks (Pitfall 8)'
+    - 'AppHandle re-acquisition inside tokio::spawn (Pitfall 1)'
+    - 'Svelte 5 $state/$derived runes for chat store'
+    - 'Hybrid loading UX: skeleton -> streaming bubble on first Delta (D-05)'
 key_files:
   created:
     - src-tauri/src/providers/sse.rs
@@ -79,13 +79,13 @@ key_files:
     - src/lib/components/surfaces/ChatSurface.svelte
 decisions:
   - "Use AppHandle.state::<AppState>() re-acquisition inside tokio::spawn instead of Arc<AppState> wrapper — AppHandle is 'static-safe; avoids changing AppState to Clone or Arc (Pitfall 1)"
-  - "Expose-then-rewrap SecretString pattern: .expose_secret().to_string() then SecretString::new(raw.into()) — SecretString does not impl Clone; this creates a new wrapper in the spawned task that zeroizes independently (Pitfall 7, RESEARCH Section 4)"
-  - "drive_sse_stream keeps model/usage tracking in two passes: parse_sse_line handles dispatch, outer loop also deserializes JSON for metadata accumulation — clean separation between line parsing and stream driving"
-  - "conversation_id parameter accepted in chat_send per D-11 API stability but not used (Phase 3 wires storage write); marked with let _ = &conversation_id to suppress Rust warning"
-  - "Capability key format uses allow-chat-send / allow-chat-cancel per established allow-<command-kebab> pattern from Phase 1 (Assumption A1 — requires live cargo tauri dev to confirm)"
+  - 'Expose-then-rewrap SecretString pattern: .expose_secret().to_string() then SecretString::new(raw.into()) — SecretString does not impl Clone; this creates a new wrapper in the spawned task that zeroizes independently (Pitfall 7, RESEARCH Section 4)'
+  - 'drive_sse_stream keeps model/usage tracking in two passes: parse_sse_line handles dispatch, outer loop also deserializes JSON for metadata accumulation — clean separation between line parsing and stream driving'
+  - 'conversation_id parameter accepted in chat_send per D-11 API stability but not used (Phase 3 wires storage write); marked with let _ = &conversation_id to suppress Rust warning'
+  - 'Capability key format uses allow-chat-send / allow-chat-cancel per established allow-<command-kebab> pattern from Phase 1 (Assumption A1 — requires live cargo tauri dev to confirm)'
 metrics:
   duration_seconds: 2160
-  completed_date: "2026-06-14T07:19:23Z"
+  completed_date: '2026-06-14T07:19:23Z'
   tasks_completed: 11
   tasks_total: 11
   files_created: 25
@@ -187,6 +187,7 @@ metrics:
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Convoluted CANCELLED error handling in run_stream**
+
 - **Found during:** T-11 review
 - **Issue:** Original implementation used chained `.map_err(...).and_then(...).or_else(...)` with an empty-string sentinel for CANCELLED, which was complex and prone to silent incorrect behavior.
 - **Fix:** Replaced with a simple `match result { Ok(()) => Ok(()), Err(e) if e == "CANCELLED" => { send event; Ok(()) }, Err(e) => Err(e) }`.
@@ -194,6 +195,7 @@ metrics:
 - **Commit:** d739b35
 
 **2. [Rule 1 - Bug] Unused import warning for security::secrets in ipc::chat**
+
 - **Found during:** T-11 review
 - **Issue:** `use crate::security::secrets::{self, ProviderId}` was imported but not used after implementing the inline expose-then-rewrap approach for the API key.
 - **Fix:** Removed the unused import.
@@ -201,6 +203,7 @@ metrics:
 - **Commit:** d739b35
 
 **3. [Rule 2 - Missing functionality] conversation_id unused variable warning**
+
 - **Found during:** T-5 implementation
 - **Issue:** `conversation_id: Option<String>` parameter in `chat_send` is required by D-11 for API stability but has no Phase 2 consumer. Would generate Rust unused variable warning.
 - **Fix:** Added `let _ = &conversation_id;` with an explanatory comment about Phase 3 wiring.
@@ -208,6 +211,7 @@ metrics:
 - **Commit:** d739b35
 
 **4. pnpm-lock.yaml and pnpm-workspace.yaml added**
+
 - **Found during:** T-7 frontend install step
 - **Issue:** Running `pnpm install` and `svelte-kit sync` to generate the `.svelte-kit/` directory (needed for `tsconfig.json` alias resolution) produced new lockfile artifacts not planned.
 - **Fix:** Included both files in T-1 commit. `pnpm-workspace.yaml` was updated to set `allowBuilds: esbuild: true` to approve the esbuild native build.

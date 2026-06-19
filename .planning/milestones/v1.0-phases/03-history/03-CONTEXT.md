@@ -7,6 +7,7 @@
 ## Phase Boundary
 
 Persist and search local conversation history with recoverable storage behavior. This phase implements:
+
 - The `conversations` and `messages` tables in SQLite, with migrations
 - FTS5 full-text search over message content (external-content table + triggers)
 - The `ipc/history.rs` command surface (list, get, delete, search)
@@ -57,29 +58,35 @@ This phase does NOT include: auto-expiry retention rules (future settings phase)
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Phase Scope and Requirements
+
 - `.planning/ROADMAP.md` — Phase 3 goal, success criteria (HIST-01, HIST-02, HIST-03)
 - `.planning/REQUIREMENTS.md` — HIST-01, HIST-02, HIST-03 definitions
 
 ### Architecture and Patterns
+
 - `.planning/codebase/ARCHITECTURE.md` — Storage layer (§Component Responsibilities), data flow patterns, anti-patterns (§Anti-Patterns), IPC command registration invariant (§Tauri Command Surface), threading and lock ordering (§Architectural Constraints)
 - `src-tauri/src/ipc/app_shell.rs` — Canonical IPC patterns: `ShellError` typed error enum, `assert_main_window` window-label enforcement, optimistic-update rollback. New `HistoryError` and `history_*` commands must follow these patterns.
 - `src-tauri/src/storage/sqlite.rs` — `SqlitePool` with `with_conn()` and `ShellPreferenceStore` as the model for new typed domain stores (`ConversationStore`, `MessageStore`)
 - `src-tauri/src/storage/migrations.rs` — Append-only migration runner. New migrations for `conversations`, `messages`, and FTS5 tables must be added here in strictly ascending order.
 
 ### Privacy and Security Constraints
+
 - `docs/Tauri_Svelte_AI_App_Architecture_Adversarial_Hardened_v5.md` — Adversarial hardening spec. Contains WAL lifecycle requirements, IPC boundary invariants, and storage privacy rules. Read before designing any storage or IPC interface.
 - `docs/privacy-boundaries.md` — Privacy boundary definitions (what stays backend-owned; what can cross IPC)
 - `docs/threat-model.md` — Threat model entries relevant to local storage and history exposure
 
 ### Phase 2 Context (upstream decisions that Phase 3 must honor)
+
 - `.planning/phases/02-routing/02-CONTEXT.md` — D-06 (cancelled messages persist as `status: "incomplete"`), D-11 (`chat_send` has `conversation_id: Option<Uuid>` for history linking), D-14 (backend-generated `request_id` per `chat_send` call)
 
 ### Scaffolded Files to Implement
+
 - `src-tauri/src/ipc/history.rs` — Placeholder; implement `history_list`, `history_get`, `history_delete`, `history_search`
 - `src-tauri/src/storage/fts.rs` — Placeholder; implement FTS5 virtual table setup and search query builder
 - `src-tauri/src/storage/retention.rs` — Placeholder; implement manual delete with WAL checkpoint
@@ -88,15 +95,18 @@ This phase does NOT include: auto-expiry retention rules (future settings phase)
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
+
 - `src-tauri/src/storage/sqlite.rs` — `SqlitePool::with_conn()` and `SqlitePool::from_connection()` patterns. New `ConversationStore` and `MessageStore` must use `with_conn()` — never call `with_conn` directly from IPC handlers.
 - `src-tauri/src/ipc/app_shell.rs` — `assert_main_window()` helper; `ShellError` enum with `thiserror` + `serde` derive pattern. Copy for `HistoryError`.
 - `src/lib/stores/surface.ts` — `normalizeIpcError()` for frontend IPC error normalization. History store should use the same pattern.
 - `src-tauri/src/storage/migrations.rs` — `MIGRATIONS` static slice; append new entries for `conversations`, `messages`, FTS5 virtual table, and triggers.
 
 ### Established Patterns
+
 - **Typed domain stores:** `ShellPreferenceStore` is the canonical pattern. New stores (`ConversationStore`, `MessageStore`) wrap `SqlitePool` and expose domain-specific methods — no raw `with_conn` in IPC handlers.
 - **IPC error shape:** `{ code: "SCREAMING_SNAKE_CASE", message: string }` — enforced at IPC layer via `thiserror` + `serde`. `HistoryError` must serialize to the same shape.
 - **Window-label enforcement:** Every history command validates caller via `assert_main_window`.
@@ -104,6 +114,7 @@ This phase does NOT include: auto-expiry retention rules (future settings phase)
 - **Lock ordering:** Shell lock before SQLite lock (documented in ARCHITECTURE.md). History commands that touch both must maintain this order.
 
 ### Integration Points
+
 - `src-tauri/src/main.rs` — `tauri::generate_handler![]` must be updated to register new `history_*` commands. `src-tauri/capabilities/main.json` must be updated with allow grants.
 - `src-tauri/src/ipc/chat.rs` (Phase 2 output) — `chat_send` has `conversation_id: Option<Uuid>` wired. Phase 3 implements the actual storage write in the `chat_send` handler, calling into `ConversationStore`/`MessageStore`.
 - `src/routes/` — History surface route (`/history` or the history surface view) needs a Svelte component: conversation list, search bar, click-to-continue wiring.
@@ -136,5 +147,5 @@ None — discussion stayed within phase scope.
 
 ---
 
-*Phase: 03-history*
-*Context gathered: 2026-06-14*
+_Phase: 03-history_
+_Context gathered: 2026-06-14_

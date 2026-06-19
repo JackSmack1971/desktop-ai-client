@@ -1,10 +1,10 @@
-name: "Technical Debt"
-description: "Track sub-optimal states categorized as works-but-should-improve."
-title: "[DEBT] "
+name: 'Technical Debt'
+description: 'Track sub-optimal states categorized as works-but-should-improve.'
+title: '[DEBT] '
 labels:
-  - "source:agent"
-  - "status:needs-triage"
-  - "type:tech-debt"
+  - 'source:agent'
+  - 'status:needs-triage'
+  - 'type:tech-debt'
 body:
   - type: markdown
     attributes:
@@ -48,17 +48,17 @@ body:
   - type: input
     id: forensic-evidence-trace
     attributes:
-      label: "1. Forensic Evidence Trace"
-      description: "Provide concrete evidence: file:line, diff, query output, commit SHA, failing check, stale doc reference, dependency finding, or runtime warning."
-      placeholder: "Example: src/payments/client.ts:88; diff abc1234..def5678; CVE output..."
+      label: '1. Forensic Evidence Trace'
+      description: 'Provide concrete evidence: file:line, diff, query output, commit SHA, failing check, stale doc reference, dependency finding, or runtime warning.'
+      placeholder: 'Example: src/payments/client.ts:88; diff abc1234..def5678; CVE output...'
     validations:
       required: true
 
   - type: textarea
     id: state-delta-assertion
     attributes:
-      label: "2. State Delta Assertion (FSV Style)"
-      description: "Declare the Expected vs Observed state using FSV-style Source of Truth comparison."
+      label: '2. State Delta Assertion (FSV Style)'
+      description: 'Declare the Expected vs Observed state using FSV-style Source of Truth comparison.'
       placeholder: |
         Expected:
           SoT: ...
@@ -76,8 +76,8 @@ body:
   - type: textarea
     id: blast-radius-definition
     attributes:
-      label: "3. Blast Radius Definition"
-      description: "Scope the impact of the technical debt across code, tests, docs, dependencies, runtime, agents, services, data, or users."
+      label: '3. Blast Radius Definition'
+      description: 'Scope the impact of the technical debt across code, tests, docs, dependencies, runtime, agents, services, data, or users.'
       placeholder: |
         Impacted scope:
         - Component/file/endpoint:
@@ -90,8 +90,8 @@ body:
   - type: textarea
     id: reproduction-sequence
     attributes:
-      label: "4. Reproduction Sequence"
-      description: "List deterministic steps required to observe the debt. Required when the debt is non-trivial."
+      label: '4. Reproduction Sequence'
+      description: 'List deterministic steps required to observe the debt. Required when the debt is non-trivial.'
       placeholder: |
         1. Checkout commit ...
         2. Run ...
@@ -103,8 +103,8 @@ body:
   - type: textarea
     id: execution-directive
     attributes:
-      label: "5. Execution Directive"
-      description: "Suggest the next action for the polling or pickup agent."
+      label: '5. Execution Directive'
+      description: 'Suggest the next action for the polling or pickup agent.'
       placeholder: |
         Suggested next action:
         - investigate further
@@ -119,8 +119,8 @@ body:
   - type: textarea
     id: traceability-footer
     attributes:
-      label: "6. Traceability Footer"
-      description: "Append execution identity metadata for deterministic multi-agent synchronization."
+      label: '6. Traceability Footer'
+      description: 'Append execution identity metadata for deterministic multi-agent synchronization.'
       value: |
         ---
         Executing agent:

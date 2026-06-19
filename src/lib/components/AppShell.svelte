@@ -39,7 +39,10 @@
 		overflow: hidden;
 		background-color: #0f0f0f;
 		color: #e0e0e0;
-		font-family: system-ui, -apple-system, sans-serif;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
 	}
 
 	.app-shell__rail {
