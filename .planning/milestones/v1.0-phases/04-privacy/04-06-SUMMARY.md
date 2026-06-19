@@ -18,4 +18,3 @@ Verification:
 
 - `cargo build --manifest-path src-tauri/Cargo.toml`
 - `cargo test --manifest-path src-tauri/Cargo.toml --all-targets`
-

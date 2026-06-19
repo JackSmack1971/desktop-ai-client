@@ -2,7 +2,8 @@
 phase: 03-history
 plan: 01
 subsystem: database
-tags: [sqlite, fts5, rusqlite, migrations, conversation-history, full-text-search]
+tags:
+  [sqlite, fts5, rusqlite, migrations, conversation-history, full-text-search]
 
 # Dependency graph
 requires:
@@ -26,9 +27,9 @@ affects:
 tech-stack:
   added: []
   patterns:
-    - "Typed domain store pattern: pub struct XxxStore { pool: Arc<SqlitePool> } with with_conn delegation"
+    - 'Typed domain store pattern: pub struct XxxStore { pool: Arc<SqlitePool> } with with_conn delegation'
     - "FTS5 external-content table: content='messages', content_rowid='rowid' with INSERT/DELETE/UPDATE sync triggers"
-    - "WAL checkpoint after hard-delete: non-fatal eprintln warning, never block delete response"
+    - 'WAL checkpoint after hard-delete: non-fatal eprintln warning, never block delete response'
 
 key-files:
   created:
@@ -41,15 +42,15 @@ key-files:
 
 key-decisions:
   - "FTS5 external-content table tied to messages table via content='messages'; DDL lives in migration 0003, not in FtsStore"
-  - "WAL checkpoint errors after delete are non-fatal (eprintln warning only, per D-14)"
-  - "ConversationStore.create_conversation accepts (id, title) — model is set later by mark_complete when Done event fires"
-  - "RetentionStore.delete_conversation returns Ok(()) when id does not exist (idempotent no-op)"
-  - "FtsStore.search returns empty Vec on no matches — QueryReturnedNoRows is not propagated as error"
+  - 'WAL checkpoint errors after delete are non-fatal (eprintln warning only, per D-14)'
+  - 'ConversationStore.create_conversation accepts (id, title) — model is set later by mark_complete when Done event fires'
+  - 'RetentionStore.delete_conversation returns Ok(()) when id does not exist (idempotent no-op)'
+  - 'FtsStore.search returns empty Vec on no matches — QueryReturnedNoRows is not propagated as error'
 
 patterns-established:
-  - "Typed domain stores: ShellPreferenceStore pattern extended for ConversationStore, MessageStore, FtsStore, RetentionStore"
-  - "with_conn delegation: all DB access inside store impl methods, never directly in IPC handlers"
-  - "In-memory test helper with run_migrations: migrated_pool() pattern for testing stores"
+  - 'Typed domain stores: ShellPreferenceStore pattern extended for ConversationStore, MessageStore, FtsStore, RetentionStore'
+  - 'with_conn delegation: all DB access inside store impl methods, never directly in IPC handlers'
+  - 'In-memory test helper with run_migrations: migrated_pool() pattern for testing stores'
 
 requirements-completed:
   - HIST-01
@@ -87,6 +88,7 @@ MIGRATIONS.len() is now 3. Tests added: count assertion, conversations/messages 
 ### Task 2: Typed Domain Stores
 
 **`sqlite.rs`** — added ConversationRow, ConversationStore, MessageRow, MessageStore:
+
 - `ConversationStore::create_conversation` inserts with `status='active'`
 - `ConversationStore::list_conversations` returns Vec<ConversationRow> ordered by `updated_at DESC`
 - `ConversationStore::get_conversation` returns `Option<ConversationRow>` (None on missing)
@@ -96,10 +98,12 @@ MIGRATIONS.len() is now 3. Tests added: count assertion, conversations/messages 
 - `MessageStore::get_messages` returns Vec<MessageRow> ordered by `created_at ASC`
 
 **`fts.rs`** — FtsStore with SearchResult struct:
+
 - `FtsStore::search(query)` issues parameterized MATCH query (T-03-04: no string interpolation), returns Vec<SearchResult> with `snippet(messages_fts, 0, '<b>', '</b>', '…', 15)`, grouped by conversation, ordered by rank, limit 50
 - Empty Vec returned on no matches (QueryReturnedNoRows is success)
 
 **`retention.rs`** — RetentionStore with delete_conversation:
+
 - Hard-deletes conversation row; ON DELETE CASCADE removes messages; `messages_ad` trigger cleans FTS index
 - `PRAGMA wal_checkpoint(TRUNCATE)` runs after delete; errors are non-fatal eprintln warning (D-14)
 - Returns Ok(()) when id does not exist (idempotent)
@@ -133,12 +137,12 @@ None — plan executed exactly as specified. All behaviors from the `<behavior>`
 
 ## Security Notes
 
-| Threat | Status |
-|--------|--------|
-| T-03-01: Migration ordering | Mitigated — append-only, MIGRATIONS.len() == 3 test asserts count |
-| T-03-03: WAL checkpoint DoS | Accepted — non-fatal, doesn't block delete response |
-| T-03-04: FTS5 MATCH injection | Mitigated — `?1` bind parameter, no string interpolation |
-| T-03-05: ConversationRow/MessageRow serde exposure | Not yet crossed IPC — Plan B will map to typed response DTOs |
+| Threat                                             | Status                                                            |
+| -------------------------------------------------- | ----------------------------------------------------------------- |
+| T-03-01: Migration ordering                        | Mitigated — append-only, MIGRATIONS.len() == 3 test asserts count |
+| T-03-03: WAL checkpoint DoS                        | Accepted — non-fatal, doesn't block delete response               |
+| T-03-04: FTS5 MATCH injection                      | Mitigated — `?1` bind parameter, no string interpolation          |
+| T-03-05: ConversationRow/MessageRow serde exposure | Not yet crossed IPC — Plan B will map to typed response DTOs      |
 
 ## Verification Note
 
@@ -156,5 +160,6 @@ None — plan executed exactly as specified. All behaviors from the `<behavior>`
 - [x] `with_conn` calls only exist in storage/ module files (not in IPC handlers)
 
 ---
-*Phase: 03-history*
-*Completed: 2026-06-14*
+
+_Phase: 03-history_
+_Completed: 2026-06-14_

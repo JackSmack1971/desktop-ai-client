@@ -72,17 +72,19 @@ This is the same class of bug the codebase explicitly already fixed elsewhere: `
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Compile check | `cargo check --manifest-path src-tauri/Cargo.toml` | exit 0, no errors |
-| Run tests | `cargo test --manifest-path src-tauri/Cargo.toml` | all tests pass |
+| Purpose       | Command                                            | Expected on success |
+| ------------- | -------------------------------------------------- | ------------------- |
+| Compile check | `cargo check --manifest-path src-tauri/Cargo.toml` | exit 0, no errors   |
+| Run tests     | `cargo test --manifest-path src-tauri/Cargo.toml`  | all tests pass      |
 
 ## Scope
 
 **In scope** (the only files you should modify):
+
 - `src-tauri/src/ipc/chat.rs` — add a revoke call inside `resolve_attachments`, after each token's content has been successfully read.
 
 **Out of scope** (do NOT touch, even though related):
+
 - `src-tauri/src/ipc/files.rs` / `files_read_token` — do not add revoke here. This command may legitimately be called more than once for the same token (e.g. a frontend preview that re-reads before the user decides whether to attach it to a message). Revoking on first read would break that flow. If the team wants token lifecycle management for this path too, that's a separate, larger design decision (e.g. "revoke when the attachment chip is removed from the composer" needs a new IPC command) — out of scope here.
 - `src-tauri/src/security/file_tokens.rs` — `revoke_token` itself is correct as written; no changes needed.
 - Any change to when/how `mint_token` is called — out of scope.
@@ -123,7 +125,7 @@ for token in tokens {
 }
 ```
 
-Place the revoke call *after* `read_attachment(&path)?` succeeds (i.e., after the `rendered.push(...)` line), not before — if `read_attachment` fails (propagating the `?` and aborting the whole function), the token should remain valid so the caller could plausibly retry with the same token rather than having it silently vanish on a transient read failure.
+Place the revoke call _after_ `read_attachment(&path)?` succeeds (i.e., after the `rendered.push(...)` line), not before — if `read_attachment` fails (propagating the `?` and aborting the whole function), the token should remain valid so the caller could plausibly retry with the same token rather than having it silently vanish on a transient read failure.
 
 **Verify**: `cargo check --manifest-path src-tauri/Cargo.toml` → exit 0.
 
@@ -185,11 +187,12 @@ Verification: `cargo test --manifest-path src-tauri/Cargo.toml --lib ipc::chat` 
 ## STOP conditions
 
 Stop and report back (do not improvise) if:
+
 - `resolve_attachments`'s signature or loop structure no longer matches the excerpt above — re-read the live file first.
 - Constructing a `tauri::State<'_, AppState>` for a unit test turns out to require infrastructure this codebase doesn't have and you cannot find a working pattern in existing tests — report back with what you tried rather than adding a new test-only dependency or refactoring `resolve_attachments`'s signature to make it more testable (that refactor, if wanted, should be its own plan).
-- You find evidence that some other in-progress code path calls `resolve_attachments` with the *same* token twice for legitimately different requests (e.g. a retry mechanism) — that would mean revoking on first use breaks a real flow; if so, stop and report instead of revoking.
+- You find evidence that some other in-progress code path calls `resolve_attachments` with the _same_ token twice for legitimately different requests (e.g. a retry mechanism) — that would mean revoking on first use breaks a real flow; if so, stop and report instead of revoking.
 
 ## Maintenance notes
 
 - This only closes the leak for the chat-attachment path. `files_read_token` (out of scope here) still mints tokens with no revoke path at all — if attachment previewing becomes a heavier feature, revisit whether that command needs its own lifecycle (e.g. revoke when the user removes the attachment chip in the composer before sending, which would need a new `files_revoke_token` IPC command).
-- If `chat_send` is ever changed to allow the *same* attachment token to be referenced by more than one in-flight request (not the case today), this revoke-on-first-read approach would break the second request. Flag that as a design constraint if it comes up.
+- If `chat_send` is ever changed to allow the _same_ attachment token to be referenced by more than one in-flight request (not the case today), this revoke-on-first-read approach would break the second request. Flag that as a design constraint if it comes up.

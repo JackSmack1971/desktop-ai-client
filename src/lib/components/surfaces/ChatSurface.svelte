@@ -24,7 +24,7 @@
 	// Auto-scroll to the bottom when messages change.
 	$effect(() => {
 		// Reactive dependency on messages length.
-		const _len = chatStore.messages.length;
+		void chatStore.messages.length;
 		// Wait for the DOM update then scroll.
 		tick().then(() => {
 			if (messageListEl) {

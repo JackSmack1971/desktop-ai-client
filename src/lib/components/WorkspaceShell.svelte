@@ -53,7 +53,12 @@
 
 	<!-- Main content area: displays the active surface inside a named tabpanel. -->
 	<div class="workspace-shell__body">
-		<main class="workspace-shell__content" id="main-content" tabindex="-1" aria-label={surfaceLabel}>
+		<main
+			class="workspace-shell__content"
+			id="main-content"
+			tabindex="-1"
+			aria-label={surfaceLabel}
+		>
 			{@render children?.()}
 		</main>
 
@@ -94,7 +99,10 @@
 		overflow: hidden;
 		background-color: #0f0f0f;
 		color: #e0e0e0;
-		font-family: system-ui, -apple-system, sans-serif;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
 	}
 
 	.workspace-shell__rail {

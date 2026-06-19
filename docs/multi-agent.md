@@ -9,22 +9,27 @@ Split only when the workflow has clearly separate roles that are becoming bottle
 ## Recommended roles
 
 `Planner`
+
 - creates the plan
 - decides what context to load
 
 `Executor`
+
 - performs the work
 - records traces
 
 `Memory Writer`
+
 - extracts candidate memory from traces
 - writes concise lessons
 
 `Judge`
+
 - validates candidate memory
 - blocks weak promotions
 
 `Coordinator`
+
 - routes tasks
 - merges approved shared lessons
 - resolves conflicts
@@ -49,4 +54,3 @@ Split only when the workflow has clearly separate roles that are becoming bottle
 - agents overwrite each other’s context
 - redundant roles create extra complexity
 - one agent’s mistakes spread to the whole system
-

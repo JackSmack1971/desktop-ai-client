@@ -1,4 +1,8 @@
-import { artifactDismiss, artifactGet, type ArtifactPreviewResponse } from '$lib/api/artifacts';
+import {
+	artifactDismiss,
+	artifactGet,
+	type ArtifactPreviewResponse,
+} from '$lib/api/artifacts';
 import type { ArtifactContentType, ChatEvent } from '$lib/api/chat';
 import { normalizeIpcError } from '$lib/api/errors';
 
@@ -20,7 +24,9 @@ function createArtifactsStore() {
 		state = 'ready';
 	}
 
-	function receiveArtifact(event: Extract<ChatEvent, { type: 'ArtifactReady' }>): void {
+	function receiveArtifact(
+		event: Extract<ChatEvent, { type: 'ArtifactReady' }>,
+	): void {
 		artifactId = event.artifact_id;
 		contentType = event.content_type;
 		preview = event.preview;
@@ -68,7 +74,10 @@ function createArtifactsStore() {
 			try {
 				await artifactDismiss(currentId);
 			} catch (e) {
-				console.warn('[artifacts-store] artifactDismiss rejected (best-effort):', e);
+				console.warn(
+					'[artifacts-store] artifactDismiss rejected (best-effort):',
+					e,
+				);
 			}
 		}
 	}
@@ -108,8 +117,11 @@ function createArtifactsStore() {
 				case 'PlainText':
 					return 'Text';
 				case 'Code':
-					return contentType.language.trim() ? `Code · ${contentType.language}` : 'Code';
+					return contentType.language.trim()
+						? `Code · ${contentType.language}`
+						: 'Code';
 			}
+			return '';
 		},
 		get statusMessage(): string {
 			switch (state) {
@@ -122,8 +134,11 @@ function createArtifactsStore() {
 				case 'dismissed':
 					return 'Artifact dismissed';
 				case 'error':
-					return error ? `Could not load artifact. ${error}` : 'Could not load artifact.';
+					return error
+						? `Could not load artifact. ${error}`
+						: 'Could not load artifact.';
 			}
+			return 'Unknown artifact state';
 		},
 		receiveArtifact,
 		reload,

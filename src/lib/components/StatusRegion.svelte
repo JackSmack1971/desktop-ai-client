@@ -24,11 +24,7 @@
 	let { message = '', loading = false, error = null }: Props = $props();
 
 	let announceText = $derived(
-		error
-			? `Error: ${error}`
-			: loading
-				? 'Loading…'
-				: message
+		error ? `Error: ${error}` : loading ? 'Loading…' : message,
 	);
 </script>
 
@@ -38,7 +34,12 @@
   - The aria-live region re-announces only when the derived text changes,
     which prevents stale AT announcements when Svelte re-renders unchanged props.
 -->
-<div class="status-region" role="status" aria-live="polite" aria-label="Shell status">
+<div
+	class="status-region"
+	role="status"
+	aria-live="polite"
+	aria-label="Shell status"
+>
 	<span class="status-region__text" class:status-region__text--error={!!error}>
 		{announceText}
 	</span>

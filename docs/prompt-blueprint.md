@@ -5,6 +5,7 @@ This document defines how we design prompts for coding agents in this repository
 ## Goal
 
 Prompts should help agents:
+
 - stay on task
 - use tools correctly
 - preserve context across long runs
@@ -18,9 +19,11 @@ Prompts should help agents:
 Each prompt should have a clear mission, a clear scope, and a clear output shape.
 
 Bad:
+
 - "Handle everything related to the project."
 
 Good:
+
 - "Summarize the run trace into candidate memory records."
 - "Plan the next task and name the retrieval inputs."
 
@@ -29,6 +32,7 @@ Good:
 Keep the main prompt short and task-specific.
 
 Put stable rules in:
+
 - AGENTS files
 - architecture docs
 - memory docs
@@ -41,6 +45,7 @@ Do not duplicate the same rule in many prompts unless the rule is critical and l
 When an agent must think through a process, make the sequence visible.
 
 Preferred shape:
+
 1. read context
 2. pick the task
 3. act
@@ -50,6 +55,7 @@ Preferred shape:
 ### 4. Add guardrails at decision points
 
 Any prompt that can cause drift should define:
+
 - what not to do
 - when to stop
 - when to ask for help
@@ -60,6 +66,7 @@ Any prompt that can cause drift should define:
 Use simple schemas for anything another agent or tool must consume.
 
 Examples:
+
 - JSON
 - bullet lists with fixed headings
 - short tables
@@ -76,6 +83,7 @@ Do not tell the agent to "review everything."
 ### 7. Verify before you promote
 
 Any prompt that extracts lessons, skills, or reusable procedures should require a check:
+
 - supported by trace
 - not a duplicate
 - useful later
@@ -94,6 +102,7 @@ Do not mix those layers unless there is a strong reason.
 ### System prompt
 
 Use for:
+
 - role
 - scope
 - safety
@@ -103,6 +112,7 @@ Use for:
 ### Developer prompt
 
 Use for:
+
 - repo-specific behavior
 - formatting rules
 - tool usage rules
@@ -111,6 +121,7 @@ Use for:
 ### Task prompt
 
 Use for:
+
 - the current unit of work
 - current inputs
 - desired output
@@ -123,6 +134,7 @@ Use for:
 Purpose: decide the next action and the evidence needed.
 
 Must include:
+
 - current objective
 - available context
 - output format
@@ -133,6 +145,7 @@ Must include:
 Purpose: do the actual work and report results.
 
 Must include:
+
 - task scope
 - allowed tools
 - expected artifacts
@@ -143,6 +156,7 @@ Must include:
 Purpose: turn a run into durable knowledge.
 
 Must include:
+
 - candidate memory types
 - promotion rules
 - confidence or verification threshold
@@ -153,6 +167,7 @@ Must include:
 Purpose: move work across agents without losing context.
 
 Must include:
+
 - owner
 - handoff format
 - acceptance criteria
@@ -170,6 +185,7 @@ Must include:
 ## Prompt design checklist
 
 Before shipping a prompt, verify:
+
 - [ ] the job is singular
 - [ ] the output shape is explicit
 - [ ] the agent knows when to stop
@@ -203,8 +219,8 @@ Output:
 ## When to update this blueprint
 
 Update this file when we discover:
+
 - a recurring prompt failure
 - a better output shape
 - a new memory or verification pattern
 - a new coordination pattern
-

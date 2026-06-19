@@ -40,18 +40,19 @@ This repo has zero frontend test files (no `*.test.ts`, no Vitest/Playwright con
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Type-check | `pnpm check` | exit 0 |
-| Install new frontend deps | `pnpm install` | exit 0 |
-| Run new frontend tests | `pnpm test` (added in Step 1) | all pass |
-| Compile check backend | `cargo check --manifest-path src-tauri/Cargo.toml` | exit 0 |
-| Compile check backend tests | `cargo check --manifest-path src-tauri/Cargo.toml --tests` | exit 0 |
-| Run backend tests | `cargo test --manifest-path src-tauri/Cargo.toml` | all pass |
+| Purpose                     | Command                                                    | Expected on success |
+| --------------------------- | ---------------------------------------------------------- | ------------------- |
+| Type-check                  | `pnpm check`                                               | exit 0              |
+| Install new frontend deps   | `pnpm install`                                             | exit 0              |
+| Run new frontend tests      | `pnpm test` (added in Step 1)                              | all pass            |
+| Compile check backend       | `cargo check --manifest-path src-tauri/Cargo.toml`         | exit 0              |
+| Compile check backend tests | `cargo check --manifest-path src-tauri/Cargo.toml --tests` | exit 0              |
+| Run backend tests           | `cargo test --manifest-path src-tauri/Cargo.toml`          | all pass            |
 
 ## Scope
 
 **In scope** (the only files you should create/modify):
+
 - `package.json` — add Vitest as a dev dependency and a `test` script.
 - New file: `vitest.config.ts` (or extend `vite.config.ts` with a `test` block — prefer a separate `vitest.config.ts` if `vite.config.ts` already has SvelteKit-specific plugin config that Vitest needs reused; read `vite.config.ts` first to decide).
 - New file: `src/lib/stores/chat.test.ts`
@@ -61,6 +62,7 @@ This repo has zero frontend test files (no `*.test.ts`, no Vitest/Playwright con
 - `src-tauri/src/storage/migrations.rs` — add one failure-path test.
 
 **Out of scope** (do NOT touch, even though related):
+
 - Playwright / end-to-end browser tests — `.claude/rules/testing.md` mentions Playwright for hydrated UI flows, but standing up a full E2E harness is a much larger effort than this plan's scope; this plan only covers Vitest unit/store-level tests and backend integration tests.
 - `src/lib/stores/history.ts`, `settings.ts`, `artifacts.ts`, `surface.ts` — also untested, but out of scope for this plan; `chat.ts` is the highest-risk one and the one this plan's audit specifically flagged. Add a follow-up plan for the others if this pattern proves out.
 - Any change to `chat_send`/`chat_cancel`'s actual behavior — this plan only adds tests and the minimum plumbing (base-URL parameterization) needed to make them testable. Do not "fix" anything you notice while writing tests; report it instead as a new finding.
@@ -86,17 +88,19 @@ This repo has zero frontend test files (no `*.test.ts`, no Vitest/Playwright con
 2. Run `pnpm add -D vitest @testing-library/svelte jsdom`. (Use `@testing-library/svelte` only if `chat.ts`'s store can be tested as a plain module without rendering a component — likely true here, since `chatStore` is a factory function exporting plain getters/methods, not a component. If you find you don't end up rendering any `.svelte` file in `chat.test.ts`, you may skip `@testing-library/svelte` and `jsdom` — try writing Step 2's tests first against plain Node, and only add these if a DOM/Svelte-runtime dependency turns out to be required.)
 3. Add a `"test": "vitest run"` script to `package.json`.
 4. Create `vitest.config.ts`:
+
    ```ts
    import { defineConfig } from 'vitest/config';
    import { svelte } from '@sveltejs/vite-plugin-svelte';
 
    export default defineConfig({
-       plugins: [svelte()],
-       test: {
-           environment: 'node', // switch to 'jsdom' only if a test needs DOM APIs
-       },
+     plugins: [svelte()],
+     test: {
+       environment: 'node', // switch to 'jsdom' only if a test needs DOM APIs
+     },
    });
    ```
+
    Adjust the plugin list to match whatever `vite.config.ts` actually uses — do not invent a different plugin set; copy what's already there.
 
 **Verify**: `pnpm install` → exit 0. `pnpm test` → runs (0 test files yet is fine at this point, should not error).
@@ -106,6 +110,7 @@ This repo has zero frontend test files (no `*.test.ts`, no Vitest/Playwright con
 First, read `src/lib/api/chat.ts` in full to learn the exact exported shape of `chatSend`/`chatCancel` and the `ChatEvent` type before writing mocks against it — do not guess its signature from this plan's excerpts of `chat.ts` alone.
 
 Write tests covering, at minimum:
+
 1. `sendMessage` appends a user message and an assistant placeholder, then calls `chatSend` with the right message list (excluding the placeholder).
 2. Simulating an `Ack` event sets `requestId` and `canCancel` becomes true.
 3. Simulating a `Delta` event after `Ack`: first delta flips `loading` to `false` and marks the message `streaming: true`; subsequent deltas append `text` to `content`.
@@ -122,10 +127,12 @@ Mock `chatSend`/`chatCancel` from `$lib/api/chat` using Vitest's `vi.mock`. Sinc
 ### Step 3: Add `mockito` as a backend dev-dependency
 
 In `src-tauri/Cargo.toml`, add:
+
 ```toml
 [dev-dependencies]
 mockito = "1"
 ```
+
 Check `mockito`'s published docs/changelog for explicit reqwest-version compatibility notes before locking this in — `mockito` only needs to run an HTTP server and doesn't depend on reqwest itself, so this should be safe regardless of the app's reqwest version, but confirm rather than assume.
 
 **Verify**: `cargo check --manifest-path src-tauri/Cargo.toml --tests` → exit 0 (dependency resolves and the (currently still real-network) existing tests still compile).
@@ -153,6 +160,7 @@ pub async fn stream_completion(
 Keep `OPENROUTER_BASE` as the public constant — it becomes the value production call sites pass in, not something removed.
 
 Update the one production call site in `src-tauri/src/ipc/chat.rs`'s `run_stream` (around line 410-417) to pass `crate::providers::openrouter::OPENROUTER_BASE` explicitly:
+
 ```rust
 r = crate::providers::openrouter::stream_completion(
     &client,
@@ -172,6 +180,7 @@ Update `openrouter.rs`'s own existing tests if any call `stream_completion` dire
 ### Step 5: Add `stream_completion` tests against a mock server, plus `chat_send`/`chat_cancel` integration tests
 
 In `src-tauri/src/providers/openrouter.rs`'s test module, add:
+
 ```rust
 #[tokio::test]
 async fn stream_completion_returns_network_error_message_on_send_failure() {
@@ -193,6 +202,7 @@ async fn stream_completion_returns_http_status_on_non_2xx_response() {
     assert_eq!(result.unwrap_err(), "HTTP 429");
 }
 ```
+
 Adjust the exact `mockito` API calls to whatever the locked `mockito = "1"` version's actual async API surface is (check its docs — the snippet above reflects mockito 1.x's `Server::new_async`/`mock(...).create_async()` pattern as of this plan's writing, but verify against the resolved version in `Cargo.lock` after Step 3).
 
 Then, in `src-tauri/src/ipc/chat.rs`'s test module, add an integration-style test for the cancellation path (the highest-value untested branch): a test that drives `run_stream` directly (it's a private function in the same module, so the test module can call it without going through the full `#[tauri::command]` machinery) with a pre-cancelled `CancellationToken`, asserting the result is `Err("CANCELLED")` and a `ChatEvent::Error { code: "CANCELLED", .. }` was sent on the channel. Use a `tauri::ipc::Channel` test double if one is needed — check whether `Channel` can be constructed directly in a unit test in this Tauri version (`tauri = "2"`); if not, this confirms the audit's original observation that `chat_send`/`chat_cancel` are hard to test end-to-end without more infrastructure, and it's acceptable to scope this test down to calling `run_stream` with a mock HTTP response (via the same `mockito` server from the `openrouter.rs` tests) and asserting on the returned tuple `(result, accumulated_text, done_model)` rather than the channel send — whichever is actually constructible, prefer the more complete one.
@@ -254,6 +264,7 @@ This test directly verifies (or disproves) the claim made during this plan's aud
 ## STOP conditions
 
 Stop and report back (do not improvise) if:
+
 - `src/lib/api/chat.ts`'s actual exported shape doesn't match the `{ messages, onEvent }` call pattern assumed from `chat.ts:182` — read it fully before writing mocks.
 - `mockito` turns out to be incompatible with the resolved `reqwest` 0.13 / TLS stack — switch to `wiremock` instead and note the substitution in your final report; do not silently fall back to live-network tests.
 - The migration-failure test in Step 6 reveals the connection really is left unusable after a failed savepoint — stop, report the failing assertion, and do not attempt to fix `run_migrations` under this plan.

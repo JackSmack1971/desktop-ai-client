@@ -16,13 +16,13 @@ created: 2026-06-15
 
 ## Design System
 
-| Property | Value |
-|----------|-------|
-| Tool | none |
-| Preset | not applicable |
-| Component library | none — hand-authored Svelte scoped styles |
-| Icon library | Unicode emoji (matches existing SurfaceRail pattern) |
-| Font | `system-ui, -apple-system, sans-serif` (source: WorkspaceShell.svelte) |
+| Property          | Value                                                                  |
+| ----------------- | ---------------------------------------------------------------------- |
+| Tool              | none                                                                   |
+| Preset            | not applicable                                                         |
+| Component library | none — hand-authored Svelte scoped styles                              |
+| Icon library      | Unicode emoji (matches existing SurfaceRail pattern)                   |
+| Font              | `system-ui, -apple-system, sans-serif` (source: WorkspaceShell.svelte) |
 
 No `components.json`, no Tailwind, no shadcn. The project uses Svelte `<style>` blocks with hex literal tokens.
 All Phase 4 components must continue this pattern.
@@ -33,17 +33,18 @@ All Phase 4 components must continue this pattern.
 
 Declared values extracted from existing components (multiples of 4):
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| xs | 4px | Icon gaps, inline padding (SurfaceRail gap: 4px) |
-| sm | 8px | Button padding, row gaps (ChatInput gap: 8px; confirm-actions gap: 12px rounds to sm) |
-| md | 16px | Default element spacing, horizontal padding (surface-header: 16px 24px) |
-| lg | 24px | Section padding (surface-header horizontal: 24px) |
-| xl | 32px | Layout gaps (not yet used — reserved for section breaks) |
-| 2xl | 48px | Rail button target: 48x48px touch target |
-| 3xl | 64px | Page-level spacing (reserved) |
+| Token | Value | Usage                                                                                 |
+| ----- | ----- | ------------------------------------------------------------------------------------- |
+| xs    | 4px   | Icon gaps, inline padding (SurfaceRail gap: 4px)                                      |
+| sm    | 8px   | Button padding, row gaps (ChatInput gap: 8px; confirm-actions gap: 12px rounds to sm) |
+| md    | 16px  | Default element spacing, horizontal padding (surface-header: 16px 24px)               |
+| lg    | 24px  | Section padding (surface-header horizontal: 24px)                                     |
+| xl    | 32px  | Layout gaps (not yet used — reserved for section breaks)                              |
+| 2xl   | 48px  | Rail button target: 48x48px touch target                                              |
+| 3xl   | 64px  | Page-level spacing (reserved)                                                         |
 
 Exceptions:
+
 - Rail button: 48x48px (matches 2xl token — satisfies 44px minimum touch target with margin)
 - Delete confirmation inline panel: 12px padding (sits between sm and md — use md=16px on new panels)
 - Focus ring: `outline: 2px solid #4a9eff; outline-offset: 2px` — declared everywhere, mandatory on all interactive elements
@@ -54,14 +55,15 @@ Exceptions:
 
 Extracted from existing component styles. Must not deviate.
 
-| Role | Size | Weight | Line Height |
-|------|------|--------|-------------|
-| Body | 14px | 400 | 1.5 |
-| Label / secondary | 12px | 400 | 1 |
-| Heading / surface title | 16px | 600 | 1.2 |
-| Micro / rail label | 9–11px | 400 | 1 |
+| Role                    | Size   | Weight | Line Height |
+| ----------------------- | ------ | ------ | ----------- |
+| Body                    | 14px   | 400    | 1.5         |
+| Label / secondary       | 12px   | 400    | 1           |
+| Heading / surface title | 16px   | 600    | 1.2         |
+| Micro / rail label      | 9–11px | 400    | 1           |
 
 Source evidence:
+
 - Body 14px/400/1.5 — ChatInput `.chat-textarea`, ConversationRow `.conv-title`, SearchBar `.search-input`
 - Label 12px/400/1 — ConversationRow `.conv-snippet`, `.conv-timestamp`, `.conv-model`
 - Heading 16px/600/1.2 — SettingsSurface `.surface-title`, WorkspaceShell `.skip-link` (font-weight: 600)
@@ -75,22 +77,23 @@ Phase 4 uses Body (14px) and Heading (16px/600) only. No new sizes are introduce
 
 Extracted from existing component hex values. All roles are established by prior phases.
 
-| Role | Value | Usage |
-|------|-------|-------|
-| Dominant (60%) | `#0f0f0f` | App background (WorkspaceShell `.workspace-shell`) |
-| Secondary (30%) | `#1a1a1a` | Rail background, input panel background, secondary surfaces |
-| Card / elevated | `#242424` | Conversation rows, textarea, input fields |
-| Border | `#2a2a2a` | All dividers, card borders, input borders |
-| Text primary | `#e0e0e0` | Body text, titles, button labels on dark |
-| Text muted | `#888` | Secondary text, labels, placeholder-adjacent |
-| Text placeholder | `#666` | Input placeholder text |
-| Accent (10%) | `#4a9eff` | Focus rings, active rail indicator bar, Send button background, active state color |
-| Destructive | `#cc4444` | Error text, delete confirmation text |
-| Destructive surface | `#2a1a1a` | Delete confirmation panel background |
-| Destructive border | `#7a1e1e` | Delete confirmation panel border |
-| Warning / incomplete | `#e0a020` | Incomplete status badge, cancel button foreground |
+| Role                 | Value     | Usage                                                                              |
+| -------------------- | --------- | ---------------------------------------------------------------------------------- |
+| Dominant (60%)       | `#0f0f0f` | App background (WorkspaceShell `.workspace-shell`)                                 |
+| Secondary (30%)      | `#1a1a1a` | Rail background, input panel background, secondary surfaces                        |
+| Card / elevated      | `#242424` | Conversation rows, textarea, input fields                                          |
+| Border               | `#2a2a2a` | All dividers, card borders, input borders                                          |
+| Text primary         | `#e0e0e0` | Body text, titles, button labels on dark                                           |
+| Text muted           | `#888`    | Secondary text, labels, placeholder-adjacent                                       |
+| Text placeholder     | `#666`    | Input placeholder text                                                             |
+| Accent (10%)         | `#4a9eff` | Focus rings, active rail indicator bar, Send button background, active state color |
+| Destructive          | `#cc4444` | Error text, delete confirmation text                                               |
+| Destructive surface  | `#2a1a1a` | Delete confirmation panel background                                               |
+| Destructive border   | `#7a1e1e` | Delete confirmation panel border                                                   |
+| Warning / incomplete | `#e0a020` | Incomplete status badge, cancel button foreground                                  |
 
 Accent `#4a9eff` reserved for:
+
 1. Focus ring (`outline: 2px solid #4a9eff`) on all focusable elements — mandatory
 2. Active rail tab indicator bar and text color
 3. Primary action button background (Save API Key button)
@@ -138,6 +141,7 @@ Only one Svelte component is in scope for Phase 4 frontend work.
 **API Key Input (`input[type="password"]`):**
 
 Identical visual spec to `.chat-textarea` / `.search-input` pattern:
+
 - Height: 40px
 - Background: `#1a1a1a`
 - Border: `1px solid #2a2a2a`
@@ -181,6 +185,7 @@ Security invariant: `type="password"` is mandatory. The input value MUST be clea
 **Clear Confirmation (inline, not modal):**
 
 Pattern follows ConversationRow `.delete-confirm`:
+
 - Container: `background: #2a1a1a; border-top: 1px solid #7a1e1e; padding: 12px 16px; border-radius: 0 0 6px 6px`
 - Heading (14px/400, `#e0e0e0`): "Remove API key?"
 - Body (14px/400, `#888`): "This will clear the key from the OS keychain. You will need to re-enter it to use AI features."
@@ -200,27 +205,28 @@ Pattern follows ConversationRow `.delete-confirm`:
 
 ## Copywriting Contract
 
-| Element | Copy |
-|---------|------|
-| Primary CTA | "Save API Key" |
-| Status — configured | "API key configured" |
-| Status — missing | "No API key set" |
-| Status — loading | "Checking…" |
-| Empty state heading | "No API key set" |
-| Empty state body | "Paste your OpenRouter API key below to enable AI features." |
-| Error — store failure | "Failed to save key. Check your OS keychain access and try again." |
-| Error — clear failure | "Failed to remove key. Check your OS keychain access and try again." |
-| Error — status check fail | "Could not check credential status. Try restarting the app." |
-| Destructive action label | "Remove key" (button triggers confirmation) |
-| Destructive confirmation heading | "Remove API key?" |
-| Destructive confirmation body | "This will clear the key from the OS keychain. You will need to re-enter it to use AI features." |
-| Destructive confirm CTA | "Confirm remove" |
-| Destructive cancel | "Cancel" |
-| Section heading | "API Credentials" |
-| Provider label | "OpenRouter" |
-| Input placeholder | "Paste your API key" |
+| Element                          | Copy                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Primary CTA                      | "Save API Key"                                                                                   |
+| Status — configured              | "API key configured"                                                                             |
+| Status — missing                 | "No API key set"                                                                                 |
+| Status — loading                 | "Checking…"                                                                                      |
+| Empty state heading              | "No API key set"                                                                                 |
+| Empty state body                 | "Paste your OpenRouter API key below to enable AI features."                                     |
+| Error — store failure            | "Failed to save key. Check your OS keychain access and try again."                               |
+| Error — clear failure            | "Failed to remove key. Check your OS keychain access and try again."                             |
+| Error — status check fail        | "Could not check credential status. Try restarting the app."                                     |
+| Destructive action label         | "Remove key" (button triggers confirmation)                                                      |
+| Destructive confirmation heading | "Remove API key?"                                                                                |
+| Destructive confirmation body    | "This will clear the key from the OS keychain. You will need to re-enter it to use AI features." |
+| Destructive confirm CTA          | "Confirm remove"                                                                                 |
+| Destructive cancel               | "Cancel"                                                                                         |
+| Section heading                  | "API Credentials"                                                                                |
+| Provider label                   | "OpenRouter"                                                                                     |
+| Input placeholder                | "Paste your API key"                                                                             |
 
 Copy rules:
+
 - Never use "delete" for credential removal — use "remove" or "clear" (delete implies permanent data loss; removal from keychain is recoverable by re-entry)
 - Never display partial key, masked key, or any derivative of the key value
 - Status copy is always one of three states: "API key configured" / "No API key set" / "Checking…" — no other variants
@@ -270,26 +276,26 @@ CLEARING
 
 ### ARIA Contract
 
-| Element | ARIA Role / Attribute |
-|---------|----------------------|
-| Settings region | `role="region" aria-label="Settings"` (matches existing scaffold) |
-| Credentials section | `role="group" aria-labelledby="credentials-heading"` |
-| Status indicator | `aria-live="polite"` on the status row — announces status changes |
-| API key input | `aria-label="API key for OpenRouter"` |
-| Save button | `aria-label="Save API key for OpenRouter"` + `aria-busy={loading}` |
-| Remove button | `aria-label="Remove API key for OpenRouter"` |
+| Element             | ARIA Role / Attribute                                                   |
+| ------------------- | ----------------------------------------------------------------------- |
+| Settings region     | `role="region" aria-label="Settings"` (matches existing scaffold)       |
+| Credentials section | `role="group" aria-labelledby="credentials-heading"`                    |
+| Status indicator    | `aria-live="polite"` on the status row — announces status changes       |
+| API key input       | `aria-label="API key for OpenRouter"`                                   |
+| Save button         | `aria-label="Save API key for OpenRouter"` + `aria-busy={loading}`      |
+| Remove button       | `aria-label="Remove API key for OpenRouter"`                            |
 | Confirmation dialog | `role="alertdialog" aria-label="Confirm key removal" aria-modal="true"` |
-| Error region | `role="alert"` — only rendered when error is non-null |
-| Loading indicator | `aria-live="polite"` on status dot (covers LOADING state) |
+| Error region        | `role="alert"` — only rendered when error is non-null                   |
+| Loading indicator   | `aria-live="polite"` on status dot (covers LOADING state)               |
 
 ---
 
 ## Registry Safety
 
-| Registry | Blocks Used | Safety Gate |
-|----------|-------------|-------------|
-| shadcn official | none | not applicable — shadcn not initialized |
-| npm / third-party | none | not applicable |
+| Registry          | Blocks Used | Safety Gate                             |
+| ----------------- | ----------- | --------------------------------------- |
+| shadcn official   | none        | not applicable — shadcn not initialized |
+| npm / third-party | none        | not applicable                          |
 
 No third-party component registry is used. All UI is hand-authored Svelte consistent with existing project pattern. Registry safety gate is not required for this phase.
 
@@ -297,23 +303,23 @@ No third-party component registry is used. All UI is hand-authored Svelte consis
 
 ## Pre-Population Sources
 
-| Decision | Source |
-|----------|--------|
+| Decision                                                                                                       | Source                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Dark theme color palette (`#0f0f0f`, `#1a1a1a`, `#242424`, `#2a2a2a`, `#e0e0e0`, `#888`, `#4a9eff`, `#cc4444`) | Extracted from WorkspaceShell.svelte, SurfaceRail.svelte, ChatInput.svelte, ConversationRow.svelte, SearchBar.svelte |
-| Typography scale (9/12/14/16px, weights 400/600) | Extracted from same components |
-| Spacing scale (4/8/16/24/32/48/64px) | Extracted from component padding/gap/margin values |
-| Input visual spec (height 40px, background #1a1a1a, border #2a2a2a, focus #4a9eff) | ChatInput.svelte `.chat-textarea`, SearchBar.svelte `.search-input` |
-| Button visual spec (accent bg #4a9eff, radius 6px, 8px 16px padding) | ChatInput.svelte `.btn-send` |
-| Destructive confirmation pattern (inline alertdialog, #2a1a1a bg, #7a1e1e border, #cc4444 text) | ConversationRow.svelte `.delete-confirm` |
-| Focus ring spec (2px solid #4a9eff, offset 2px) | All existing interactive components |
-| No shadcn / no Tailwind / no components.json | Filesystem check — none found |
-| Credential-only scope for Settings, write-once key, status-only feedback | CONTEXT.md D-11, D-02, D-10 |
-| `input[type="password"]`, clear-after-submit, no key display | CONTEXT.md D-02, RESEARCH.md Pattern 8 security invariant |
-| Three IPC commands: set/status/clear | CONTEXT.md D-10 |
-| Full Settings UX deferred | CONTEXT.md §Deferred Ideas |
-| Inline confirmation pattern preferred over modal | RESEARCH.md Pattern 8 (follow historyStore / ConversationRow patterns) |
-| ARIA tablist pattern | SurfaceRail.svelte — established accessibility baseline |
-| Error serialization shape `{ code, message }` | RESEARCH.md Pattern 2 / `normalizeIpcError()` |
+| Typography scale (9/12/14/16px, weights 400/600)                                                               | Extracted from same components                                                                                       |
+| Spacing scale (4/8/16/24/32/48/64px)                                                                           | Extracted from component padding/gap/margin values                                                                   |
+| Input visual spec (height 40px, background #1a1a1a, border #2a2a2a, focus #4a9eff)                             | ChatInput.svelte `.chat-textarea`, SearchBar.svelte `.search-input`                                                  |
+| Button visual spec (accent bg #4a9eff, radius 6px, 8px 16px padding)                                           | ChatInput.svelte `.btn-send`                                                                                         |
+| Destructive confirmation pattern (inline alertdialog, #2a1a1a bg, #7a1e1e border, #cc4444 text)                | ConversationRow.svelte `.delete-confirm`                                                                             |
+| Focus ring spec (2px solid #4a9eff, offset 2px)                                                                | All existing interactive components                                                                                  |
+| No shadcn / no Tailwind / no components.json                                                                   | Filesystem check — none found                                                                                        |
+| Credential-only scope for Settings, write-once key, status-only feedback                                       | CONTEXT.md D-11, D-02, D-10                                                                                          |
+| `input[type="password"]`, clear-after-submit, no key display                                                   | CONTEXT.md D-02, RESEARCH.md Pattern 8 security invariant                                                            |
+| Three IPC commands: set/status/clear                                                                           | CONTEXT.md D-10                                                                                                      |
+| Full Settings UX deferred                                                                                      | CONTEXT.md §Deferred Ideas                                                                                           |
+| Inline confirmation pattern preferred over modal                                                               | RESEARCH.md Pattern 8 (follow historyStore / ConversationRow patterns)                                               |
+| ARIA tablist pattern                                                                                           | SurfaceRail.svelte — established accessibility baseline                                                              |
+| Error serialization shape `{ code, message }`                                                                  | RESEARCH.md Pattern 2 / `normalizeIpcError()`                                                                        |
 
 ---
 

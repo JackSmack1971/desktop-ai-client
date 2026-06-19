@@ -1,11 +1,11 @@
-name: "Architecture"
-description: "Track structural and systemic deficiencies requiring strategic refactoring."
-title: "[ARCH] "
+name: 'Architecture'
+description: 'Track structural and systemic deficiencies requiring strategic refactoring.'
+title: '[ARCH] '
 labels:
-  - "source:agent"
-  - "status:needs-triage"
-  - "type:architecture"
-  - "priority:p2"
+  - 'source:agent'
+  - 'status:needs-triage'
+  - 'type:architecture'
+  - 'priority:p2'
 body:
   - type: markdown
     attributes:
@@ -63,30 +63,30 @@ body:
   - type: dropdown
     id: architectural-trigger
     attributes:
-      label: "Architectural Trigger"
-      description: "Classify the structural anti-pattern or systemic deficiency."
+      label: 'Architectural Trigger'
+      description: 'Classify the structural anti-pattern or systemic deficiency.'
       options:
-        - "Distributed monolith symptom"
-        - "Data boundary violation"
-        - "God class or god service"
-        - "Resilience gap"
-        - "Missing idempotency"
-        - "Single point of failure"
-        - "Contract drift"
-        - "Observability black hole"
-        - "Other systemic architectural deficiency"
+        - 'Distributed monolith symptom'
+        - 'Data boundary violation'
+        - 'God class or god service'
+        - 'Resilience gap'
+        - 'Missing idempotency'
+        - 'Single point of failure'
+        - 'Contract drift'
+        - 'Observability black hole'
+        - 'Other systemic architectural deficiency'
     validations:
       required: true
 
   - type: dropdown
     id: execution-tier
     attributes:
-      label: "Execution Tier"
-      description: "Default is priority:p2 unless coupled to an active security or outage threat."
+      label: 'Execution Tier'
+      description: 'Default is priority:p2 unless coupled to an active security or outage threat.'
       options:
-        - "priority:p2"
-        - "priority:p1"
-        - "priority:p0"
+        - 'priority:p2'
+        - 'priority:p1'
+        - 'priority:p0'
       default: 0
     validations:
       required: true
@@ -94,8 +94,8 @@ body:
   - type: textarea
     id: forensic-evidence-trace
     attributes:
-      label: "1. Forensic Evidence Trace"
-      description: "Provide concrete evidence exposing the structural flaw: cross-service file paths, queries, schema diffs, dependency traces, topology notes, logs, metrics, or architectural traces."
+      label: '1. Forensic Evidence Trace'
+      description: 'Provide concrete evidence exposing the structural flaw: cross-service file paths, queries, schema diffs, dependency traces, topology notes, logs, metrics, or architectural traces.'
       placeholder: |
         Evidence:
         - Cross-service paths:
@@ -109,8 +109,8 @@ body:
   - type: textarea
     id: state-delta-assertion
     attributes:
-      label: "2. State Delta Assertion (FSV Style)"
-      description: "Declare Expected Architectural State vs Observed State using FSV-style comparison."
+      label: '2. State Delta Assertion (FSV Style)'
+      description: 'Declare Expected Architectural State vs Observed State using FSV-style comparison.'
       placeholder: |
         Expected architectural state:
           SoT/design contract:
@@ -128,8 +128,8 @@ body:
   - type: textarea
     id: blast-radius-definition
     attributes:
-      label: "3. Blast Radius Definition"
-      description: "Scope the impact of the architectural flaw, including cascading failure, deployment coupling, data integrity risk, scalability limits, or observability loss."
+      label: '3. Blast Radius Definition'
+      description: 'Scope the impact of the architectural flaw, including cascading failure, deployment coupling, data integrity risk, scalability limits, or observability loss.'
       placeholder: |
         Impacted scope:
         - Components/services/boundaries:
@@ -143,8 +143,8 @@ body:
   - type: textarea
     id: reproduction-sequence
     attributes:
-      label: "4. Reproduction Sequence"
-      description: "List steps to verify the structural constraint or architectural flaw, if applicable."
+      label: '4. Reproduction Sequence'
+      description: 'List steps to verify the structural constraint or architectural flaw, if applicable.'
       placeholder: |
         1. Inspect service boundary or component graph ...
         2. Compare documented contract against physical implementation ...
@@ -156,8 +156,8 @@ body:
   - type: textarea
     id: execution-directive
     attributes:
-      label: "5. Execution Directive"
-      description: "Suggest the next action for the polling, pickup, or architecture-review agent."
+      label: '5. Execution Directive'
+      description: 'Suggest the next action for the polling, pickup, or architecture-review agent.'
       placeholder: |
         Suggested next action:
         - investigate further
@@ -175,8 +175,8 @@ body:
   - type: textarea
     id: traceability-footer
     attributes:
-      label: "6. Traceability Footer"
-      description: "Append execution identity metadata for deterministic multi-agent synchronization."
+      label: '6. Traceability Footer'
+      description: 'Append execution identity metadata for deterministic multi-agent synchronization.'
       value: |
         ---
         Executing agent: agent:

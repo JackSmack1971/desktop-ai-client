@@ -68,27 +68,27 @@ The original document was directionally strong but too implementation-dangerous 
 
 The previous hardened version fixed the largest errors in the original architecture, but it still left several implementation traps that would let downstream agents produce an app that looks correct while failing privacy, security, release-readiness, or real-framework feasibility requirements.
 
-| Severity | Design Error | Why It Fails in Implementation | Required Correction |
-|---|---|---|---|
-| High | Tauri command exposure remains deny-by-default only on paper | Registered custom commands can be broader than the capability matrix suggests if the reviewed inventory does not explicitly restrict them. A future command can silently widen the IPC attack surface. | Tauri command exposure is deny-by-inventory. Production builds must pin a Tauri v2 version that supports `tauri_build::AppManifest::commands`. The build script must enumerate allowed commands, and CI must diff that list against `tauri::generate_handler![...]`, `src-tauri/capabilities`, and `security/command-inventory.toml`. A command missing from any required list fails release. |
-| High | Stronghold can accidentally reintroduce a frontend secret read path | Using Stronghold is not automatically safe if JavaScript-accessible plugin permissions expose store-record reads to compromised UI code. | No frontend Stronghold read surface. Ordinary windows must not receive Stronghold default permissions or any read/enumerate/export operations. The only frontend-visible credential commands are domain commands such as `set_provider_key`, `delete_provider_key`, `test_provider_key`, and `get_credential_status`. |
-| High | SSE parsing contract underspecifies standards-conformant event grammar | Parsing only `data:` frames can mishandle comments, multi-line data, `id`, `retry`, blank-line dispatch, and provider variants. | Implement full SSE grammar parsing before converting provider events into normalized internal stream events. |
-| High | Updater authentication and private feed secrets are not governed | Private update feeds or beta channel tokens can reintroduce frontend secret paths if JavaScript supplies authorization headers or channel routing. | Keep updater credentials, private release-feed headers, channel routing, and rollback authorization Rust-owned only. |
-| High | Provider debug and retention behavior is too implicit | Production debug/metadata expansion can expose transformed prompts, routing, moderation, fallback details, or content-bearing generation metadata. | Ban provider debug modes and content-bearing metadata/retrieval surfaces in production unless an explicit privacy review approves them. |
-| Medium | Custom OpenAI-compatible endpoints are not governed as an SSRF surface | User-configurable endpoint URLs can pivot requests toward localhost, LAN services, private IPs, cloud metadata services, or redirect bypasses. | Enforce scheme, hostname, resolved-IP, redirect, and TLS policy before sending prompts or credentials. |
-| Medium | WAL lifecycle and multi-instance coordination are incomplete | WAL/SHM files are part of persistent state; long-lived readers can block checkpoints; concurrent instances can race migrations or backups. | Add checkpoint policy, backup-safe copy rules, `busy_timeout`, and either single-instance startup or explicit multi-process migration locks. |
-| Medium | Artifact preview hardening misses base-URL, assignment, and accessibility gates | `about:srcdoc` base-URL behavior, unsafe assignment, missing iframe titles, keyboard traps, invisible focus, and weak status announcements can cause security and accessibility failures. | `srcdoc` assignment must be escaped or programmatic. Generated preview HTML must be assigned through a reviewed function that handles `srcdoc` escaping rules, injects the CSP/base/title wrapper, validates a per-preview message channel, and is covered by adversarial fixtures. |
-| High | Revision 3 under-specified the Tauri command-manifest mechanism | Tauri v2 documents `AppManifest::commands`, but prose alone is not enough: downstream agents can forget to pin the Tauri version, update `generate_handler!` without updating the manifest, or grant commands in capabilities that are absent from the review inventory. | Use the official `AppManifest::commands` mechanism when supported by the selected Tauri version, and add a concrete verifier: parse Rust command registration, compare against `security/command-inventory.toml`, compare manifest/capabilities against that inventory, and fail CI on drift. |
-| High | Attachment intake still trusts JavaScript-controlled file paths too much | A compromised frontend can pass paths that did not come from a user dialog, can probe path existence through error behavior, or can trick backend code into reading unexpected files. | No raw path read bridge. Backend file-read commands may accept only backend-issued opaque file tokens. Raw JavaScript-returned paths are display hints, not read authority. Canonicalize and validate token-backed selections at use time. |
-| High | Executable artifact previews still share too much renderer failure domain | A sandboxed iframe blocks IPC, but malicious generated JavaScript can still CPU-spin, memory-bloat, spam messages, or exploit same-webview implementation bugs. | Treat executable previews as hostile workloads. Use no-IPC separate webviews/process isolation where available, parent-owned kill/reload, CPU/message budgets, and static-preview fallback. |
-| Medium | FTS5 `MATCH` syntax is not governed | User search strings can become malformed FTS queries, trigger expensive tokenization/NEAR/prefix behavior, or crash the search command path if errors are not handled. | Build FTS queries through a bounded query builder: quote terms, cap length/operator count, escape special syntax, time-box searches, and fall back to literal search on parse failure. |
-| Medium | Provider-router identity remains too compressed | Saying “OpenRouter sent this” hides whether a downstream provider, fallback route, moderation layer, or retention regime actually processed the payload. | Store/display gateway provider plus final routed provider/endpoint/request ID when available. Do not imply ZDR, single-processor handling, or fixed retention without runtime metadata or account policy evidence. |
-| Medium | `metadata_json` can become a privacy bypass | A schema column named metadata tends to accumulate raw provider JSON, prompt snippets, attachment text, local file paths, and diagnostic leftovers. | Define an allowlisted metadata schema with redaction tests. Reject raw request/response JSON and any field that can contain user content unless explicitly classified and export-controlled. |
-| Medium | Deletion semantics are underspecified | Users may believe “delete conversation” removes backups, exports, WAL remnants, crash reports, provider records, and support bundles when it only removes active rows. | Separate active deletion, tombstone, backup purge, export purge, local vacuum/secure-delete caveat, and provider-side retention disclosure. |
-| Medium | Production app-shell CSP and remote asset policy are incomplete | A privileged webview that loads CDN scripts, remote fonts, inline scripts, or broad `connect-src` expands the attack surface despite strong backend controls. | No remote scripts/styles/assets in privileged windows. Generate per-window CSP, pin allowed `connect-src`, and test release bundles for remote asset references. |
-| High | Streaming still relies on broad event-bus semantics | Global Tauri events are easy for downstream agents to use because examples are common, but they blur per-invocation ownership and make wrong-stream races easier to miss. | Primary token streaming uses `tauri::ipc::Channel<StreamEvent>`. Global Tauri events are reserved for coarse app status only. Each stream receives a backend-owned stream ID and a per-invocation channel. The frontend must ignore messages whose stream ID does not match the active stream. |
-| High | Release capability selection can be implicit or drift-prone | Merely having capability files in `src-tauri/capabilities` does not prove which ones are selected for packaged release, and stale dev capability files can accidentally grant authority. | Capabilities are explicitly selected. `tauri.conf.json` must explicitly list release capabilities. Any capability file in `src-tauri/capabilities` not selected for release must be dev-only and excluded or rejected by CI. |
-| High | Strict privacy mode can become UI-only theater | A privacy toggle that only changes disclosure text still sends payloads through provider fallbacks or data-collection paths when the provider supports constraints but the app fails to request them. | Strict privacy mode sets provider constraints, not just UI disclosure. For OpenRouter, strict mode must disable fallback routing where supported and request provider data-collection denial where supported. If the provider cannot satisfy those constraints, the request must stop before payload transmission. |
+| Severity | Design Error                                                                    | Why It Fails in Implementation                                                                                                                                                                                                                                           | Required Correction                                                                                                                                                                                                                                                                                                                                                                           |
+| -------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| High     | Tauri command exposure remains deny-by-default only on paper                    | Registered custom commands can be broader than the capability matrix suggests if the reviewed inventory does not explicitly restrict them. A future command can silently widen the IPC attack surface.                                                                   | Tauri command exposure is deny-by-inventory. Production builds must pin a Tauri v2 version that supports `tauri_build::AppManifest::commands`. The build script must enumerate allowed commands, and CI must diff that list against `tauri::generate_handler![...]`, `src-tauri/capabilities`, and `security/command-inventory.toml`. A command missing from any required list fails release. |
+| High     | Stronghold can accidentally reintroduce a frontend secret read path             | Using Stronghold is not automatically safe if JavaScript-accessible plugin permissions expose store-record reads to compromised UI code.                                                                                                                                 | No frontend Stronghold read surface. Ordinary windows must not receive Stronghold default permissions or any read/enumerate/export operations. The only frontend-visible credential commands are domain commands such as `set_provider_key`, `delete_provider_key`, `test_provider_key`, and `get_credential_status`.                                                                         |
+| High     | SSE parsing contract underspecifies standards-conformant event grammar          | Parsing only `data:` frames can mishandle comments, multi-line data, `id`, `retry`, blank-line dispatch, and provider variants.                                                                                                                                          | Implement full SSE grammar parsing before converting provider events into normalized internal stream events.                                                                                                                                                                                                                                                                                  |
+| High     | Updater authentication and private feed secrets are not governed                | Private update feeds or beta channel tokens can reintroduce frontend secret paths if JavaScript supplies authorization headers or channel routing.                                                                                                                       | Keep updater credentials, private release-feed headers, channel routing, and rollback authorization Rust-owned only.                                                                                                                                                                                                                                                                          |
+| High     | Provider debug and retention behavior is too implicit                           | Production debug/metadata expansion can expose transformed prompts, routing, moderation, fallback details, or content-bearing generation metadata.                                                                                                                       | Ban provider debug modes and content-bearing metadata/retrieval surfaces in production unless an explicit privacy review approves them.                                                                                                                                                                                                                                                       |
+| Medium   | Custom OpenAI-compatible endpoints are not governed as an SSRF surface          | User-configurable endpoint URLs can pivot requests toward localhost, LAN services, private IPs, cloud metadata services, or redirect bypasses.                                                                                                                           | Enforce scheme, hostname, resolved-IP, redirect, and TLS policy before sending prompts or credentials.                                                                                                                                                                                                                                                                                        |
+| Medium   | WAL lifecycle and multi-instance coordination are incomplete                    | WAL/SHM files are part of persistent state; long-lived readers can block checkpoints; concurrent instances can race migrations or backups.                                                                                                                               | Add checkpoint policy, backup-safe copy rules, `busy_timeout`, and either single-instance startup or explicit multi-process migration locks.                                                                                                                                                                                                                                                  |
+| Medium   | Artifact preview hardening misses base-URL, assignment, and accessibility gates | `about:srcdoc` base-URL behavior, unsafe assignment, missing iframe titles, keyboard traps, invisible focus, and weak status announcements can cause security and accessibility failures.                                                                                | `srcdoc` assignment must be escaped or programmatic. Generated preview HTML must be assigned through a reviewed function that handles `srcdoc` escaping rules, injects the CSP/base/title wrapper, validates a per-preview message channel, and is covered by adversarial fixtures.                                                                                                           |
+| High     | Revision 3 under-specified the Tauri command-manifest mechanism                 | Tauri v2 documents `AppManifest::commands`, but prose alone is not enough: downstream agents can forget to pin the Tauri version, update `generate_handler!` without updating the manifest, or grant commands in capabilities that are absent from the review inventory. | Use the official `AppManifest::commands` mechanism when supported by the selected Tauri version, and add a concrete verifier: parse Rust command registration, compare against `security/command-inventory.toml`, compare manifest/capabilities against that inventory, and fail CI on drift.                                                                                                 |
+| High     | Attachment intake still trusts JavaScript-controlled file paths too much        | A compromised frontend can pass paths that did not come from a user dialog, can probe path existence through error behavior, or can trick backend code into reading unexpected files.                                                                                    | No raw path read bridge. Backend file-read commands may accept only backend-issued opaque file tokens. Raw JavaScript-returned paths are display hints, not read authority. Canonicalize and validate token-backed selections at use time.                                                                                                                                                    |
+| High     | Executable artifact previews still share too much renderer failure domain       | A sandboxed iframe blocks IPC, but malicious generated JavaScript can still CPU-spin, memory-bloat, spam messages, or exploit same-webview implementation bugs.                                                                                                          | Treat executable previews as hostile workloads. Use no-IPC separate webviews/process isolation where available, parent-owned kill/reload, CPU/message budgets, and static-preview fallback.                                                                                                                                                                                                   |
+| Medium   | FTS5 `MATCH` syntax is not governed                                             | User search strings can become malformed FTS queries, trigger expensive tokenization/NEAR/prefix behavior, or crash the search command path if errors are not handled.                                                                                                   | Build FTS queries through a bounded query builder: quote terms, cap length/operator count, escape special syntax, time-box searches, and fall back to literal search on parse failure.                                                                                                                                                                                                        |
+| Medium   | Provider-router identity remains too compressed                                 | Saying “OpenRouter sent this” hides whether a downstream provider, fallback route, moderation layer, or retention regime actually processed the payload.                                                                                                                 | Store/display gateway provider plus final routed provider/endpoint/request ID when available. Do not imply ZDR, single-processor handling, or fixed retention without runtime metadata or account policy evidence.                                                                                                                                                                            |
+| Medium   | `metadata_json` can become a privacy bypass                                     | A schema column named metadata tends to accumulate raw provider JSON, prompt snippets, attachment text, local file paths, and diagnostic leftovers.                                                                                                                      | Define an allowlisted metadata schema with redaction tests. Reject raw request/response JSON and any field that can contain user content unless explicitly classified and export-controlled.                                                                                                                                                                                                  |
+| Medium   | Deletion semantics are underspecified                                           | Users may believe “delete conversation” removes backups, exports, WAL remnants, crash reports, provider records, and support bundles when it only removes active rows.                                                                                                   | Separate active deletion, tombstone, backup purge, export purge, local vacuum/secure-delete caveat, and provider-side retention disclosure.                                                                                                                                                                                                                                                   |
+| Medium   | Production app-shell CSP and remote asset policy are incomplete                 | A privileged webview that loads CDN scripts, remote fonts, inline scripts, or broad `connect-src` expands the attack surface despite strong backend controls.                                                                                                            | No remote scripts/styles/assets in privileged windows. Generate per-window CSP, pin allowed `connect-src`, and test release bundles for remote asset references.                                                                                                                                                                                                                              |
+| High     | Streaming still relies on broad event-bus semantics                             | Global Tauri events are easy for downstream agents to use because examples are common, but they blur per-invocation ownership and make wrong-stream races easier to miss.                                                                                                | Primary token streaming uses `tauri::ipc::Channel<StreamEvent>`. Global Tauri events are reserved for coarse app status only. Each stream receives a backend-owned stream ID and a per-invocation channel. The frontend must ignore messages whose stream ID does not match the active stream.                                                                                                |
+| High     | Release capability selection can be implicit or drift-prone                     | Merely having capability files in `src-tauri/capabilities` does not prove which ones are selected for packaged release, and stale dev capability files can accidentally grant authority.                                                                                 | Capabilities are explicitly selected. `tauri.conf.json` must explicitly list release capabilities. Any capability file in `src-tauri/capabilities` not selected for release must be dev-only and excluded or rejected by CI.                                                                                                                                                                  |
+| High     | Strict privacy mode can become UI-only theater                                  | A privacy toggle that only changes disclosure text still sends payloads through provider fallbacks or data-collection paths when the provider supports constraints but the app fails to request them.                                                                    | Strict privacy mode sets provider constraints, not just UI disclosure. For OpenRouter, strict mode must disable fallback routing where supported and request provider data-collection denial where supported. If the provider cannot satisfy those constraints, the request must stop before payload transmission.                                                                            |
 
 ### Non-Negotiable Security Invariants
 
@@ -109,7 +109,6 @@ Downstream agents must preserve these invariants even when making “small” ch
 13. **No arbitrary frontend path-to-read bridge.** Backend file-read commands may accept only backend-issued opaque file tokens. Raw JavaScript-returned paths are display hints, not read authority.
 14. **No unbounded metadata sink.** Metadata columns, diagnostics, request logs, and support bundles must reject user-content payloads by schema, test, and review.
 15. **No executable generated code in the host renderer failure domain without a hard recovery path.** Sandboxing must cover IPC, origin, network, message budget, CPU/memory abuse, and user recovery. `srcdoc` assignment must be escaped or programmatic through a reviewed wrapper.
-
 
 ---
 
@@ -153,15 +152,15 @@ The implementation must protect:
 
 ### Adversary Classes
 
-| Adversary | Capability | Design Response |
-|---|---|---|
-| Malicious generated artifact | Runs attacker-controlled HTML/CSS/JS inside preview | No Tauri IPC, no same-origin sandbox, no network by default, schema-validated messaging, runtime kill controls. |
-| Compromised frontend dependency | Executes JS in the main webview | Backend-only secrets, domain-specific commands, capability scoping, backend caller validation, no arbitrary SQL/fs/shell. |
-| Malicious local file | User imports crafted PDF/image/archive/Markdown/HTML | File allowlist, size/decompression limits, metadata stripping, parser isolation where practical, no automatic execution. |
-| Malicious or drifting cloud provider | Changes model behavior, metadata, pricing, logging, or rate limits | Runtime discovery, disclosure, fallback, request IDs, no hardcoded promises, provider-specific error handling. |
-| Local malware/same-user process | Reads files, env vars, clipboard, logs, crash dumps | OS keychain/Stronghold for secrets, optional encrypted DB, minimized logs, no plaintext key files. |
-| Network attacker | Attempts MITM or endpoint substitution | HTTPS only, platform TLS validation, no user-disabled certificate checks, signed updates, explicit custom endpoint trust warnings. |
-| Supply-chain attacker | Compromises npm/crate/plugin/update artifacts | Dependency pinning, lockfile review, cargo/npm audit, minimal plugins, signed release artifacts, reproducible build checks where practical. |
+| Adversary                            | Capability                                                         | Design Response                                                                                                                             |
+| ------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Malicious generated artifact         | Runs attacker-controlled HTML/CSS/JS inside preview                | No Tauri IPC, no same-origin sandbox, no network by default, schema-validated messaging, runtime kill controls.                             |
+| Compromised frontend dependency      | Executes JS in the main webview                                    | Backend-only secrets, domain-specific commands, capability scoping, backend caller validation, no arbitrary SQL/fs/shell.                   |
+| Malicious local file                 | User imports crafted PDF/image/archive/Markdown/HTML               | File allowlist, size/decompression limits, metadata stripping, parser isolation where practical, no automatic execution.                    |
+| Malicious or drifting cloud provider | Changes model behavior, metadata, pricing, logging, or rate limits | Runtime discovery, disclosure, fallback, request IDs, no hardcoded promises, provider-specific error handling.                              |
+| Local malware/same-user process      | Reads files, env vars, clipboard, logs, crash dumps                | OS keychain/Stronghold for secrets, optional encrypted DB, minimized logs, no plaintext key files.                                          |
+| Network attacker                     | Attempts MITM or endpoint substitution                             | HTTPS only, platform TLS validation, no user-disabled certificate checks, signed updates, explicit custom endpoint trust warnings.          |
+| Supply-chain attacker                | Compromises npm/crate/plugin/update artifacts                      | Dependency pinning, lockfile review, cargo/npm audit, minimal plugins, signed release artifacts, reproducible build checks where practical. |
 
 ### Trust Boundary Diagram
 
@@ -190,14 +189,13 @@ The frontend is treated as a hostile-but-necessary renderer. The Rust core owns 
 
 A feature is not privacy-safe merely because the history database is local. The implementation must classify every operation as one of:
 
-| Class | Leaves Device? | Examples | Required UI Treatment |
-|---|---:|---|---|
-| Local-only | No | browsing local history, local search, local export | No cloud warning needed. |
-| Local inference | No, unless tools are invoked | Ollama/llama.cpp on verified localhost | Show local provider badge and endpoint. |
-| Cloud inference | Yes | OpenRouter request, remote custom endpoint | Show provider badge, payload disclosure, model, and attachment status. |
-| Cloud metadata | Yes | model catalog refresh, provider limits query | Show in settings/privacy copy; do not include prompts. |
-| Explicit export/share | User-controlled | Markdown/JSON export, save artifact | Confirmation when sensitive content may be included. |
-
+| Class                 |               Leaves Device? | Examples                                           | Required UI Treatment                                                  |
+| --------------------- | ---------------------------: | -------------------------------------------------- | ---------------------------------------------------------------------- |
+| Local-only            |                           No | browsing local history, local search, local export | No cloud warning needed.                                               |
+| Local inference       | No, unless tools are invoked | Ollama/llama.cpp on verified localhost             | Show local provider badge and endpoint.                                |
+| Cloud inference       |                          Yes | OpenRouter request, remote custom endpoint         | Show provider badge, payload disclosure, model, and attachment status. |
+| Cloud metadata        |                          Yes | model catalog refresh, provider limits query       | Show in settings/privacy copy; do not include prompts.                 |
+| Explicit export/share |              User-controlled | Markdown/JSON export, save artifact                | Confirmation when sensitive content may be included.                   |
 
 ---
 
@@ -205,12 +203,12 @@ A feature is not privacy-safe merely because the history database is local. The 
 
 Downstream agents must treat all external facts by confidence tier:
 
-| Tier | Source Type | Use In Architecture | Required Action |
-|---|---|---|---|
-| Tier 1 | Official docs and API responses | Normative | Cite or encode in tests |
-| Tier 2 | Maintainer repositories/package docs | Acceptable with pinning | Pin version and audit dependency |
-| Tier 3 | Engineering blogs | Advisory only | Verify with prototype or test |
-| Tier 4 | Reddit/forums/vendor marketing | Non-normative | Do not encode as requirement without independent verification |
+| Tier   | Source Type                          | Use In Architecture     | Required Action                                               |
+| ------ | ------------------------------------ | ----------------------- | ------------------------------------------------------------- |
+| Tier 1 | Official docs and API responses      | Normative               | Cite or encode in tests                                       |
+| Tier 2 | Maintainer repositories/package docs | Acceptable with pinning | Pin version and audit dependency                              |
+| Tier 3 | Engineering blogs                    | Advisory only           | Verify with prototype or test                                 |
+| Tier 4 | Reddit/forums/vendor marketing       | Non-normative           | Do not encode as requirement without independent verification |
 
 Volatile items that must never be hardcoded without a runtime check:
 
@@ -229,34 +227,34 @@ Volatile items that must never be hardcoded without a runtime check:
 
 ### Table 1: Core Stack and State Management Configuration
 
-| Component | Hardened Recommendation | Rationale and Implementation Constraint |
-|---|---|---|
-| Frontend framework | Svelte 5 with runes | Strong choice for small bundles and precise reactive updates. `$state`, `$derived`, and `$effect` must be used according to Svelte semantics. `$derived` must remain side-effect-free. Do not treat Svelte alone as a guarantee of 60 fps rendering. |
-| Desktop framework | Tauri v2 | Strong choice for small desktop apps using the host webview and Rust commands. Must use capability-scoped permissions, a reviewed command inventory verified by CI, backend caller checks, and production-disabled `app.withGlobalTauri`. |
-| Provider layer | Provider abstraction with OpenRouter as one default | OpenRouter is useful, but free-tier inventory and limits are volatile. The app must support dynamic metadata discovery, paid model fallback, and local provider fallback. |
-| Data persistence | SQLite via backend repository layer | SQLite is the default store. Prefer Rust commands such as `append_message`, `search_messages`, and `delete_conversation` over exposing arbitrary frontend SQL. |
-| Search | SQLite FTS5 external-content table | Use an external-content FTS5 table tied to `messages.id`, with insert/update/delete triggers and rebuild/integrity operations. |
-| Secret storage | Backend-only OS keychain or Rust-owned Stronghold-backed design | The frontend must never receive the API key after initial submission. Stronghold guest/frontend read permissions must not be exposed to ordinary UI windows. The backend must retrieve secrets internally and construct provider authorization headers. |
+| Component          | Hardened Recommendation                                         | Rationale and Implementation Constraint                                                                                                                                                                                                                 |
+| ------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend framework | Svelte 5 with runes                                             | Strong choice for small bundles and precise reactive updates. `$state`, `$derived`, and `$effect` must be used according to Svelte semantics. `$derived` must remain side-effect-free. Do not treat Svelte alone as a guarantee of 60 fps rendering.    |
+| Desktop framework  | Tauri v2                                                        | Strong choice for small desktop apps using the host webview and Rust commands. Must use capability-scoped permissions, a reviewed command inventory verified by CI, backend caller checks, and production-disabled `app.withGlobalTauri`.               |
+| Provider layer     | Provider abstraction with OpenRouter as one default             | OpenRouter is useful, but free-tier inventory and limits are volatile. The app must support dynamic metadata discovery, paid model fallback, and local provider fallback.                                                                               |
+| Data persistence   | SQLite via backend repository layer                             | SQLite is the default store. Prefer Rust commands such as `append_message`, `search_messages`, and `delete_conversation` over exposing arbitrary frontend SQL.                                                                                          |
+| Search             | SQLite FTS5 external-content table                              | Use an external-content FTS5 table tied to `messages.id`, with insert/update/delete triggers and rebuild/integrity operations.                                                                                                                          |
+| Secret storage     | Backend-only OS keychain or Rust-owned Stronghold-backed design | The frontend must never receive the API key after initial submission. Stronghold guest/frontend read permissions must not be exposed to ordinary UI windows. The backend must retrieve secrets internally and construct provider authorization headers. |
 
 ### Table 2: Interface, User Experience, and Rendering Components
 
-| Component | Hardened Recommendation | Rationale and Implementation Constraint |
-|---|---|---|
-| Markdown rendering | Use a stream-aware renderer, but prove it | `@humanspeak/svelte-markdown` may be used if pinned and tested. Do not rely on package claims alone. Long transcripts, partial code fences, tables, raw HTML, and KaTeX must be benchmarked. |
-| Code/Canvas editor | CodeMirror 6 | Strong default because CodeMirror is modular and built around separate state/view packages. Only import needed languages and extensions. |
-| Diff engine | Version-aware diff workflow | A diff-match-patch wrapper is acceptable only if patch state is tied to artifact revision IDs. Reject or rebase stale patches. |
-| Styling | Tailwind CSS plus shadcn-svelte primitives | Good choice if bundle output is measured. Avoid monolithic component frameworks. |
-| Virtualization | Required for long chat histories | The chat transcript must virtualize offscreen messages or collapse historical turns. Rendering every message forever will eventually destroy streaming performance. |
+| Component          | Hardened Recommendation                    | Rationale and Implementation Constraint                                                                                                                                                      |
+| ------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Markdown rendering | Use a stream-aware renderer, but prove it  | `@humanspeak/svelte-markdown` may be used if pinned and tested. Do not rely on package claims alone. Long transcripts, partial code fences, tables, raw HTML, and KaTeX must be benchmarked. |
+| Code/Canvas editor | CodeMirror 6                               | Strong default because CodeMirror is modular and built around separate state/view packages. Only import needed languages and extensions.                                                     |
+| Diff engine        | Version-aware diff workflow                | A diff-match-patch wrapper is acceptable only if patch state is tied to artifact revision IDs. Reject or rebase stale patches.                                                               |
+| Styling            | Tailwind CSS plus shadcn-svelte primitives | Good choice if bundle output is measured. Avoid monolithic component frameworks.                                                                                                             |
+| Virtualization     | Required for long chat histories           | The chat transcript must virtualize offscreen messages or collapse historical turns. Rendering every message forever will eventually destroy streaming performance.                          |
 
 ### Table 3: Security, Sandboxing, and Key Management
 
-| Surface | Hardened Recommendation | Required Constraint |
-|---|---|---|
-| API key storage | OS keychain, Rust-owned Stronghold, or direct Rust `keyring` usage | No frontend read path. No API key parameter in stream commands. No localStorage/sessionStorage/plaintext config. No Stronghold store-record read permissions in ordinary UI windows. |
-| Database | SQLite file, optionally encrypted | If plaintext, UI and docs must say so. If encrypted, define key lifecycle and backup/export behavior. |
-| Tauri IPC | Typed, scoped commands plus reviewed command-inventory verifier | No arbitrary SQL, no arbitrary fs, no shell, no raw secret reads. Each command validates schemas and caller window label. Registered commands must be listed in the reviewed command inventory. |
-| Artifact preview | Sandboxed iframe or separate no-IPC webview | `sandbox="allow-scripts"` only. Omit `allow-same-origin`. Inject a deliberate `about:srcdoc` base, title the iframe, validate the message channel, escape console output, add CSP and kill/reload controls. |
-| npm supply chain | Minimize trusted frontend dependencies | Pin dependencies, run audits, avoid packages that request broad Tauri capabilities, and keep all sensitive actions in Rust. |
+| Surface          | Hardened Recommendation                                            | Required Constraint                                                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API key storage  | OS keychain, Rust-owned Stronghold, or direct Rust `keyring` usage | No frontend read path. No API key parameter in stream commands. No localStorage/sessionStorage/plaintext config. No Stronghold store-record read permissions in ordinary UI windows.                        |
+| Database         | SQLite file, optionally encrypted                                  | If plaintext, UI and docs must say so. If encrypted, define key lifecycle and backup/export behavior.                                                                                                       |
+| Tauri IPC        | Typed, scoped commands plus reviewed command-inventory verifier    | No arbitrary SQL, no arbitrary fs, no shell, no raw secret reads. Each command validates schemas and caller window label. Registered commands must be listed in the reviewed command inventory.             |
+| Artifact preview | Sandboxed iframe or separate no-IPC webview                        | `sandbox="allow-scripts"` only. Omit `allow-same-origin`. Inject a deliberate `about:srcdoc` base, title the iframe, validate the message channel, escape console output, add CSP and kill/reload controls. |
+| npm supply chain | Minimize trusted frontend dependencies                             | Pin dependencies, run audits, avoid packages that request broad Tauri capabilities, and keep all sensitive actions in Rust.                                                                                 |
 
 ---
 
@@ -266,11 +264,11 @@ Volatile items that must never be hardcoded without a runtime check:
 
 The app has three privacy modes:
 
-| Mode | Inference Location | Local Data Storage | User Disclosure |
-|---|---|---|---|
-| Cloud provider mode | OpenRouter or another remote endpoint | Local SQLite history | Prompts/context/attachments are sent to the provider. |
+| Mode                | Inference Location                     | Local Data Storage   | User Disclosure                                             |
+| ------------------- | -------------------------------------- | -------------------- | ----------------------------------------------------------- |
+| Cloud provider mode | OpenRouter or another remote endpoint  | Local SQLite history | Prompts/context/attachments are sent to the provider.       |
 | Local provider mode | Ollama/llama.cpp/other localhost model | Local SQLite history | Prompts remain on device unless external tools are invoked. |
-| Hybrid mode | User-selected per request | Local SQLite history | UI must show where each request will be processed. |
+| Hybrid mode         | User-selected per request              | Local SQLite history | UI must show where each request will be processed.          |
 
 The UI must show the active provider next to the send button. Any file attachment flow must show whether the selected model/provider supports that input type and whether the file will leave the device.
 
@@ -347,12 +345,28 @@ Recommended event types:
 
 ```typescript
 type StreamEvent =
-  | { type: 'token'; streamId: string; messageId: string; text: string }
-  | { type: 'metadata'; streamId: string; requestId?: string; provider?: string }
-  | { type: 'rate_limit_wait'; streamId: string; retryAfterMs: number }
-  | { type: 'error'; streamId: string; code: string; message: string; retryable: boolean }
-  | { type: 'cancelled'; streamId: string; messageId: string }
-  | { type: 'done'; streamId: string; messageId: string; finishReason?: string };
+	| { type: 'token'; streamId: string; messageId: string; text: string }
+	| {
+			type: 'metadata';
+			streamId: string;
+			requestId?: string;
+			provider?: string;
+	  }
+	| { type: 'rate_limit_wait'; streamId: string; retryAfterMs: number }
+	| {
+			type: 'error';
+			streamId: string;
+			code: string;
+			message: string;
+			retryable: boolean;
+	  }
+	| { type: 'cancelled'; streamId: string; messageId: string }
+	| {
+			type: 'done';
+			streamId: string;
+			messageId: string;
+			finishReason?: string;
+	  };
 ```
 
 Do not broadcast token chunks globally with `app.emit("stream-chunk", text)` or with any global Tauri event. Emit token deltas only through the per-invocation `tauri::ipc::Channel<StreamEvent>`. Global Tauri events may announce coarse app status such as catalog refresh or update availability, but not token content. The frontend must ignore channel messages whose stream ID does not match the active stream.
@@ -374,61 +388,65 @@ let activeChannel: Channel<StreamEvent> | null = null;
 let pendingEvents: StreamEvent[] = [];
 
 const renderLoop = () => {
-  if (tokenBuffer.length > 0) {
-    activeMessage += tokenBuffer;
-    tokenBuffer = '';
-  }
+	if (tokenBuffer.length > 0) {
+		activeMessage += tokenBuffer;
+		tokenBuffer = '';
+	}
 
-  if (isStreaming || tokenBuffer.length > 0) {
-    animationFrameId = requestAnimationFrame(renderLoop);
-  } else {
-    animationFrameId = null;
-  }
+	if (isStreaming || tokenBuffer.length > 0) {
+		animationFrameId = requestAnimationFrame(renderLoop);
+	} else {
+		animationFrameId = null;
+	}
 };
 
 const startLoop = () => {
-  if (animationFrameId === null) {
-    animationFrameId = requestAnimationFrame(renderLoop);
-  }
+	if (animationFrameId === null) {
+		animationFrameId = requestAnimationFrame(renderLoop);
+	}
 };
 
 const handleStreamEvent = (payload: StreamEvent) => {
-  if (!activeStreamId) {
-    pendingEvents.push(payload);
-    return;
-  }
+	if (!activeStreamId) {
+		pendingEvents.push(payload);
+		return;
+	}
 
-  if (payload.streamId !== activeStreamId) return;
+	if (payload.streamId !== activeStreamId) return;
 
-  if (payload.type === 'token') {
-    tokenBuffer += payload.text;
-    startLoop();
-  }
+	if (payload.type === 'token') {
+		tokenBuffer += payload.text;
+		startLoop();
+	}
 
-  if (payload.type === 'done' || payload.type === 'cancelled' || payload.type === 'error') {
-    isStreaming = false;
-    startLoop();
-  }
+	if (
+		payload.type === 'done' ||
+		payload.type === 'cancelled' ||
+		payload.type === 'error'
+	) {
+		isStreaming = false;
+		startLoop();
+	}
 };
 
 export async function startStream(request: StreamRequest) {
-  const channel = new Channel<StreamEvent>();
-  activeChannel = channel;
-  activeStreamId = null;
-  pendingEvents = [];
-  isStreaming = true;
+	const channel = new Channel<StreamEvent>();
+	activeChannel = channel;
+	activeStreamId = null;
+	pendingEvents = [];
+	isStreaming = true;
 
-  channel.onmessage = handleStreamEvent;
+	channel.onmessage = handleStreamEvent;
 
-  const ack = await invoke<StreamStartAck>('stream_chat', { request, channel });
-  activeStreamId = ack.streamId;
-  pendingEvents.splice(0).forEach(handleStreamEvent);
+	const ack = await invoke<StreamStartAck>('stream_chat', { request, channel });
+	activeStreamId = ack.streamId;
+	pendingEvents.splice(0).forEach(handleStreamEvent);
 }
 
 onDestroy(() => {
-  activeChannel = null;
-  pendingEvents = [];
-  if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+	activeChannel = null;
+	pendingEvents = [];
+	if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
 });
 ```
 
@@ -473,18 +491,18 @@ Required release controls:
 
 Release capability selection is a release blocker. `tauri.conf.json` must explicitly list the release capability set rather than relying on directory presence or broad defaults. CI must enumerate every file in `src-tauri/capabilities`, classify it as release-selected or dev-only, and fail if an unselected capability can be packaged into release or if a selected capability grants a command not present in the reviewed inventory.
 
-| Control | Requirement |
-|---|---|
-| Devtools | Disabled by default in production. Any emergency devtools build must have a separate signed channel and visible watermark. |
-| CSP | Production CSP must be explicit and restrictive. Any `unsafe-inline` exception must be limited to sandboxed artifact documents, not the host app. |
-| Source maps | Do not ship public source maps that expose local paths, secrets, or internal command names unless explicitly reviewed. |
-| Debug commands | Compile out or hard-deny test commands, diagnostic secret dumps, SQL consoles, fixture loaders, and mock provider endpoints. |
-| Capabilities | Capabilities are explicitly selected. `tauri.conf.json` must explicitly list release capabilities. Any capability file in `src-tauri/capabilities` not selected for release must be dev-only and excluded or rejected by CI. Registered custom commands must also be checked by the command-inventory verifier. |
-| Global Tauri object | `app.withGlobalTauri` must be disabled in production so frontend code cannot rely on global `window.__TAURI__` injection. |
-| Logging | Default log level must not include HTTP bodies, headers, authorization tokens, prompts, attachments, or generated artifact contents. |
-| Provider debug | Provider debug modes, metadata-expansion headers, and content-bearing generation retrieval features must be disabled in production unless a documented privacy review explicitly approves them. |
-| Update channel | Stable, beta, and internal builds must use separate update manifests and signing keys or clearly separated signing identities. |
-| Artifact verification | CI must publish checksums, SBOM/license report, size report, and signature verification evidence. |
+| Control               | Requirement                                                                                                                                                                                                                                                                                                     |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Devtools              | Disabled by default in production. Any emergency devtools build must have a separate signed channel and visible watermark.                                                                                                                                                                                      |
+| CSP                   | Production CSP must be explicit and restrictive. Any `unsafe-inline` exception must be limited to sandboxed artifact documents, not the host app.                                                                                                                                                               |
+| Source maps           | Do not ship public source maps that expose local paths, secrets, or internal command names unless explicitly reviewed.                                                                                                                                                                                          |
+| Debug commands        | Compile out or hard-deny test commands, diagnostic secret dumps, SQL consoles, fixture loaders, and mock provider endpoints.                                                                                                                                                                                    |
+| Capabilities          | Capabilities are explicitly selected. `tauri.conf.json` must explicitly list release capabilities. Any capability file in `src-tauri/capabilities` not selected for release must be dev-only and excluded or rejected by CI. Registered custom commands must also be checked by the command-inventory verifier. |
+| Global Tauri object   | `app.withGlobalTauri` must be disabled in production so frontend code cannot rely on global `window.__TAURI__` injection.                                                                                                                                                                                       |
+| Logging               | Default log level must not include HTTP bodies, headers, authorization tokens, prompts, attachments, or generated artifact contents.                                                                                                                                                                            |
+| Provider debug        | Provider debug modes, metadata-expansion headers, and content-bearing generation retrieval features must be disabled in production unless a documented privacy review explicitly approves them.                                                                                                                 |
+| Update channel        | Stable, beta, and internal builds must use separate update manifests and signing keys or clearly separated signing identities.                                                                                                                                                                                  |
+| Artifact verification | CI must publish checksums, SBOM/license report, size report, and signature verification evidence.                                                                                                                                                                                                               |
 
 ### Application Shell CSP and Remote Asset Policy
 
@@ -518,11 +536,9 @@ Minimum requirements:
 
 No release candidate is acceptable until update verification has been tested on Windows, macOS, and Linux packaging targets.
 
-
 ---
 
 ## Security and Privacy Implementation Guide
-
 
 ### Logging, Telemetry, and Crash-Report Policy
 
@@ -597,23 +613,23 @@ Required ingestion pipeline:
 
 Baseline attachment budgets:
 
-| Input Type | Default Max | Notes |
-|---|---:|---|
-| Plain text/Markdown/code | 2 MB | Larger files require chunking/indexing flow. |
-| PDF | 25 MB | Parse/extract locally when possible before provider upload. |
-| Image | 10 MB | Strip EXIF where possible before cloud send. |
-| Archive | Rejected | Add only in a later threat-modeled feature. |
-| HTML/SVG | Treat as hostile text | Never render in main DOM. Preview only through artifact sandbox. |
+| Input Type               |           Default Max | Notes                                                            |
+| ------------------------ | --------------------: | ---------------------------------------------------------------- |
+| Plain text/Markdown/code |                  2 MB | Larger files require chunking/indexing flow.                     |
+| PDF                      |                 25 MB | Parse/extract locally when possible before provider upload.      |
+| Image                    |                 10 MB | Strip EXIF where possible before cloud send.                     |
+| Archive                  |              Rejected | Add only in a later threat-modeled feature.                      |
+| HTML/SVG                 | Treat as hostile text | Never render in main DOM. Preview only through artifact sandbox. |
 
 Path and metadata handling:
 
-| Field | Default Handling | Rationale |
-|---|---|---|
-| Original filename | Store sanitized basename only | Full paths reveal usernames, project names, and private folder structure. |
-| Absolute source path | Do not persist by default | Needed transiently for reading, but dangerous in logs/exports. |
-| File hash | Store SHA-256 for dedupe/integrity | Safe if not used as a public identifier for known private files. |
-| Extracted text | Store only if user consents to local indexing | Extracted text can be as sensitive as the original file. |
-| EXIF/document metadata | Strip before cloud send where practical | Metadata may contain GPS, author, app, path, and device identity. |
+| Field                  | Default Handling                              | Rationale                                                                 |
+| ---------------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
+| Original filename      | Store sanitized basename only                 | Full paths reveal usernames, project names, and private folder structure. |
+| Absolute source path   | Do not persist by default                     | Needed transiently for reading, but dangerous in logs/exports.            |
+| File hash              | Store SHA-256 for dedupe/integrity            | Safe if not used as a public identifier for known private files.          |
+| Extracted text         | Store only if user consents to local indexing | Extracted text can be as sensitive as the original file.                  |
+| EXIF/document metadata | Strip before cloud send where practical       | Metadata may contain GPS, author, app, path, and device identity.         |
 
 ### Clipboard and Export Safety
 
@@ -627,7 +643,6 @@ Rules:
 - Markdown export must not include executable frontmatter or hidden HTML unless user opts in.
 - JSON export must not include provider API keys, secret status internals, local database keys, or updater metadata.
 - “Delete conversation” must disclose whether backups, exports, logs, or provider-side data may still exist.
-
 
 ### API Key Storage: Backend-Only Secret Retrieval
 
@@ -650,23 +665,22 @@ There must be no `get_provider_key` frontend command. The UI can ask whether a k
 
 ```typescript
 type CredentialStatus = {
-  providerId: string;
-  configured: boolean;
-  lastFour?: string;
-  createdAt?: string;
+	providerId: string;
+	configured: boolean;
+	lastFour?: string;
+	createdAt?: string;
 };
 ```
 
 Acceptable storage options:
 
-| Option | Status | Notes |
-|---|---|---|
-| Direct Rust `keyring` crate | Preferred simple option | Keeps secret API in backend. Requires platform testing. |
-| Rust-owned Tauri Stronghold vault | Preferred for encrypted app vaults | More UX complexity. Must initialize securely. Ordinary UI windows must not receive Stronghold record-read permissions. |
-| Community keyring plugin | Conditional | Only after supply-chain review and only if frontend read commands are disabled, not exposed, and covered by capability tests. |
-| Frontend-accessible Stronghold store-record reads | Rejected | A compromised webview could read secrets directly and violate the backend-only secret invariant. |
-| localStorage/sessionStorage/plaintext config | Rejected | Violates baseline security promise. |
-
+| Option                                            | Status                             | Notes                                                                                                                         |
+| ------------------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Direct Rust `keyring` crate                       | Preferred simple option            | Keeps secret API in backend. Requires platform testing.                                                                       |
+| Rust-owned Tauri Stronghold vault                 | Preferred for encrypted app vaults | More UX complexity. Must initialize securely. Ordinary UI windows must not receive Stronghold record-read permissions.        |
+| Community keyring plugin                          | Conditional                        | Only after supply-chain review and only if frontend read commands are disabled, not exposed, and covered by capability tests. |
+| Frontend-accessible Stronghold store-record reads | Rejected                           | A compromised webview could read secrets directly and violate the backend-only secret invariant.                              |
+| localStorage/sessionStorage/plaintext config      | Rejected                           | Violates baseline security promise.                                                                                           |
 
 ### Stronghold-Specific Constraints
 
@@ -684,16 +698,15 @@ Rules:
 
 Secret storage is not complete until lifecycle behavior is defined.
 
-| Operation | Required Behavior |
-|---|---|
-| Add key | Accept once through settings command; validate format only enough to prevent obvious mistakes; never echo full value. |
-| Test key | Send a minimal provider metadata/auth check that contains no prompts. |
-| Rotate key | Store new key atomically; invalidate active provider clients using the old key. |
-| Delete key | Remove from keychain/Stronghold and memory caches; show provider as unconfigured. |
-| Export settings | Export provider IDs and preferences, never secrets. |
-| Crash/panic | Secret values must not appear in formatted errors or debug output. |
-| Memory | Use secret wrappers where practical and avoid cloning key strings into long-lived frontend-visible structures. |
-
+| Operation       | Required Behavior                                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Add key         | Accept once through settings command; validate format only enough to prevent obvious mistakes; never echo full value. |
+| Test key        | Send a minimal provider metadata/auth check that contains no prompts.                                                 |
+| Rotate key      | Store new key atomically; invalidate active provider clients using the old key.                                       |
+| Delete key      | Remove from keychain/Stronghold and memory caches; show provider as unconfigured.                                     |
+| Export settings | Export provider IDs and preferences, never secrets.                                                                   |
+| Crash/panic     | Secret values must not appear in formatted errors or debug output.                                                    |
+| Memory          | Use secret wrappers where practical and avoid cloning key strings into long-lived frontend-visible structures.        |
 
 ### Local History Database Privacy
 
@@ -727,15 +740,15 @@ Deletion must be precise. A user-facing delete action cannot honestly imply prov
 
 Required states:
 
-| State | Meaning | User Copy Requirement |
-|---|---|---|
-| Active | Visible in normal history | Normal history/search. |
-| Locally deleted | Removed from active tables and FTS | Explain whether local backups/exports may still contain it. |
-| Tombstoned | Deletion marker retained for sync/audit | Do not show content; retain only minimal deletion metadata. |
-| Backup retained | Still present in local backup/snapshot | Backup purge must be a separate action or scheduled policy. |
-| Exported | User-created external copy may exist | App cannot revoke external files. |
+| State             | Meaning                                                | User Copy Requirement                                                                            |
+| ----------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Active            | Visible in normal history                              | Normal history/search.                                                                           |
+| Locally deleted   | Removed from active tables and FTS                     | Explain whether local backups/exports may still contain it.                                      |
+| Tombstoned        | Deletion marker retained for sync/audit                | Do not show content; retain only minimal deletion metadata.                                      |
+| Backup retained   | Still present in local backup/snapshot                 | Backup purge must be a separate action or scheduled policy.                                      |
+| Exported          | User-created external copy may exist                   | App cannot revoke external files.                                                                |
 | Provider-retained | Cloud provider may retain/process under its own policy | Disclose provider-governed retention; do not promise remote deletion unless API evidence exists. |
-| Secure-erased | Best-effort local vacuum/secure-delete flow completed | State limitations for SSDs, OS caches, and previous backups. |
+| Secure-erased     | Best-effort local vacuum/secure-delete flow completed  | State limitations for SSDs, OS caches, and previous backups.                                     |
 
 Implementation rules:
 
@@ -745,17 +758,16 @@ Implementation rules:
 - Support export must mark whether deleted/tombstoned records are excluded.
 - The privacy UI must avoid a single ambiguous “forever deleted” claim.
 
-
 ### Tauri IPC Capability Contract
 
 Every window/webview must have an explicit capability profile, and every registered custom command must also be explicitly present in a reviewed command inventory. Capability files constrain who may call a command; the verifier must constrain which commands may be registered in the compiled app at all.
 
-| Window/WebView | Allowed Commands | Denied Commands | Allowed Plugins |
-|---|---|---|---|
-| `main` chat window | `stream_chat`, `cancel_stream`, `list_conversations`, `append_message`, `search_messages`, `get_model_catalog`, `get_credential_status` | raw filesystem, shell, arbitrary SQL, read secret, delete credential unless confirmed | events only, limited invoke |
-| `settings` window/pane | `set_provider_key`, `delete_provider_key`, `get_credential_status`, provider configuration commands | stream commands, arbitrary SQL, artifact execution | credential write/delete only |
-| `artifact-preview` iframe/webview | none | all Tauri IPC | none |
-| `debug`/developer tools window, if any | read-only diagnostics | secrets, arbitrary SQL, shell | diagnostics only |
+| Window/WebView                         | Allowed Commands                                                                                                                        | Denied Commands                                                                       | Allowed Plugins              |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------- |
+| `main` chat window                     | `stream_chat`, `cancel_stream`, `list_conversations`, `append_message`, `search_messages`, `get_model_catalog`, `get_credential_status` | raw filesystem, shell, arbitrary SQL, read secret, delete credential unless confirmed | events only, limited invoke  |
+| `settings` window/pane                 | `set_provider_key`, `delete_provider_key`, `get_credential_status`, provider configuration commands                                     | stream commands, arbitrary SQL, artifact execution                                    | credential write/delete only |
+| `artifact-preview` iframe/webview      | none                                                                                                                                    | all Tauri IPC                                                                         | none                         |
+| `debug`/developer tools window, if any | read-only diagnostics                                                                                                                   | secrets, arbitrary SQL, shell                                                         | diagnostics only             |
 
 Backend commands must validate the caller’s window label in addition to Tauri capability files. Capability configuration is necessary but not sufficient.
 
@@ -812,15 +824,11 @@ Interactive HTML/CSS/JS previews are high risk. AI-generated code must never be 
 Minimum iframe sandbox for static or constrained preview:
 
 ```html
-<iframe
-  title="Generated artifact preview"
-  sandbox="allow-scripts"
-  srcdoc="...">
+<iframe title="Generated artifact preview" sandbox="allow-scripts" srcdoc="...">
 </iframe>
 ```
 
 Do not include `allow-same-origin`.
-
 
 `srcdoc` assignment must be escaped or programmatic. Generated preview HTML must be assigned through a reviewed function that handles `srcdoc` escaping rules, injects the CSP/base/title wrapper, and is covered by adversarial fixtures. Downstream code must not concatenate arbitrary generated HTML directly into an iframe attribute or assign unwrapped HTML directly to `iframe.srcdoc`.
 
@@ -828,13 +836,13 @@ Required wrapper behavior:
 
 ```typescript
 function buildArtifactSrcdoc(input: GeneratedPreviewHtml): string {
-  const escapedOrParsed = normalizeGeneratedPreviewHtml(input);
-  return renderReviewedSrcdoc({
-    title: 'Generated artifact preview',
-    baseHref: 'about:srcdoc',
-    csp: "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src data:; base-uri 'none'; form-action 'none';",
-    body: escapedOrParsed
-  });
+	const escapedOrParsed = normalizeGeneratedPreviewHtml(input);
+	return renderReviewedSrcdoc({
+		title: 'Generated artifact preview',
+		baseHref: 'about:srcdoc',
+		csp: "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src data:; base-uri 'none'; form-action 'none';",
+		body: escapedOrParsed,
+	});
 }
 ```
 
@@ -843,9 +851,11 @@ Adversarial fixtures must cover quote breaking, `</iframe>` injection, malformed
 The `srcdoc` document must set a deliberate base URL and include a restrictive CSP before generated content. Example baseline:
 
 ```html
-<base href="about:srcdoc">
-<meta http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src data:; base-uri 'none'; form-action 'none';">
+<base href="about:srcdoc" />
+<meta
+	http-equiv="Content-Security-Policy"
+	content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src data:; base-uri 'none'; form-action 'none';"
+/>
 ```
 
 The `<base href="about:srcdoc">` requirement prevents generated relative URLs from resolving against the embedding app document. The iframe `title` is mandatory for assistive technology.
@@ -872,13 +882,13 @@ Example parent-side handling:
 
 ```typescript
 function handlePreviewMessage(event: MessageEvent) {
-  if (event.source !== iframeRef?.contentWindow) return;
+	if (event.source !== iframeRef?.contentWindow) return;
 
-  const parsed = PreviewConsoleMessage.safeParse(event.data);
-  if (!parsed.success) return;
-  if (parsed.data.previewSessionId !== currentPreviewSessionId) return;
+	const parsed = PreviewConsoleMessage.safeParse(event.data);
+	if (!parsed.success) return;
+	if (parsed.data.previewSessionId !== currentPreviewSessionId) return;
 
-  appendEscapedConsoleEntry(parsed.data);
+	appendEscapedConsoleEntry(parsed.data);
 }
 ```
 
@@ -946,11 +956,15 @@ Allowed examples:
 
 ```json
 {
-  "schema_version": 1,
-  "client_revision": "artifact-rev-id",
-  "visible_status": "partial",
-  "provider": { "id": "openrouter", "routed_provider": "unknown", "request_id": "redacted-or-provider-id" },
-  "usage": { "prompt_tokens": 1234, "completion_tokens": 456 }
+	"schema_version": 1,
+	"client_revision": "artifact-rev-id",
+	"visible_status": "partial",
+	"provider": {
+		"id": "openrouter",
+		"routed_provider": "unknown",
+		"request_id": "redacted-or-provider-id"
+	},
+	"usage": { "prompt_tokens": 1234, "completion_tokens": 456 }
 }
 ```
 
@@ -1153,7 +1167,6 @@ CREATE TABLE provider_request_log (
 
 The request log must not contain prompt or completion bodies.
 
-
 ---
 
 ## UI/UX Patterns and Component Architecture
@@ -1269,16 +1282,16 @@ Minimum model metadata:
 
 ```typescript
 type ModelCapability = {
-  id: string;
-  name?: string;
-  provider?: string;
-  contextLength?: number;
-  inputModalities: string[];
-  outputModalities: string[];
-  supportedParameters: string[];
-  isFreeVariant: boolean;
-  pricing?: unknown;
-  fetchedAt: string;
+	id: string;
+	name?: string;
+	provider?: string;
+	contextLength?: number;
+	inputModalities: string[];
+	outputModalities: string[];
+	supportedParameters: string[];
+	isFreeVariant: boolean;
+	pricing?: unknown;
+	fetchedAt: string;
 };
 ```
 
@@ -1319,7 +1332,6 @@ Requirements:
 - Treat fallback routing as a privacy-relevant event. A fallback from one model host to another must either follow an explicit user policy or stop for confirmation when the privacy class changes.
 - Request logs may store routed provider metadata and request IDs, but not content-bearing generation retrieval payloads.
 - Provider capability refresh must account for user provider preferences, disabled providers, privacy settings, guardrails, and endpoint availability where the gateway exposes those controls.
-
 
 ### Strict Provider Privacy Mode
 
@@ -1365,7 +1377,6 @@ Required behavior:
 6. Allow the user to inspect the exact local objects included in the request, even if not the provider-tokenized form.
 7. Redact deleted or archived content from automatic context unless explicitly restored.
 
-
 ### OpenRouter Free-Tier Reality
 
 OpenRouter is useful but not stable enough to be the only production path. Free-model limits and availability can change. The app must show quota-aware UX and support fallback options.
@@ -1397,11 +1408,11 @@ trait ChatProvider {
 
 Initial providers:
 
-| Provider | Priority | Notes |
-|---|---|---|
-| OpenRouter | Primary cloud provider | Broad model access, volatile free tier. |
-| Ollama | Primary local fallback | Gives true local inference when installed. |
-| OpenAI-compatible custom endpoint | Secondary | Allows advanced users to bring compatible gateways. |
+| Provider                          | Priority               | Notes                                               |
+| --------------------------------- | ---------------------- | --------------------------------------------------- |
+| OpenRouter                        | Primary cloud provider | Broad model access, volatile free tier.             |
+| Ollama                            | Primary local fallback | Gives true local inference when installed.          |
+| OpenAI-compatible custom endpoint | Secondary              | Allows advanced users to bring compatible gateways. |
 
 ### Local Provider Operational Checks
 
@@ -1409,16 +1420,15 @@ A local provider claim is valid only after runtime verification.
 
 Required checks:
 
-| Check | Requirement |
-|---|---|
-| Endpoint | Confirm endpoint is loopback or explicitly user-approved remote LAN address; validate scheme, hostname, resolved IP, redirects, and TLS policy before any prompt is sent. |
-| Health | Probe API version/shape without sending user prompts. |
-| Model inventory | List installed models and capabilities where possible. |
-| Modality | Disable image/PDF/file controls unless the local model path supports them. |
-| Context | Estimate and enforce model context limits locally. |
-| Resource warning | Show RAM/VRAM/disk requirements when known. |
-| Failure | If local model is unavailable, do not silently fall back to cloud. Ask or require a configured policy. |
-
+| Check            | Requirement                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Endpoint         | Confirm endpoint is loopback or explicitly user-approved remote LAN address; validate scheme, hostname, resolved IP, redirects, and TLS policy before any prompt is sent. |
+| Health           | Probe API version/shape without sending user prompts.                                                                                                                     |
+| Model inventory  | List installed models and capabilities where possible.                                                                                                                    |
+| Modality         | Disable image/PDF/file controls unless the local model path supports them.                                                                                                |
+| Context          | Estimate and enforce model context limits locally.                                                                                                                        |
+| Resource warning | Show RAM/VRAM/disk requirements when known.                                                                                                                               |
+| Failure          | If local model is unavailable, do not silently fall back to cloud. Ask or require a configured policy.                                                                    |
 
 ---
 
@@ -1430,13 +1440,13 @@ The target remains a small app, but the measurement must be explicit.
 
 Define budgets per platform:
 
-| Artifact | Budget | Notes |
-|---|---:|---|
-| Windows installed app directory | < 50 MB target | Exclude system WebView2 runtime if already installed; document assumptions. |
-| macOS `.app` bundle | < 50 MB target | Measure uncompressed `.app`, not just `.dmg`. |
-| Linux AppImage | Best effort | AppImage may exceed the target due to bundled dependencies. Track separately. |
-| Frontend JS initial chunk | < 300 KB gzip target | Canvas/editor should be lazy-loaded. |
-| Canvas/editor lazy chunk | < 2 MB gzip target | CodeMirror language imports must be controlled. |
+| Artifact                        |               Budget | Notes                                                                         |
+| ------------------------------- | -------------------: | ----------------------------------------------------------------------------- |
+| Windows installed app directory |       < 50 MB target | Exclude system WebView2 runtime if already installed; document assumptions.   |
+| macOS `.app` bundle             |       < 50 MB target | Measure uncompressed `.app`, not just `.dmg`.                                 |
+| Linux AppImage                  |          Best effort | AppImage may exceed the target due to bundled dependencies. Track separately. |
+| Frontend JS initial chunk       | < 300 KB gzip target | Canvas/editor should be lazy-loaded.                                          |
+| Canvas/editor lazy chunk        |   < 2 MB gzip target | CodeMirror language imports must be controlled.                               |
 
 Cargo release profile baseline:
 
@@ -1473,14 +1483,14 @@ Lazy-load:
 
 The implementation is not accepted until these benchmarks pass:
 
-| Benchmark | Minimum Target |
-|---|---|
-| 50k-token streamed response | No sustained UI freeze > 100 ms after warmup |
-| 1,000-message conversation | Sidebar and transcript remain scrollable |
-| 100 code blocks | Syntax highlighting deferred; no progressive lockup |
-| 50 KaTeX blocks | Math rendering deferred or batched |
-| Long Markdown table | No unbounded layout thrashing |
-| Low-end Windows machine | Basic streaming remains responsive |
+| Benchmark                   | Minimum Target                                      |
+| --------------------------- | --------------------------------------------------- |
+| 50k-token streamed response | No sustained UI freeze > 100 ms after warmup        |
+| 1,000-message conversation  | Sidebar and transcript remain scrollable            |
+| 100 code blocks             | Syntax highlighting deferred; no progressive lockup |
+| 50 KaTeX blocks             | Math rendering deferred or batched                  |
+| Long Markdown table         | No unbounded layout thrashing                       |
+| Low-end Windows machine     | Basic streaming remains responsive                  |
 
 Measure with browser performance APIs, Tauri logs, and automated fixtures.
 
@@ -1490,29 +1500,29 @@ Measure with browser performance APIs, Tauri logs, and automated fixtures.
 
 ### Table 4: Local Storage and Persistence Solutions
 
-| Solution | Performance & Search | Security & Isolation | Recommendation |
-|---|---|---|---|
-| SQLite via backend repository layer | Excellent with FTS5 and indexes | Stronger than frontend SQL because commands are constrained | Primary choice |
-| Tauri SQL plugin exposed to frontend | Good | Risky if compromised frontend can issue arbitrary queries | Use only with tight capabilities, or avoid |
-| Flat JSON files | Simple for export/debug | Weak for search and consistency | Reject for primary persistence |
-| OPFS/WebView storage | Browser-like convenience | WebView/version lifecycle problems | Reject for primary persistence |
-| Encrypted SQLite/SQLCipher-like approach | Good | Best privacy posture if implemented correctly | Recommended for privacy-forward release |
+| Solution                                 | Performance & Search            | Security & Isolation                                        | Recommendation                             |
+| ---------------------------------------- | ------------------------------- | ----------------------------------------------------------- | ------------------------------------------ |
+| SQLite via backend repository layer      | Excellent with FTS5 and indexes | Stronger than frontend SQL because commands are constrained | Primary choice                             |
+| Tauri SQL plugin exposed to frontend     | Good                            | Risky if compromised frontend can issue arbitrary queries   | Use only with tight capabilities, or avoid |
+| Flat JSON files                          | Simple for export/debug         | Weak for search and consistency                             | Reject for primary persistence             |
+| OPFS/WebView storage                     | Browser-like convenience        | WebView/version lifecycle problems                          | Reject for primary persistence             |
+| Encrypted SQLite/SQLCipher-like approach | Good                            | Best privacy posture if implemented correctly               | Recommended for privacy-forward release    |
 
 ### Table 5: Editor Integrations
 
-| Editor | Strengths | Risks | Recommendation |
-|---|---|---|---|
-| CodeMirror 6 | Modular, small, strong code editing model | Requires careful extension imports and state design | Primary choice |
-| Monaco | VS Code-like editing | Larger footprint, weaker mobile/responsive fit | Reject for sub-50 MB target unless separately budgeted |
-| Tiptap/ProseMirror | Excellent rich text documents | Not ideal for raw code artifacts | Optional for future document mode |
+| Editor             | Strengths                                 | Risks                                               | Recommendation                                         |
+| ------------------ | ----------------------------------------- | --------------------------------------------------- | ------------------------------------------------------ |
+| CodeMirror 6       | Modular, small, strong code editing model | Requires careful extension imports and state design | Primary choice                                         |
+| Monaco             | VS Code-like editing                      | Larger footprint, weaker mobile/responsive fit      | Reject for sub-50 MB target unless separately budgeted |
+| Tiptap/ProseMirror | Excellent rich text documents             | Not ideal for raw code artifacts                    | Optional for future document mode                      |
 
 ### Table 6: Streaming Implementations
 
-| Approach | Strengths | Risks | Recommendation |
-|---|---|---|---|
-| Rust HTTP client + proper SSE parser + scoped Tauri events | Best control over credentials, cancellation, retries, and typed errors | Requires careful implementation | Primary choice |
-| Frontend `fetch` | Simpler prototype | Exposes provider/network logic to webview and complicates secrets | Reject for production provider calls |
-| WebSocket proxy | Useful for custom backends | More infrastructure | Future option only |
+| Approach                                                   | Strengths                                                              | Risks                                                             | Recommendation                       |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------ |
+| Rust HTTP client + proper SSE parser + scoped Tauri events | Best control over credentials, cancellation, retries, and typed errors | Requires careful implementation                                   | Primary choice                       |
+| Frontend `fetch`                                           | Simpler prototype                                                      | Exposes provider/network logic to webview and complicates secrets | Reject for production provider calls |
+| WebSocket proxy                                            | Useful for custom backends                                             | More infrastructure                                               | Future option only                   |
 
 ---
 
@@ -1649,111 +1659,110 @@ release-evidence/
 
 A downstream agent may not mark the implementation complete without attaching or referencing this evidence.
 
-
 ---
 
 ## Required Test Matrix
 
 ### Security Tests
 
-| Test | Expected Result |
-|---|---|
-| Main frontend attempts to call secret read command | Command unavailable or denied |
-| Registered command missing from reviewed command inventory | CI/release build fails |
-| Production build enables `app.withGlobalTauri` | Test fails |
-| Ordinary UI window receives Stronghold record-read permission | Test fails |
-| Artifact iframe attempts `window.__TAURI__` access | Undefined/inaccessible |
-| Artifact sends malformed `postMessage` | Ignored |
-| Artifact floods console bridge | Rate-limited |
-| Compromised frontend attempts arbitrary SQL | No arbitrary SQL command exists |
-| Wrong window label calls `set_provider_key` | Denied |
-| API key appears in frontend logs | Test fails |
-| Release build exposes devtools/debug commands | Test fails |
-| Custom endpoint disables TLS validation | Test fails |
-| Custom endpoint resolves to blocked private/link-local/metadata IP | Request denied before prompt/credential send |
-| Custom endpoint redirect escapes approved policy | Redirect blocked |
-| JavaScript supplies updater authorization header or private-feed token | Update check denied |
-| Provider debug mode enabled in production | Test fails |
-| Unsigned or wrong-channel update is offered | Update rejected |
-| Crash report contains prompt fixture or key fixture | Test fails |
-| Command appears in `generate_handler!` but not inventory | CI fails |
-| Release capability grants command absent from inventory | CI fails |
-| Frontend passes arbitrary absolute path to attachment-read command | Denied unless backed by valid Rust-issued token |
-| Built app shell references CDN/remote script/style/font | Release scan fails |
-| IPC payload exceeds command budget or violates schema | Rejected before provider/database/filesystem use |
-| Metadata/log/support bundle contains prompt fixture, attachment fixture, or local path fixture | Test fails |
-| Executable artifact infinite loop/message flood | Parent-owned kill/reload recovers host UI |
-| Command inventory differs from `tauri_build::AppManifest::commands` | CI fails release |
-| Capability file exists but is not selected for release and not marked dev-only | CI fails release |
-| Strict privacy mode cannot disable fallback or request data-collection denial where required | Request stops before payload transmission |
-| Stronghold default/read/enumerate/export permission reaches ordinary window | Test fails |
-| Backend file-read command accepts raw JavaScript-returned path | Test fails |
-| Artifact preview assigns raw generated HTML to `srcdoc` outside reviewed wrapper | Test fails |
+| Test                                                                                           | Expected Result                                  |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Main frontend attempts to call secret read command                                             | Command unavailable or denied                    |
+| Registered command missing from reviewed command inventory                                     | CI/release build fails                           |
+| Production build enables `app.withGlobalTauri`                                                 | Test fails                                       |
+| Ordinary UI window receives Stronghold record-read permission                                  | Test fails                                       |
+| Artifact iframe attempts `window.__TAURI__` access                                             | Undefined/inaccessible                           |
+| Artifact sends malformed `postMessage`                                                         | Ignored                                          |
+| Artifact floods console bridge                                                                 | Rate-limited                                     |
+| Compromised frontend attempts arbitrary SQL                                                    | No arbitrary SQL command exists                  |
+| Wrong window label calls `set_provider_key`                                                    | Denied                                           |
+| API key appears in frontend logs                                                               | Test fails                                       |
+| Release build exposes devtools/debug commands                                                  | Test fails                                       |
+| Custom endpoint disables TLS validation                                                        | Test fails                                       |
+| Custom endpoint resolves to blocked private/link-local/metadata IP                             | Request denied before prompt/credential send     |
+| Custom endpoint redirect escapes approved policy                                               | Redirect blocked                                 |
+| JavaScript supplies updater authorization header or private-feed token                         | Update check denied                              |
+| Provider debug mode enabled in production                                                      | Test fails                                       |
+| Unsigned or wrong-channel update is offered                                                    | Update rejected                                  |
+| Crash report contains prompt fixture or key fixture                                            | Test fails                                       |
+| Command appears in `generate_handler!` but not inventory                                       | CI fails                                         |
+| Release capability grants command absent from inventory                                        | CI fails                                         |
+| Frontend passes arbitrary absolute path to attachment-read command                             | Denied unless backed by valid Rust-issued token  |
+| Built app shell references CDN/remote script/style/font                                        | Release scan fails                               |
+| IPC payload exceeds command budget or violates schema                                          | Rejected before provider/database/filesystem use |
+| Metadata/log/support bundle contains prompt fixture, attachment fixture, or local path fixture | Test fails                                       |
+| Executable artifact infinite loop/message flood                                                | Parent-owned kill/reload recovers host UI        |
+| Command inventory differs from `tauri_build::AppManifest::commands`                            | CI fails release                                 |
+| Capability file exists but is not selected for release and not marked dev-only                 | CI fails release                                 |
+| Strict privacy mode cannot disable fallback or request data-collection denial where required   | Request stops before payload transmission        |
+| Stronghold default/read/enumerate/export permission reaches ordinary window                    | Test fails                                       |
+| Backend file-read command accepts raw JavaScript-returned path                                 | Test fails                                       |
+| Artifact preview assigns raw generated HTML to `srcdoc` outside reviewed wrapper               | Test fails                                       |
 
 ### Streaming Tests
 
-| Test | Expected Result |
-|---|---|
-| UTF-8 code point split across chunks | Correct output |
-| SSE event split across chunks | Correct output |
-| Multiple SSE events in one chunk | Correct output |
-| SSE comment lines and blank-line dispatch | Comments ignored and event state remains valid |
-| SSE multi-line `data:` fields | Data concatenated with newline separators before provider JSON parsing |
-| SSE `id` and `retry` fields | Last-event-id and retry metadata handled without corrupting text |
-| Provider sends error before body stream | Typed error |
-| Cancel mid-stream | Partial output saved with `cancelled` status |
-| 429 before first token | Bounded retry if budget remains |
-| 429 after first token | No silent replay; user-visible continuation path |
-| Provider sends usage in final streamed chunk | Usage stored without corrupting message text |
-| Provider sends non-token error event mid-stream | Partial output preserved and typed error shown |
-| Stream event from wrong stream ID/window | Ignored |
-| Channel message from stale stream ID after a new stream starts | Ignored |
-| Token payload delivered through global Tauri event | Test fails |
+| Test                                                           | Expected Result                                                        |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| UTF-8 code point split across chunks                           | Correct output                                                         |
+| SSE event split across chunks                                  | Correct output                                                         |
+| Multiple SSE events in one chunk                               | Correct output                                                         |
+| SSE comment lines and blank-line dispatch                      | Comments ignored and event state remains valid                         |
+| SSE multi-line `data:` fields                                  | Data concatenated with newline separators before provider JSON parsing |
+| SSE `id` and `retry` fields                                    | Last-event-id and retry metadata handled without corrupting text       |
+| Provider sends error before body stream                        | Typed error                                                            |
+| Cancel mid-stream                                              | Partial output saved with `cancelled` status                           |
+| 429 before first token                                         | Bounded retry if budget remains                                        |
+| 429 after first token                                          | No silent replay; user-visible continuation path                       |
+| Provider sends usage in final streamed chunk                   | Usage stored without corrupting message text                           |
+| Provider sends non-token error event mid-stream                | Partial output preserved and typed error shown                         |
+| Stream event from wrong stream ID/window                       | Ignored                                                                |
+| Channel message from stale stream ID after a new stream starts | Ignored                                                                |
+| Token payload delivered through global Tauri event             | Test fails                                                             |
 
 ### Database Tests
 
-| Test | Expected Result |
-|---|---|
-| Insert message | Message searchable |
-| Update message content | Old terms removed, new terms searchable |
-| Delete conversation | Deleted messages absent from search |
-| Migration after existing messages | FTS rebuild indexes all rows |
-| FTS integrity check | Passes |
-| Export/import | Content preserved |
-| Interrupted migration with WAL present | Recovery mode or successful rollback |
-| WAL recovery fixture after power-loss simulation | Recovery mode, rollback, or repair path preserves durable user data |
-| Long-lived reader blocks WAL checkpoint during backup/export | Operation blocks or fails safely with diagnostic |
-| Second app instance starts during migration | First instance is focused/signaled or migration lock denies concurrent mutation |
-| FTS index intentionally desynchronized | Integrity check fails and rebuild repairs |
-| Delete attachment | Message remains valid and attachment unavailable |
-| Malformed FTS query syntax | Validation error or literal fallback, no crash |
-| FTS query with excessive operators/wildcards/length | Rejected by query budget |
-| FTS query abuse fixture corpus | Validation/literal fallback succeeds without crash or unbounded scan |
-| Delete conversation with attachments and FTS entries | Active rows, FTS rows, extracted text, and attachment records are removed or tombstoned consistently |
-| Metadata schema receives raw provider JSON/content/path | Write rejected |
+| Test                                                         | Expected Result                                                                                      |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| Insert message                                               | Message searchable                                                                                   |
+| Update message content                                       | Old terms removed, new terms searchable                                                              |
+| Delete conversation                                          | Deleted messages absent from search                                                                  |
+| Migration after existing messages                            | FTS rebuild indexes all rows                                                                         |
+| FTS integrity check                                          | Passes                                                                                               |
+| Export/import                                                | Content preserved                                                                                    |
+| Interrupted migration with WAL present                       | Recovery mode or successful rollback                                                                 |
+| WAL recovery fixture after power-loss simulation             | Recovery mode, rollback, or repair path preserves durable user data                                  |
+| Long-lived reader blocks WAL checkpoint during backup/export | Operation blocks or fails safely with diagnostic                                                     |
+| Second app instance starts during migration                  | First instance is focused/signaled or migration lock denies concurrent mutation                      |
+| FTS index intentionally desynchronized                       | Integrity check fails and rebuild repairs                                                            |
+| Delete attachment                                            | Message remains valid and attachment unavailable                                                     |
+| Malformed FTS query syntax                                   | Validation error or literal fallback, no crash                                                       |
+| FTS query with excessive operators/wildcards/length          | Rejected by query budget                                                                             |
+| FTS query abuse fixture corpus                               | Validation/literal fallback succeeds without crash or unbounded scan                                 |
+| Delete conversation with attachments and FTS entries         | Active rows, FTS rows, extracted text, and attachment records are removed or tombstoned consistently |
+| Metadata schema receives raw provider JSON/content/path      | Write rejected                                                                                       |
 
 ### Accessibility Tests
 
-| Test | Expected Result |
-|---|---|
-| Keyboard-only core chat flow | User can select model, compose, send, stop, copy, and retry without pointer input |
-| Focus visibility across chat, sidebar, settings, canvas, and preview | Visible focus is preserved in normal and high-contrast themes |
-| Artifact iframe title and escape path | Screen-reader title exists and keyboard focus can return to host UI |
-| Streaming/cancel/error status announcements | Status is programmatically determinable without stealing input focus |
-| Destructive actions and exports | Labels, descriptions, and confirmations are programmatically associated |
+| Test                                                                 | Expected Result                                                                   |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Keyboard-only core chat flow                                         | User can select model, compose, send, stop, copy, and retry without pointer input |
+| Focus visibility across chat, sidebar, settings, canvas, and preview | Visible focus is preserved in normal and high-contrast themes                     |
+| Artifact iframe title and escape path                                | Screen-reader title exists and keyboard focus can return to host UI               |
+| Streaming/cancel/error status announcements                          | Status is programmatically determinable without stealing input focus              |
+| Destructive actions and exports                                      | Labels, descriptions, and confirmations are programmatically associated           |
 
 ### Performance Tests
 
-| Test | Expected Result |
-|---|---|
-| Stream 50k tokens | UI remains responsive |
-| Load 1,000-message conversation | Virtualization/collapse prevents freeze |
-| Render many code blocks | Highlighting deferred or batched |
-| Render KaTeX-heavy output | Math rendering does not block stream |
-| Open artifact infinite loop | Kill/reload control recovers UI |
-| Console bridge flood | Rate-limited without host UI freeze |
-| Executable preview CPU loop | Host UI can recover through parent-owned kill/reload |
-| Large rejected attachment | Clear error without reading entire file into memory |
+| Test                            | Expected Result                                      |
+| ------------------------------- | ---------------------------------------------------- |
+| Stream 50k tokens               | UI remains responsive                                |
+| Load 1,000-message conversation | Virtualization/collapse prevents freeze              |
+| Render many code blocks         | Highlighting deferred or batched                     |
+| Render KaTeX-heavy output       | Math rendering does not block stream                 |
+| Open artifact infinite loop     | Kill/reload control recovers UI                      |
+| Console bridge flood            | Rate-limited without host UI freeze                  |
+| Executable preview CPU loop     | Host UI can recover through parent-owned kill/reload |
+| Large rejected attachment       | Clear error without reading entire file into memory  |
 
 ---
 
@@ -1843,32 +1852,32 @@ Use official or primary sources for normative behavior:
 
 Revision 3 applied the research report's eight required hardening deltas. Revision 4 kept those corrections and added framework-version verification, file-intake, metadata, provider-transparency, and executable-preview hardening. Revision 5 converts the remaining high-risk advisory language into implementation blockers: deny-by-inventory Tauri commands, Channel-first streaming, explicitly selected release capabilities, provider privacy constraints, no frontend Stronghold read surface, opaque file-token intake, reviewed `srcdoc` assignment, and exact adversarial fixtures.
 
-| Research Finding | Normative Architecture Change |
-|---|---|
-| Tauri command exposure | Added source-controlled command inventory, verifier, release capability cross-checks, and production-disabled `app.withGlobalTauri`. |
-| Stronghold ambiguity | Restricted Stronghold to Rust-owned or frontend-inaccessible vault usage and rejected frontend store-record reads. |
-| SSE underspecification | Upgraded streaming to full SSE grammar parsing before provider delta normalization. |
-| Updater secret path | Required Rust-only updater credentials, private-feed headers, channel routing, rollback authorization, and JavaScript header rejection. |
-| Provider debug/retention | Added production ban/default-off posture for provider debug, metadata expansion, and content-bearing retrieval surfaces. |
-| Endpoint SSRF risk | Added custom endpoint scheme, DNS, resolved-IP, redirect, and TLS validation policy. |
-| WAL lifecycle | Added WAL checkpoint policy, backup-safe copy rules, `busy_timeout`, and single-instance/migration coordination. |
-| Artifact preview/accessibility | Added `about:srcdoc` base hardening, iframe titles, stricter message-channel requirements, keyboard escape paths, and accessibility release tests. |
-| Command manifest drift risk | Clarified official Tauri `AppManifest::commands` usage and added a source-controlled command inventory plus project-owned CI verifier. |
-| File intake path confusion | Made Rust-owned dialogs or opaque file-selection tokens mandatory before backend reads user files. |
-| Executable preview denial of service | Split static iframe preview from executable generated-code preview and required no-IPC isolation plus parent-owned recovery. |
-| FTS query safety | Added a bounded FTS5 query builder, literal fallback, parse-error handling, and adversarial query tests. |
-| Metadata content leakage | Added allowlisted metadata schemas and tests preventing prompts, completions, files, paths, and raw provider JSON from hiding in metadata. |
-| Provider-router opacity | Required gateway versus routed-provider metadata and prohibited unverified ZDR/retention/provider claims. |
-| Deletion semantics | Added distinct local deletion, backup retention, export retention, provider retention, tombstone, and secure-erasure states. |
-| App-shell CSP/remote assets | Blocked remote scripts/styles/assets in privileged windows and required release scans for CSP and remote references. |
-| Deny-by-inventory command exposure | Required pinned Tauri v2 support for `tauri_build::AppManifest::commands`, build-script enumeration, and CI diffs against `generate_handler!`, release capabilities, and `security/command-inventory.toml`. |
-| Channel-first streaming | Replaced global token events with per-invocation `tauri::ipc::Channel<StreamEvent>` plus backend-owned stream IDs and frontend stale-stream rejection. |
-| Explicit release capabilities | Required `tauri.conf.json` to explicitly list release capabilities and CI to reject unselected non-dev capability files. |
-| Strict provider privacy | Required request-time provider constraints for OpenRouter fallback and data-collection controls, with stop-before-send behavior on failure. |
-| Stronghold frontend surface | Banned ordinary-window Stronghold default/read/enumerate/export permissions and limited credential access to domain commands. |
-| File-token intake | Banned raw path read bridges and made raw JavaScript paths display hints only. |
-| `srcdoc` assignment | Required a reviewed escaping/programmatic assignment wrapper that injects CSP/base/title and is tested by adversarial fixtures. |
-| Exact adversarial fixtures | Added release evidence for SSE errors, FTS query abuse, `srcdoc` escaping, WAL recovery, and capability drift. |
+| Research Finding                     | Normative Architecture Change                                                                                                                                                                               |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tauri command exposure               | Added source-controlled command inventory, verifier, release capability cross-checks, and production-disabled `app.withGlobalTauri`.                                                                        |
+| Stronghold ambiguity                 | Restricted Stronghold to Rust-owned or frontend-inaccessible vault usage and rejected frontend store-record reads.                                                                                          |
+| SSE underspecification               | Upgraded streaming to full SSE grammar parsing before provider delta normalization.                                                                                                                         |
+| Updater secret path                  | Required Rust-only updater credentials, private-feed headers, channel routing, rollback authorization, and JavaScript header rejection.                                                                     |
+| Provider debug/retention             | Added production ban/default-off posture for provider debug, metadata expansion, and content-bearing retrieval surfaces.                                                                                    |
+| Endpoint SSRF risk                   | Added custom endpoint scheme, DNS, resolved-IP, redirect, and TLS validation policy.                                                                                                                        |
+| WAL lifecycle                        | Added WAL checkpoint policy, backup-safe copy rules, `busy_timeout`, and single-instance/migration coordination.                                                                                            |
+| Artifact preview/accessibility       | Added `about:srcdoc` base hardening, iframe titles, stricter message-channel requirements, keyboard escape paths, and accessibility release tests.                                                          |
+| Command manifest drift risk          | Clarified official Tauri `AppManifest::commands` usage and added a source-controlled command inventory plus project-owned CI verifier.                                                                      |
+| File intake path confusion           | Made Rust-owned dialogs or opaque file-selection tokens mandatory before backend reads user files.                                                                                                          |
+| Executable preview denial of service | Split static iframe preview from executable generated-code preview and required no-IPC isolation plus parent-owned recovery.                                                                                |
+| FTS query safety                     | Added a bounded FTS5 query builder, literal fallback, parse-error handling, and adversarial query tests.                                                                                                    |
+| Metadata content leakage             | Added allowlisted metadata schemas and tests preventing prompts, completions, files, paths, and raw provider JSON from hiding in metadata.                                                                  |
+| Provider-router opacity              | Required gateway versus routed-provider metadata and prohibited unverified ZDR/retention/provider claims.                                                                                                   |
+| Deletion semantics                   | Added distinct local deletion, backup retention, export retention, provider retention, tombstone, and secure-erasure states.                                                                                |
+| App-shell CSP/remote assets          | Blocked remote scripts/styles/assets in privileged windows and required release scans for CSP and remote references.                                                                                        |
+| Deny-by-inventory command exposure   | Required pinned Tauri v2 support for `tauri_build::AppManifest::commands`, build-script enumeration, and CI diffs against `generate_handler!`, release capabilities, and `security/command-inventory.toml`. |
+| Channel-first streaming              | Replaced global token events with per-invocation `tauri::ipc::Channel<StreamEvent>` plus backend-owned stream IDs and frontend stale-stream rejection.                                                      |
+| Explicit release capabilities        | Required `tauri.conf.json` to explicitly list release capabilities and CI to reject unselected non-dev capability files.                                                                                    |
+| Strict provider privacy              | Required request-time provider constraints for OpenRouter fallback and data-collection controls, with stop-before-send behavior on failure.                                                                 |
+| Stronghold frontend surface          | Banned ordinary-window Stronghold default/read/enumerate/export permissions and limited credential access to domain commands.                                                                               |
+| File-token intake                    | Banned raw path read bridges and made raw JavaScript paths display hints only.                                                                                                                              |
+| `srcdoc` assignment                  | Required a reviewed escaping/programmatic assignment wrapper that injects CSP/base/title and is tested by adversarial fixtures.                                                                             |
+| Exact adversarial fixtures           | Added release evidence for SSE errors, FTS query abuse, `srcdoc` escaping, WAL recovery, and capability drift.                                                                                              |
 
 ---
 

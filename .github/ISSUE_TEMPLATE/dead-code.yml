@@ -1,10 +1,10 @@
-name: "Dead Code"
-description: "Track structurally unused or redundant logic for extraction or deletion."
-title: "[DEAD] "
+name: 'Dead Code'
+description: 'Track structurally unused or redundant logic for extraction or deletion.'
+title: '[DEAD] '
 labels:
-  - "source:agent"
-  - "status:needs-triage"
-  - "type:dead-code"
+  - 'source:agent'
+  - 'status:needs-triage'
+  - 'type:dead-code'
 body:
   - type: markdown
     attributes:
@@ -65,17 +65,17 @@ body:
   - type: input
     id: forensic-evidence-trace
     attributes:
-      label: "1. Forensic Evidence Trace"
-      description: "Provide concrete evidence: file:line, diff, static-analysis output, runtime coverage, query output, or commit SHA."
-      placeholder: "Example: src/payments/PaymentLegacyProcessor.ts:31; knip output; pg_stat_user_indexes output..."
+      label: '1. Forensic Evidence Trace'
+      description: 'Provide concrete evidence: file:line, diff, static-analysis output, runtime coverage, query output, or commit SHA.'
+      placeholder: 'Example: src/payments/PaymentLegacyProcessor.ts:31; knip output; pg_stat_user_indexes output...'
     validations:
       required: true
 
   - type: textarea
     id: state-delta-assertion
     attributes:
-      label: "2. State Delta Assertion (FSV Style)"
-      description: "Declare the Expected vs Observed state using FSV-style Source of Truth comparison."
+      label: '2. State Delta Assertion (FSV Style)'
+      description: 'Declare the Expected vs Observed state using FSV-style Source of Truth comparison.'
       placeholder: |
         Expected:
           SoT: Code paths should be reachable, required, or intentionally retained.
@@ -93,8 +93,8 @@ body:
   - type: textarea
     id: blast-radius-definition
     attributes:
-      label: "3. Blast Radius Definition"
-      description: "Scope the impact and risk of removing or extracting the dead code."
+      label: '3. Blast Radius Definition'
+      description: 'Scope the impact and risk of removing or extracting the dead code.'
       placeholder: |
         Impacted scope:
         - Symbol/file/endpoint/table/index:
@@ -107,8 +107,8 @@ body:
   - type: textarea
     id: reproduction-sequence
     attributes:
-      label: "4. Reproduction Sequence"
-      description: "List deterministic steps to verify the artifact is unreachable or redundant."
+      label: '4. Reproduction Sequence'
+      description: 'List deterministic steps to verify the artifact is unreachable or redundant.'
       placeholder: |
         1. Checkout commit ...
         2. Run static analysis command ...
@@ -121,23 +121,23 @@ body:
   - type: checkboxes
     id: verification-gate
     attributes:
-      label: "Deletion Verification Gate"
-      description: "Confirm dynamic invocation risks were checked before deletion is attempted."
+      label: 'Deletion Verification Gate'
+      description: 'Confirm dynamic invocation risks were checked before deletion is attempted.'
       options:
-        - label: "Reflection usage checked"
+        - label: 'Reflection usage checked'
           required: true
-        - label: "Dependency Injection bindings checked"
+        - label: 'Dependency Injection bindings checked'
           required: true
-        - label: "Dynamic dispatch or runtime registration checked"
+        - label: 'Dynamic dispatch or runtime registration checked'
           required: true
-        - label: "Generated SDKs, framework conventions, or routing magic checked"
+        - label: 'Generated SDKs, framework conventions, or routing magic checked'
           required: true
 
   - type: textarea
     id: execution-directive
     attributes:
-      label: "5. Execution Directive"
-      description: "Suggest the next action for the polling or pickup agent."
+      label: '5. Execution Directive'
+      description: 'Suggest the next action for the polling or pickup agent.'
       placeholder: |
         Suggested next action:
         - investigate further
@@ -152,8 +152,8 @@ body:
   - type: textarea
     id: traceability-footer
     attributes:
-      label: "6. Traceability Footer"
-      description: "Append execution identity metadata for deterministic multi-agent synchronization."
+      label: '6. Traceability Footer'
+      description: 'Append execution identity metadata for deterministic multi-agent synchronization.'
       value: |
         ---
         Executing agent: agent:

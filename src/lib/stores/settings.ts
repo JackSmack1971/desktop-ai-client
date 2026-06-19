@@ -16,13 +16,20 @@ function createPrivacyStore() {
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 
-	async function loadStatus(provider: ProviderId = 'OpenRouter'): Promise<void> {
+	async function loadStatus(
+		provider: ProviderId = 'OpenRouter',
+	): Promise<void> {
 		loading = true;
 		error = null;
 		try {
-			status = await invoke<CredentialStatus>('privacy_get_credential_status', { provider });
+			status = await invoke<CredentialStatus>('privacy_get_credential_status', {
+				provider,
+			});
 		} catch (e) {
-			console.warn('[privacy-store] status check failed:', normalizeIpcError(e));
+			console.warn(
+				'[privacy-store] status check failed:',
+				normalizeIpcError(e),
+			);
 			status = 'MISSING';
 			error = 'Could not check credential status. Try restarting the app.';
 		} finally {
@@ -30,7 +37,10 @@ function createPrivacyStore() {
 		}
 	}
 
-	async function setProviderKey(provider: ProviderId, key: string): Promise<void> {
+	async function setProviderKey(
+		provider: ProviderId,
+		key: string,
+	): Promise<void> {
 		loading = true;
 		error = null;
 		try {
@@ -38,13 +48,16 @@ function createPrivacyStore() {
 			status = 'CONFIGURED';
 		} catch (e) {
 			console.warn('[privacy-store] save failed:', normalizeIpcError(e));
-			error = 'Failed to save key. Check your OS keychain access and try again.';
+			error =
+				'Failed to save key. Check your OS keychain access and try again.';
 		} finally {
 			loading = false;
 		}
 	}
 
-	async function clearProviderKey(provider: ProviderId = 'OpenRouter'): Promise<void> {
+	async function clearProviderKey(
+		provider: ProviderId = 'OpenRouter',
+	): Promise<void> {
 		loading = true;
 		error = null;
 		try {
@@ -52,7 +65,8 @@ function createPrivacyStore() {
 			status = 'MISSING';
 		} catch (e) {
 			console.warn('[privacy-store] clear failed:', normalizeIpcError(e));
-			error = 'Failed to remove key. Check your OS keychain access and try again.';
+			error =
+				'Failed to remove key. Check your OS keychain access and try again.';
 		} finally {
 			loading = false;
 		}

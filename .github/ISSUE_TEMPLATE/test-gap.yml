@@ -1,11 +1,11 @@
-name: "Test Gap"
-description: "Track missing verification coverage within the Physical State Verification pipeline."
-title: "[TEST] "
+name: 'Test Gap'
+description: 'Track missing verification coverage within the Physical State Verification pipeline.'
+title: '[TEST] '
 labels:
-  - "source:agent"
-  - "status:needs-triage"
-  - "type:test-gap"
-  - "priority:p2"
+  - 'source:agent'
+  - 'status:needs-triage'
+  - 'type:test-gap'
+  - 'priority:p2'
 body:
   - type: markdown
     attributes:
@@ -50,28 +50,28 @@ body:
   - type: dropdown
     id: test-gap-trigger
     attributes:
-      label: "Test Gap Trigger"
-      description: "Classify the verification gap."
+      label: 'Test Gap Trigger'
+      description: 'Classify the verification gap.'
       options:
-        - "Function without dedicated test coverage"
-        - "FSV omission after state change"
-        - "Boundary case coverage gap"
-        - "Regression coverage gap"
-        - "Integration coverage gap"
-        - "End-to-end coverage gap"
-        - "Other missing verification coverage"
+        - 'Function without dedicated test coverage'
+        - 'FSV omission after state change'
+        - 'Boundary case coverage gap'
+        - 'Regression coverage gap'
+        - 'Integration coverage gap'
+        - 'End-to-end coverage gap'
+        - 'Other missing verification coverage'
     validations:
       required: true
 
   - type: dropdown
     id: execution-tier
     attributes:
-      label: "Execution Tier"
-      description: "Default is priority:p2 unless the gap protects an active security, outage, or data-loss path."
+      label: 'Execution Tier'
+      description: 'Default is priority:p2 unless the gap protects an active security, outage, or data-loss path.'
       options:
-        - "priority:p2"
-        - "priority:p1"
-        - "priority:p0"
+        - 'priority:p2'
+        - 'priority:p1'
+        - 'priority:p0'
       default: 0
     validations:
       required: true
@@ -79,31 +79,31 @@ body:
   - type: checkboxes
     id: boundary-gap-classes
     attributes:
-      label: "Boundary Gap Classes"
-      description: "Select any uncovered edge categories observed. Leave unchecked if not applicable."
+      label: 'Boundary Gap Classes'
+      description: 'Select any uncovered edge categories observed. Leave unchecked if not applicable.'
       options:
-        - label: "max+1 / upper-bound overflow"
-        - label: "min-1 / lower-bound underflow"
-        - label: "null or empty input"
-        - label: "invalid type"
-        - label: "malformed payload"
-        - label: "unicode injection"
-        - label: "concurrent execution"
-        - label: "timeout"
-        - label: "retry behavior"
-        - label: "permission boundary"
-        - label: "idempotency"
-        - label: "numeric overflow"
-        - label: "ordering"
-        - label: "duplicate input"
-        - label: "partial failure"
-        - label: "external dependency failure"
+        - label: 'max+1 / upper-bound overflow'
+        - label: 'min-1 / lower-bound underflow'
+        - label: 'null or empty input'
+        - label: 'invalid type'
+        - label: 'malformed payload'
+        - label: 'unicode injection'
+        - label: 'concurrent execution'
+        - label: 'timeout'
+        - label: 'retry behavior'
+        - label: 'permission boundary'
+        - label: 'idempotency'
+        - label: 'numeric overflow'
+        - label: 'ordering'
+        - label: 'duplicate input'
+        - label: 'partial failure'
+        - label: 'external dependency failure'
 
   - type: textarea
     id: forensic-evidence-trace
     attributes:
-      label: "1. Forensic Evidence Trace"
-      description: "Provide concrete evidence exposing the coverage gap: file:line, diff, query output, coverage report, test listing, or commit SHA."
+      label: '1. Forensic Evidence Trace'
+      description: 'Provide concrete evidence exposing the coverage gap: file:line, diff, query output, coverage report, test listing, or commit SHA.'
       placeholder: |
         Evidence:
         - File/line:
@@ -116,8 +116,8 @@ body:
   - type: textarea
     id: state-delta-assertion
     attributes:
-      label: "2. State Delta Assertion (FSV Style)"
-      description: "Declare Expected vs Observed verification state, including what the SoT reports and what should be physically verified."
+      label: '2. State Delta Assertion (FSV Style)'
+      description: 'Declare Expected vs Observed verification state, including what the SoT reports and what should be physically verified.'
       placeholder: |
         Expected:
           SoT reports:
@@ -135,8 +135,8 @@ body:
   - type: textarea
     id: blast-radius-definition
     attributes:
-      label: "3. Blast Radius Definition"
-      description: "Scope the impact of the verification gap, such as silent production failure, regression risk, data integrity risk, or unverified boundary behavior."
+      label: '3. Blast Radius Definition'
+      description: 'Scope the impact of the verification gap, such as silent production failure, regression risk, data integrity risk, or unverified boundary behavior.'
       placeholder: |
         Impacted scope:
         - Symbol/file/endpoint:
@@ -149,8 +149,8 @@ body:
   - type: textarea
     id: reproduction-sequence
     attributes:
-      label: "4. Reproduction Sequence"
-      description: "List steps to verify the coverage or FSV gap, if non-trivial."
+      label: '4. Reproduction Sequence'
+      description: 'List steps to verify the coverage or FSV gap, if non-trivial.'
       placeholder: |
         1. Checkout commit ...
         2. Run test/coverage command ...
@@ -162,8 +162,8 @@ body:
   - type: textarea
     id: execution-directive
     attributes:
-      label: "5. Execution Directive"
-      description: "Suggest the next action for the polling, pickup, or verification agent."
+      label: '5. Execution Directive'
+      description: 'Suggest the next action for the polling, pickup, or verification agent.'
       placeholder: |
         Suggested next action:
         - investigate further
@@ -178,8 +178,8 @@ body:
   - type: textarea
     id: traceability-footer
     attributes:
-      label: "6. Traceability Footer"
-      description: "Append execution identity metadata for deterministic multi-agent synchronization."
+      label: '6. Traceability Footer'
+      description: 'Append execution identity metadata for deterministic multi-agent synchronization.'
       value: |
         ---
         Executing agent: agent:
