@@ -8,12 +8,11 @@
 	let { children }: Props = $props();
 
 	// Hydrate the active surface from backend state on first render.
-	// The store handles the IPC call; it falls back to 'chat' if the call fails
-	// so the shell always renders even if the backend is not yet connected.
+	// The store handles the IPC call and surfaces backend errors itself; this
+	// layout simply kicks off hydration and renders whatever readiness state the
+	// backend reports.
 	onMount(() => {
-		surfaceStore
-			.hydrate()
-			.catch((e) => console.error('surface hydration failed', e));
+		void surfaceStore.hydrate();
 	});
 </script>
 

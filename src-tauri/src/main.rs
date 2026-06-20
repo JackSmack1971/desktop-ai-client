@@ -44,18 +44,10 @@ fn main() {
             // Register ShellPreferenceStore so tauri::State<'_, ShellPreferenceStore> resolves.
             app.manage(ShellPreferenceStore::new(pool.clone()));
 
-            // Register typed domain stores for conversation history IPC commands.
-            // Each store wraps the same Arc<SqlitePool> so all stores share one connection.
-            app.manage(ConversationStore::new(pool.clone()));
-            app.manage(MessageStore::new(pool.clone()));
-            app.manage(ArtifactStore::new(pool.clone()));
-            app.manage(FtsStore::new(pool.clone()));
-            app.manage(RetentionStore::new(pool.clone()));
-
             // Conversation Transaction Protocol: recover any turn attempt
             // left `in_progress` by a previous process that crashed or was
             // force-quit mid-stream, before any IPC command can observe it.
-            let turn_store = TurnStore::new(pool);
+            let turn_store = TurnStore::new(pool.clone());
             match turn_store.recover_orphaned_attempts() {
                 Ok(0) => {}
                 Ok(recovered) => {
@@ -65,8 +57,17 @@ fn main() {
                 }
                 Err(e) => {
                     log::error!("[chat] failed to recover orphaned turn attempts: {e}");
+                    return Err(e.into());
                 }
             }
+
+            // Register typed domain stores for conversation history IPC commands.
+            // Each store wraps the same Arc<SqlitePool> so all stores share one connection.
+            app.manage(ConversationStore::new(pool.clone()));
+            app.manage(MessageStore::new(pool.clone()));
+            app.manage(ArtifactStore::new(pool.clone()));
+            app.manage(FtsStore::new(pool.clone()));
+            app.manage(RetentionStore::new(pool.clone()));
             app.manage(turn_store);
 
             Ok(())

@@ -31,8 +31,9 @@ function createSurfaceStore() {
 
 	/**
 	 * Hydrate the active surface from backend-owned SQLite persistence.
-	 * Called once on layout mount. Falls back to 'chat' on any IPC failure
-	 * so the shell always renders.
+	 * Called once on layout mount. A missing persisted preference leaves the
+	 * default `chat` surface in place; backend failures are surfaced through
+	 * `error` so the shell does not pretend hydration succeeded.
 	 */
 	async function hydrate(): Promise<void> {
 		loading = true;

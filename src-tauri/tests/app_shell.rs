@@ -14,7 +14,9 @@
 ///
 /// Run with: cargo test --workspace --all-targets
 use desktop_ai_client_lib::app_state::{AppState, Surface};
-use desktop_ai_client_lib::ipc::app_shell::{get_active_surface_inner, set_active_surface_inner};
+use desktop_ai_client_lib::ipc::app_shell::{
+    get_active_surface_inner, set_active_surface_inner, ShellError,
+};
 use desktop_ai_client_lib::storage::migrations::run_migrations;
 use desktop_ai_client_lib::storage::sqlite::{ShellPreferenceStore, SqlitePool};
 use rusqlite::Connection;
@@ -138,28 +140,83 @@ fn shell_preference_overwrite_replaces_stored_value() {
 #[test]
 fn shell_preference_restores_non_default_surface_on_startup() {
     let pool = migrated_pool();
+    let store = ShellPreferenceStore::new(Arc::clone(&pool));
 
     // Session 1: user navigated to History and the shell persisted it.
-    {
-        let store = ShellPreferenceStore::new(Arc::clone(&pool));
-        store
-            .save_active_surface(&Surface::History)
-            .expect("session 1 save should succeed");
-    }
+    store
+        .save_active_surface(&Surface::History)
+        .expect("session 1 save should succeed");
 
     // Session 2: startup hydration loads the persisted preference.
-    {
-        let store = ShellPreferenceStore::new(Arc::clone(&pool));
-        let loaded = store
-            .load_active_surface()
-            .expect("session 2 load should succeed");
+    let first_session = AppState::default();
+    let loaded = tauri::async_runtime::block_on(get_active_surface_inner(
+        &first_session,
+        &store,
+    ))
+    .expect("session 2 hydration should succeed");
 
-        assert_eq!(
-            loaded,
-            Some(Surface::History),
-            "restart should restore the non-default surface from session 1"
-        );
-    }
+    assert_eq!(
+        loaded,
+        Surface::History,
+        "restart should restore the non-default surface from session 1"
+    );
+    assert!(
+        first_session
+            .shell
+            .lock()
+            .expect("shell lock should not be poisoned")
+            .hydrated,
+        "successful hydration must mark the shell ready"
+    );
+
+    // Session 3: a fresh AppState still restores the shell surface, but no
+    // conversation ownership is auto-reopened here. That remains user-driven
+    // through History selection / chat ACKs, not shell hydration.
+    let second_session = AppState::default();
+    let loaded_again = tauri::async_runtime::block_on(get_active_surface_inner(
+        &second_session,
+        &store,
+    ))
+    .expect("session 3 hydration should succeed");
+    assert_eq!(loaded_again, Surface::History);
+    assert!(second_session
+        .shell
+        .lock()
+        .expect("shell lock should not be poisoned")
+        .hydrated);
+}
+
+/// Verify that a corrupted persisted surface fails closed instead of falling
+/// back to a fake-ready shell state.
+#[test]
+fn shell_preference_restart_hydration_fails_closed_on_corrupted_surface() {
+    let pool = migrated_pool();
+    pool.with_conn(|conn| {
+        conn.execute(
+            "INSERT INTO shell_preferences (id, active_surface, updated_at)
+             VALUES (1, 'not-a-real-surface', datetime('now'))",
+            [],
+        )?;
+        Ok(())
+    })
+    .expect("seeding corrupted shell preference should succeed");
+
+    let state = AppState::default();
+    let store = ShellPreferenceStore::new(pool);
+    let err = tauri::async_runtime::block_on(get_active_surface_inner(&state, &store))
+        .expect_err("corrupted surface must fail closed");
+    assert!(
+        matches!(err, ShellError::StorageError(_)),
+        "expected a structured storage error, got {err:?}"
+    );
+    assert!(
+        !state
+            .shell
+            .lock()
+            .expect("shell lock should not be poisoned")
+            .hydrated,
+        "failed hydration must not mark the shell ready"
+    );
 }
 
 // ---------------------------------------------------------------------------

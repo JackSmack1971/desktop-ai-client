@@ -127,8 +127,10 @@ function createHistoryStore() {
 	 * Stabilize the active conversation id once the backend assigns one.
 	 *
 	 * Called by `chatStore` after the first `chat_send` Ack for a brand-new
-	 * conversation, so every later send in this session reuses the same
-	 * `conversation_id` instead of creating a new conversation each time.
+	 * conversation, or by `loadConversation()` when the user explicitly opens
+	 * a history item. It is intentionally not restored from shell hydration,
+	 * so restarts reopen the last surface without auto-reopening the last
+	 * active conversation.
 	 */
 	function setActiveConversationId(id: string): void {
 		activeConversationId = id;

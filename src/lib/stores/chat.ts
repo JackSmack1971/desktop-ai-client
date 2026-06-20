@@ -92,6 +92,9 @@ function createChatStore() {
 			case 'Ack': {
 				attemptId = event.attempt_id;
 				if (historyStore.activeConversationId === null) {
+					// A fresh conversation learns its backend id from the first Ack.
+					// Restarted shells do not auto-reopen conversation state here;
+					// history selection remains explicit through `historyStore`.
 					historyStore.setActiveConversationId(event.conversation_id);
 				}
 				break;

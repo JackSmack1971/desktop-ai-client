@@ -62,7 +62,10 @@ pub async fn get_active_surface_inner(
 
     if !shell.hydrated {
         // DB read while holding the shell lock; sqlite lock acquired inside here.
-        if let Ok(Some(persisted)) = store.load_active_surface() {
+        let persisted = store
+            .load_active_surface()
+            .map_err(|e| ShellError::StorageError(e.to_string()))?;
+        if let Some(persisted) = persisted {
             shell.active_surface = persisted;
         }
         shell.hydrated = true;
@@ -120,6 +123,21 @@ pub async fn set_active_surface(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::migrations::run_migrations;
+    use crate::storage::sqlite::SqlitePool;
+    use rusqlite::Connection;
+    use std::sync::Arc;
+
+    fn migrated_pool() -> Arc<SqlitePool> {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "PRAGMA journal_mode = WAL;
+             PRAGMA foreign_keys = ON;",
+        )
+        .unwrap();
+        run_migrations(&conn, "0.0.0-test").unwrap();
+        Arc::new(SqlitePool::from_connection(conn))
+    }
 
     #[test]
     fn shell_error_serializes_with_code_field() {
@@ -145,5 +163,69 @@ mod tests {
             .unwrap_err()
             .into();
         assert!(matches!(err, ShellError::UnauthorizedWindow(_)));
+    }
+
+    #[test]
+    fn get_active_surface_restores_surface_on_restart_without_shell_conversation_state() {
+        let pool = migrated_pool();
+        let store = ShellPreferenceStore::new(pool.clone());
+        store.save_active_surface(&Surface::History).unwrap();
+
+        let first_session = AppState::default();
+        let first = tauri::async_runtime::block_on(get_active_surface_inner(
+            &first_session,
+            &store,
+        ))
+        .unwrap();
+        assert_eq!(first, Surface::History);
+        assert!(first_session
+            .shell
+            .lock()
+            .expect("shell lock should not be poisoned")
+            .hydrated);
+
+        let second_session = AppState::default();
+        let second = tauri::async_runtime::block_on(get_active_surface_inner(
+            &second_session,
+            &store,
+        ))
+        .unwrap();
+        assert_eq!(second, Surface::History);
+        assert!(second_session
+            .shell
+            .lock()
+            .expect("shell lock should not be poisoned")
+            .hydrated);
+    }
+
+    #[test]
+    fn get_active_surface_fails_closed_for_corrupted_persisted_surface() {
+        let pool = migrated_pool();
+        pool.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO shell_preferences (id, active_surface, updated_at)
+                 VALUES (1, 'not-a-real-surface', datetime('now'))",
+                [],
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        let state = AppState::default();
+        let store = ShellPreferenceStore::new(pool);
+        let err = tauri::async_runtime::block_on(get_active_surface_inner(&state, &store))
+            .unwrap_err();
+        assert!(
+            matches!(err, ShellError::StorageError(_)),
+            "invalid persisted surface should fail closed"
+        );
+        assert!(
+            !state
+                .shell
+                .lock()
+                .expect("shell lock should not be poisoned")
+                .hydrated,
+            "failed hydration must not mark the shell ready"
+        );
     }
 }
