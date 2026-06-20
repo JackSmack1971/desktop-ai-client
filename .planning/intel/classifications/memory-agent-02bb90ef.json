@@ -1,0 +1,12 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\memory-agent.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Memory Agent Prompt Template",
+  "summary": "Prompt template for summarizing, promoting, or consolidating repository memory.",
+  "scope": ["memory agent", "run data", "repository docs", "agent context", "memory loop", "prompt blueprint"],
+  "cross_refs": ["AGENTS.md", "docs/agent-context.md", "docs/architecture.md", "docs/memory-loop.md", "docs/prompt-blueprint.md"],
+  "locked": false,
+  "precedence": null
+}

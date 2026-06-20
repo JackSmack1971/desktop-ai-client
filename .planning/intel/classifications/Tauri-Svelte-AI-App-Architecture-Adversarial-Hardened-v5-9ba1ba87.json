@@ -1,0 +1,33 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\Tauri_Svelte_AI_App_Architecture_Adversarial_Hardened_v5.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Optimal Technical Architecture for a Local-History Desktop AI Application",
+  "summary": "Adversarially hardened architecture specification for a Tauri/Svelte desktop AI app with SQLite, OpenRouter, streaming, security, and release gates.",
+  "scope": [
+    "desktop AI application",
+    "Tauri v2",
+    "Svelte 5",
+    "SQLite",
+    "FTS5",
+    "CodeMirror 6",
+    "OpenRouter",
+    "Server-Sent Events",
+    "Stronghold",
+    "artifact sandbox",
+    "updater",
+    "command inventory",
+    "provider routing",
+    "file intake",
+    "WAL backup",
+    "release gates"
+  ],
+  "cross_refs": [
+    "Tauri Svelte AI App Architecture.txt",
+    "src-tauri/capabilities",
+    "security/command-inventory.toml"
+  ],
+  "locked": false,
+  "precedence": null
+}

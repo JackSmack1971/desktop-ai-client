@@ -1,0 +1,24 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\README.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Prompt Templates",
+  "summary": "Documents reusable prompt drafts for repo agents and the order in which to use them.",
+  "scope": [
+    "prompt templates",
+    "agent prompts",
+    "coding-agent.md",
+    "design-agent.md",
+    "memory-agent.md",
+    "coordination-agent.md"
+  ],
+  "cross_refs": [
+    "coding-agent.md",
+    "design-agent.md",
+    "memory-agent.md",
+    "coordination-agent.md"
+  ],
+  "locked": false,
+  "precedence": null
+}

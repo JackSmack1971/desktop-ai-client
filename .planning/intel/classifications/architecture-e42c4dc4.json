@@ -1,0 +1,29 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\architecture.md",
+  "type": "SPEC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Architecture",
+  "summary": "Describes the Tauri desktop app's layered architecture, IPC contracts, storage boundaries, and backend security model.",
+  "scope": [
+    "Tauri desktop application",
+    "Svelte 5 renderer",
+    "Rust backend",
+    "IPC command surface",
+    "command policy",
+    "AppState",
+    "SQLite storage",
+    "provider routing",
+    "telemetry",
+    "file tokens",
+    "secrets",
+    "redaction",
+    "prompt blueprint"
+  ],
+  "cross_refs": [
+    "docs/prompt-blueprint.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

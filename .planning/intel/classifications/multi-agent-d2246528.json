@@ -1,0 +1,13 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\multi-agent.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Multi-Agent Rules",
+  "summary": "Overview of coordination rules, recommended roles, and failure modes for a multi-agent workflow.",
+  "scope": ["agents", "roles", "memory strategy", "coordination rules", "failure modes"],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

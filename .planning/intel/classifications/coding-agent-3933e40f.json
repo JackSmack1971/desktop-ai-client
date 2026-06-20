@@ -1,0 +1,35 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\coding-agent.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Coding Agent Prompt Template",
+  "summary": "A template for instructing a coding agent to follow repo docs, keep scope narrow, and report implementation changes.",
+  "scope": [
+    "coding agent",
+    "repository work",
+    "repo docs",
+    "prompt template",
+    "workflow",
+    "AGENTS.md",
+    "docs/agent-context.md",
+    "docs/architecture.md",
+    "docs/memory-loop.md",
+    "docs/prompt-blueprint.md",
+    "docs/implementation-plan.md",
+    "docs/multi-agent.md",
+    "prompt design"
+  ],
+  "cross_refs": [
+    "AGENTS.md",
+    "docs/agent-context.md",
+    "docs/architecture.md",
+    "docs/memory-loop.md",
+    "docs/prompt-blueprint.md",
+    "docs/implementation-plan.md",
+    "docs/multi-agent.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

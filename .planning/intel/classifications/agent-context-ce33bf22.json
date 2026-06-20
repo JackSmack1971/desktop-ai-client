@@ -1,0 +1,21 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\agent-context.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Agent Context",
+  "summary": "Guidance for agent behavior, memory practices, and operating priorities in this repository.",
+  "scope": [
+    "agents",
+    "working memory",
+    "episodic memory",
+    "procedural memory",
+    "caution memory",
+    "promotion",
+    "consolidation",
+    "retrieval"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

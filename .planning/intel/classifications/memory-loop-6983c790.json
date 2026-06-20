@@ -1,0 +1,26 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\memory-loop.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Memory Loop",
+  "summary": "Guidance for memory lifecycle policy, candidate shapes, retrieval, promotion, consolidation, and Phase 1 implementation status.",
+  "scope": [
+    "memory loop",
+    "memory types",
+    "candidate record shape",
+    "retrieval policy",
+    "promotion policy",
+    "consolidation policy",
+    "anti-drift rules",
+    "memory storage",
+    "deterministic replay harness"
+  ],
+  "cross_refs": [
+    "src-tauri/src/storage/memory.rs",
+    "docs/architecture.md",
+    "src-tauri/src/telemetry/memory_replay.rs"
+  ],
+  "locked": false,
+  "precedence": null
+}

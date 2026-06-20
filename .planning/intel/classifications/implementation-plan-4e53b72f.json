@@ -1,0 +1,25 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\implementation-plan.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Implementation Plan",
+  "summary": "Staged implementation roadmap for a single-agent memory system, retrieval flow, promotion pipeline, observability, and multi-agent expansion.",
+  "scope": [
+    "workflow",
+    "success metric",
+    "task schema",
+    "run schema",
+    "run storage",
+    "memory types",
+    "memory schema",
+    "retrieval",
+    "promotion",
+    "observability",
+    "multi-agent roles"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

@@ -1,0 +1,26 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\command-inventory.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Command Inventory",
+  "summary": "Defines the reviewed Tauri command inventory, release capability split, and verifier contract for command exposure.",
+  "scope": [
+    "command inventory",
+    "Tauri commands",
+    "release capability files",
+    "permission grant files",
+    "verifier contract"
+  ],
+  "cross_refs": [
+    "security/command-inventory.toml",
+    "security/release-capabilities.toml",
+    "src-tauri/permissions/*.toml",
+    "src-tauri/capabilities/main.json",
+    "src-tauri/src/main.rs",
+    "build.rs",
+    "src-tauri/Cargo.toml"
+  ],
+  "locked": false,
+  "precedence": null
+}

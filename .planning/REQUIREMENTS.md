@@ -1,98 +1,21 @@
-# Requirements: Desktop AI Client
+# Requirements
 
-**Defined:** 2026-06-13
-**Core Value:** Keep local history, files, and agent state private while safely routing AI inference, streaming, and artifacts through explicit backend boundaries.
+## Source Summary
 
-## v1 Requirements
+This ingest produced no PRD- or ADR-derived v1 requirements.
 
-Requirements for initial release. Each maps to roadmap phases.
+- Requirements extracted: 0
+- Decisions locked: 0
+- Conflicts: none
+- Primary inputs: synthesized docs context and constraints
 
-### Shell
+## V1 Requirements
 
-- [x] **SHELL-01**: User can launch the desktop app and reach the main workspace
-- [x] **SHELL-02**: User can navigate between chat, history, settings, and artifact surfaces
-
-### Routing
-
-- [x] **ROUTE-01**: User can send a prompt through deterministic provider selection
-- [x] **ROUTE-02**: User can receive streamed assistant output in order, including partial output and cancellation
-
-### History
-
-- [ ] **HIST-01**: User can save conversations locally
-- [ ] **HIST-02**: User can search prior conversations and messages
-- [ ] **HIST-03**: User can delete or retain history according to configured retention rules
-
-### Security
-
-- [ ] **SEC-01**: Secrets stay backend-owned and are not exposed to ordinary frontend windows
-- [ ] **SEC-02**: File access uses opaque tokens or Rust-owned selection instead of raw frontend paths
-- [ ] **SEC-03**: Sensitive data is redacted before logs or telemetry
-
-### Artifacts
-
-- [x] **ARTF-01**: User can preview generated artifacts in a sandboxed host-controlled surface
-- [x] **ARTF-02**: User can stop or reload a runaway preview without losing the host UI
-- [x] **ARTF-03**: Artifact previews remain keyboard accessible and expose usable status feedback
-
-### Release
-
-- [x] **REL-01**: Builds include a reviewed command inventory and explicit release capability selection
-- [x] **REL-02**: Release evidence covers security, routing, storage, and adversarial fixtures
-
-## v2 Requirements
-
-Deferred to future release. Tracked but not in current roadmap.
-
-### Platform Extensions
-
-- **PLAT-01**: User can switch to local inference providers when available
-- **PLAT-02**: User can manage multi-agent workflows from the desktop client
-
-## Out of Scope
-
-Explicitly excluded. Documented to prevent scope creep.
-
-| Feature                                                    | Reason                                              |
-| ---------------------------------------------------------- | --------------------------------------------------- |
-| Raw SQL execution from the frontend                        | Persistence must stay behind typed backend commands |
-| Unrestricted remote assets in privileged windows           | Production attack surface must stay narrow          |
-| Frontend secret reads from Stronghold or equivalent vaults | Secret storage stays backend-owned                  |
-| Raw JavaScript-returned path reads                         | File access must use Rust-owned selection or tokens |
+None.
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+No v1 requirements were extracted from ingest, so traceability is intentionally empty until PRD-backed requirements exist.
 
-| Requirement | Phase    | Status   |
-| ----------- | -------- | -------- |
-| SHELL-01    | Phase 1  | Complete |
-| SHELL-02    | Phase 1  | Complete |
-| ROUTE-01    | Phase 2  | Complete |
-| ROUTE-02    | Phase 2  | Complete |
-| HIST-01     | Phase 3  | Pending  |
-| HIST-02     | Phase 3  | Pending  |
-| HIST-03     | Phase 3  | Pending  |
-| SEC-01      | Phase 4  | Pending  |
-| SEC-02      | Phase 4  | Pending  |
-| SEC-03      | Phase 4  | Pending  |
-| ARTF-01     | Phase 5  | Complete |
-| ARTF-02     | Phase 5  | Complete |
-| ARTF-03     | Phase 5  | Complete |
-| REL-01      | Phase 6  | Complete |
-| REL-02      | Phase 6  | Complete |
-| PLAT-01     | Deferred | Deferred |
-| PLAT-02     | Deferred | Deferred |
-
-**Coverage:**
-
-- v1 requirements: 15 total
-- Mapped to phases: 15
-- Unmapped: 0 ✓
-- v2 requirements: 2 total
-- Deferred: 2
-
----
-
-_Requirements defined: 2026-06-13_
-_Last updated: 2026-06-16 after Phase 06 completion_
+| Requirement | Phase | Status |
+|-------------|-------|--------|

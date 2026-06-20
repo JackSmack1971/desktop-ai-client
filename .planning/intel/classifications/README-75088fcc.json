@@ -1,0 +1,32 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\README.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Docs Overview",
+  "summary": "Agent-facing documentation overview and read order for the repo's context layer.",
+  "scope": [
+    "docs",
+    "agent-facing context layer",
+    "read order",
+    "memory-loop design",
+    "prompt design rules",
+    "design-agent rules",
+    "prompt templates",
+    "build order",
+    "multi-agent concerns"
+  ],
+  "cross_refs": [
+    "../AGENTS.md",
+    "agent-context.md",
+    "architecture.md",
+    "memory-loop.md",
+    "prompt-blueprint.md",
+    "design-blueprint.md",
+    "prompt-templates/README.md",
+    "implementation-plan.md",
+    "multi-agent.md"
+  ],
+  "locked": false,
+  "precedence": null
+}

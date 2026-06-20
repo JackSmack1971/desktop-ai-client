@@ -1,115 +1,93 @@
 # Roadmap: Desktop AI Client
 
-## Phase 1: App Shell
+## Overview
 
-**Goal:** Get the desktop app booting into a usable workspace shell with clear navigation boundaries.
-**Mode:** mvp
-**Requirements:** SHELL-01, SHELL-02
-**Success Criteria**:
+This project is being bootstrapped from synthesized docs context rather than PRD-backed v1 requirements, so the roadmap follows the repo's documented memory-first implementation order. The sequence starts with a stable single-agent core, then adds the memory schema and shadow-mode pipeline, then run-loop tracing, then bounded retrieval and promotion, then consolidation and observability guardrails, and only then any multi-agent expansion.
 
-1. The app launches successfully from the desktop shell.
-2. The user can reach the main workspace and switch between the major surfaces.
-3. The shell is organized so backend and frontend boundaries remain explicit.
+## Phases
 
-## Phase 2: Routing
+- [ ] **Phase 1: Single-Agent Core** - Define the first workflow, success metric, task/run schemas, and durable startup recovery.
+- [ ] **Phase 2: Memory Model** - Separate durable memory from raw traces and establish the memory record shape.
+- [ ] **Phase 3: Run Loop** - Record runs end-to-end, including trace events, summaries, and candidate memory emission.
+- [ ] **Phase 4: Retrieval, Promotion, and Verification** - Make bounded retrieval and trace-backed promotion decisions testable.
+- [ ] **Phase 5: Consolidation, Observability, and Guardrails** - Dedupe, expire, observe, and harden the memory system before it widens.
+- [ ] **Phase 6: Multi-Agent Expansion** - Split roles only after the single-agent loop is stable and measured.
 
-**Goal:** Route user prompts through deterministic provider selection and robust streaming transport.
-**Mode:** mvp
-**Requirements:** ROUTE-01, ROUTE-02
-**Success Criteria**:
+## Phase Details
 
-1. A prompt can be routed without frontend ownership of provider secrets.
-2. Streaming output arrives in order and preserves partial output.
-3. Cancellation and typed error handling work without corrupting the active stream.
+### Phase 1: Single-Agent Core
+**Goal**: Users can define one task/run workflow, persist it durably, and recover it on startup without losing the active context.
+**Depends on**: Nothing (first phase)
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. A new run can be created and loaded back after restart with its identity intact.
+  2. The project has explicit task/run schemas that distinguish the active workflow from historical traces.
+  3. Startup retrieval restores the last relevant working context before any new work begins.
+  4. The success metric and workflow boundary are recorded as part of project memory instead of staying implicit.
+**Plans**: TBD
 
-## Phase 3: History
+### Phase 2: Memory Model
+**Goal**: The system can store candidate memories separately from raw traces without letting live chat depend on them.
+**Depends on**: Phase 1
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. Memory records are stored in tables or stores separate from raw conversation traces.
+  2. Each memory candidate carries type, summary, source, tags, confidence, utility, recency, verification state, and expiry.
+  3. The memory pipeline remains shadow-mode only and does not change live provider routing or chat behavior.
+  4. A human can inspect stored memory metadata without exposing backend-owned secrets or raw file paths.
+**Plans**: TBD
 
-**Goal:** Persist and search local conversation history with recoverable storage behavior.
-**Mode:** mvp
-**Requirements:** HIST-01, HIST-02, HIST-03
-**Plans:** 4/4 plans executed
-**Success Criteria**:
+### Phase 3: Run Loop
+**Goal**: Every run is captured as a traceable execution record with summary and candidate memory output.
+**Depends on**: Phase 2
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. A completed run records the events that happened during execution in order.
+  2. Tool and turn events are appended to the run trace rather than reconstructed later from chat history.
+  3. Each run produces a compact summary that can be replayed or reviewed later.
+  4. Finished runs can emit candidate memories for later evaluation without promoting them automatically.
+**Plans**: TBD
 
-1. Conversations persist across app restarts.
-2. Prior messages are searchable through local history.
-3. Retention and deletion behavior are explicit and testable.
+### Phase 4: Retrieval, Promotion, and Verification
+**Goal**: Retrieval and promotion behave as bounded, explainable gates instead of implicit memory drift.
+**Depends on**: Phase 3
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. Retrieval returns only a small bounded set of candidate memories.
+  2. Retrieval prefers relevant, recent, confident, and useful items while excluding expired ones.
+  3. Promotion only succeeds when the trace supports the candidate and duplicate or contradiction checks pass.
+  4. A human can see why a candidate was promoted, deferred, or rejected.
+**Plans**: TBD
 
-Plans:
+### Phase 5: Consolidation, Observability, and Guardrails
+**Goal**: The memory system becomes maintainable and observable without weakening the privacy boundary.
+**Depends on**: Phase 4
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. Duplicate and overlapping memories can be deduped, merged, or expired instead of accumulating forever.
+  2. Retrieval and promotion activity is observable through logs or metrics that do not expose sensitive content.
+  3. Regressions in memory pollution or stale retrieval are detectable through automated tests.
+  4. The command, provider, and privacy boundaries remain deny-by-inventory and fail closed.
+**Plans**: TBD
 
-- [x] 03-01-PLAN.md — SQLite schema migrations (0002, 0003) + typed domain stores (ConversationStore, MessageStore, FtsStore, RetentionStore)
-- [x] 03-02-PLAN.md — IPC command surface (history_list, history_get, history_delete, history_search) + main.rs registration + capabilities
-- [x] 03-03-PLAN.md — chat_send storage wiring (conversation persistence, title generation, Done/Cancel terminal writes)
-- [x] 03-04-PLAN.md — Frontend History surface (historyStore, HistorySurface, SearchBar, ConversationList, ConversationRow)
+### Phase 6: Multi-Agent Expansion
+**Goal**: Multi-agent roles can be introduced only after the single-agent loop is stable and trustworthy.
+**Depends on**: Phase 5
+**Requirements**: None
+**Success Criteria** (what must be TRUE):
+  1. The system can split into planner, executor, memory writer, and judge roles without losing the single-agent baseline.
+  2. Shared procedures are reused only after they are verified as stable lessons.
+  3. Inter-agent communication stays structured and local memory remains the default.
+  4. A coordinator is introduced only after the single-agent loop is demonstrably stable.
+**Plans**: TBD
 
-## Phase 4: Privacy
+## Progress
 
-**Goal:** Enforce the privacy boundary for secrets, file access, and telemetry.
-**Mode:** mvp
-**Requirements:** SEC-01, SEC-02, SEC-03
-**Plans:** 7/7 plans executed
-**Success Criteria**:
-
-1. Ordinary frontend windows cannot read backend-owned secrets.
-2. File access rejects raw frontend path authority.
-3. Logs and telemetry redact sensitive content before persistence or transmission.
-
-Plans:
-
-- [x] 04-01-PLAN.md — Foundation: Cargo deps (keyring v3, dialog, mime_guess) + AppState.file_tokens + KeyringSecretStore backing
-- [x] 04-02-PLAN.md — security::redaction (three categories) + security::command_policy (window-label allow-table)
-- [x] 04-03-PLAN.md — security::file_tokens (mint/resolve/revoke against AppState.file_tokens)
-- [x] 04-04-PLAN.md — telemetry::audit_log (JSON Lines) + ipc::privacy (set/status/clear commands)
-- [x] 04-05-PLAN.md — ipc::files (files_open_dialog native picker + files_read_token)
-- [x] 04-06-PLAN.md — Wiring: main.rs registration + dialog plugin + privacy.toml/files.toml + capabilities
-- [x] 04-07-PLAN.md — Frontend: privacyStore (settings.ts) + SettingsSurface.svelte credential UI
-
-## Phase 5: Artifacts
-
-**Goal:** Provide sandboxed artifact previews that remain safe and usable under hostile content.
-**Mode:** mvp
-**Requirements:** ARTF-01, ARTF-02, ARTF-03
-**Success Criteria**:
-
-1. Generated artifacts render inside a constrained preview surface.
-2. A runaway artifact can be stopped or reloaded without freezing the host UI.
-3. Keyboard and screen-reader paths remain usable for preview workflows.
-
-**Plan Waves:**
-
-- [x] Wave 1: `05-01` - backend artifact contract, persistence, and IPC surface
-- [x] Wave 2: `05-02` - frontend preview surface, reload/stop controls, and chat routing
-- [x] Wave 3: `05-03` - accessibility, fail-closed behavior, and verification
-
-**Execution:** Complete — all three waves executed (see `05-01-SUMMARY.md` through `05-03-SUMMARY.md`).
-
-**Cross-cutting constraints:**
-
-- Artifact content is backend-owned until it is sanitized and CSP-wrapped for preview.
-- The preview iframe must never allow scripts or external network access in Phase 5.
-- Reload and stop remain host chrome controls outside the sandboxed iframe.
-- ArtifactReady is emitted only after chat completion and routes through typed frontend state.
-
-## Phase 6: Release
-
-**Goal:** Make the project release-ready with reviewed command exposure and adversarial evidence.
-**Mode:** mvp
-**Requirements:** REL-01, REL-02
-**Plans:** 1 plan
-**Success Criteria**:
-
-1. Command exposure is explicitly inventoried and cross-checked before release.
-2. The release gate includes the expected security, routing, storage, and fixture evidence.
-3. A build alone is not considered complete unless the verification evidence is present.
-
-Plans:
-
-- [x] PLAN.md — reviewed command inventory, deny-by-inventory verifier, and first-pass release evidence bundle
-
-**Execution:** Complete — inventory, verifier, evidence bundle, and release trackers updated on 2026-06-16.
-
-## Deferred (post-v1.0 backlog)
-
-These were considered during v1.0 and explicitly scoped out rather than left as silent gaps:
-
-- **Database export/import backup** (`src-tauri/src/storage/backup.rs`) — stays a scaffold placeholder. Phase 3 (History) decided this is user-facing backup/export, not the WAL-based crash recovery SQLite already handles automatically. No requirement in this milestone calls for it; pick it up as its own phase when export/import is actually needed.
-- **Richer streaming-protocol contract** (per-stream `attempt_id`/`sequence`/capability-request-partial hashing, multi-provider fallback policy, resumable retry tokens — as described in `.claude/rules/backend.md`) — not implemented. The current `ChatEvent` contract (`Ack`/`Delta`/`Done`/`Error`/`ArtifactReady` plus `chat_cancel`) satisfies ROUTE-02 as written (ordered output, partial-output preservation, cancellation) with a single hardcoded provider (OpenRouter) and no fallback path. The richer contract only earns its complexity once a second provider or fallback/resume policy is introduced — do not build it ahead of that need.
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Single-Agent Core | TBD | Not started | - |
+| 2. Memory Model | TBD | Not started | - |
+| 3. Run Loop | TBD | Not started | - |
+| 4. Retrieval, Promotion, and Verification | TBD | Not started | - |
+| 5. Consolidation, Observability, and Guardrails | TBD | Not started | - |
+| 6. Multi-Agent Expansion | TBD | Not started | - |

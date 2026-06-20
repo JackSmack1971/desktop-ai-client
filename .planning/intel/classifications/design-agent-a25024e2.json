@@ -1,0 +1,27 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\design-agent.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Design Agent Prompt Template",
+  "summary": "Template for prompting a design agent to create screens, flows, or other visual artifacts in this repository.",
+  "scope": [
+    "design agent",
+    "screen",
+    "flow",
+    "visual artifact",
+    "repository docs",
+    "design constraints",
+    "workflow",
+    "output format"
+  ],
+  "cross_refs": [
+    "AGENTS.md",
+    "docs/agent-context.md",
+    "docs/architecture.md",
+    "docs/design-blueprint.md",
+    "docs/prompt-blueprint.md"
+  ],
+  "locked": false,
+  "precedence": null
+}

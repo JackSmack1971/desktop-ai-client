@@ -1,0 +1,21 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\prompt-blueprint.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Prompt Blueprint",
+  "summary": "Guidelines for designing prompts for coding agents in this repository.",
+  "scope": [
+    "prompts",
+    "coding agents",
+    "AGENTS files",
+    "architecture docs",
+    "memory docs",
+    "system prompt",
+    "developer prompt",
+    "task prompt"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

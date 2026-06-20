@@ -1,0 +1,26 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\threat-model.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Threat Model",
+  "summary": "Documents threat scenarios and mitigations for renderer behavior, provider routing, privacy, attachments, and file access in the desktop client.",
+  "scope": [
+    "desktop client",
+    "provider routing",
+    "secret exposure",
+    "renderer behavior",
+    "command execution",
+    "file access boundaries",
+    "privacy boundaries",
+    "attachment intake",
+    "memory engine"
+  ],
+  "cross_refs": [
+    "docs/provider-routing.md",
+    "docs/privacy-boundaries.md",
+    "docs/architecture.md"
+  ],
+  "locked": false,
+  "precedence": null
+}

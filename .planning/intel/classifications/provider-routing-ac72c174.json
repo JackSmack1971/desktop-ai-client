@@ -1,0 +1,23 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\provider-routing.md",
+  "type": "SPEC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Provider Routing",
+  "summary": "Defines how the client resolves provider, model, privacy, and execution bounds for chat requests.",
+  "scope": [
+    "provider routing",
+    "model allowlist",
+    "execution profile",
+    "privacy mode",
+    "message role validation",
+    "fallback behavior",
+    "capability hash"
+  ],
+  "cross_refs": [
+    "docs/privacy-boundaries.md",
+    "docs/architecture.md"
+  ],
+  "locked": false,
+  "precedence": null
+}

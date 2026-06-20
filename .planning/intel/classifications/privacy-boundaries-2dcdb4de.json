@@ -1,0 +1,27 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\privacy-boundaries.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Privacy Boundaries",
+  "summary": "Documentation of the client’s privacy boundary rules for access, storage, redaction, transmission, and retention.",
+  "scope": [
+    "secrets handling",
+    "file content visibility",
+    "command history retention",
+    "telemetry redaction",
+    "local storage scope",
+    "privacy mode",
+    "attachment intake",
+    "message role boundary",
+    "memory engine storage",
+    "audit-safe receipts"
+  ],
+  "cross_refs": [
+    "docs/provider-routing.md",
+    "docs/architecture.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

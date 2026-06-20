@@ -1,0 +1,26 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\coordination-agent.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Coordination Agent Prompt Template",
+  "summary": "Template for routing work across agents with structured handoffs, ownership, and acceptance criteria.",
+  "scope": [
+    "coordination agent",
+    "task handoff",
+    "agent roles",
+    "repository docs",
+    "handoff payload",
+    "acceptance criteria",
+    "rollback path"
+  ],
+  "cross_refs": [
+    "AGENTS.md",
+    "docs/agent-context.md",
+    "docs/architecture.md",
+    "docs/multi-agent.md",
+    "docs/prompt-blueprint.md"
+  ],
+  "locked": false,
+  "precedence": null
+}

@@ -1,0 +1,24 @@
+{
+  "source_path": "C:\\workspaces\\desktop-ai-client\\docs\\release-evidence.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Release Evidence",
+  "summary": "Explains the release evidence bundle, its generated artifacts, and the evidence categories and fixture families it tracks.",
+  "scope": [
+    "release evidence bundle",
+    "manifest.toml",
+    "fixtures.toml",
+    "test-runs",
+    "fixture families",
+    "tests/fixtures",
+    "collector command"
+  ],
+  "cross_refs": [
+    "src-tauri/Cargo.toml",
+    "release-evidence/README.md",
+    "tests/fixtures/"
+  ],
+  "locked": false,
+  "precedence": null
+}
