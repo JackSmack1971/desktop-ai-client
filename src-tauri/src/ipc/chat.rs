@@ -111,6 +111,7 @@ pub enum ChatEvent {
     },
     /// Backend-owned artifact detected after stream completion.
     ArtifactReady {
+        conversation_id: String,
         artifact_id: String,
         content_type: ArtifactContentType,
         preview: String,
@@ -868,6 +869,7 @@ mod tests {
     #[test]
     fn chat_event_artifact_ready_serializes_with_type_field() {
         let event = ChatEvent::ArtifactReady {
+            conversation_id: "conv-1".into(),
             artifact_id: "art-1".into(),
             content_type: ArtifactContentType::Html,
             preview: "<html></html>".into(),
@@ -881,6 +883,10 @@ mod tests {
         assert!(
             json.contains(r#""artifact_id":"art-1""#),
             "expected artifact_id field: {json}"
+        );
+        assert!(
+            json.contains(r#""conversation_id":"conv-1""#),
+            "expected conversation_id field: {json}"
         );
     }
 

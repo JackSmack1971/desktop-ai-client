@@ -46,6 +46,7 @@ export type ChatEvent =
 	| { type: 'Error'; code: string; message: string; sequence: number }
 	| {
 			type: 'ArtifactReady';
+			conversation_id: string;
 			artifact_id: string;
 			content_type: ArtifactContentType;
 			preview: string;
