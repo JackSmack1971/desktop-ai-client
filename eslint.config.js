@@ -18,6 +18,7 @@ export default [
 			'release-evidence/',
 			'scripts/',
 			'src-tauri/',
+			'target/',
 			'node_modules/',
 		],
 	},

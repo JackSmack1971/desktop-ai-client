@@ -74,6 +74,14 @@ export type ChatSendParams = {
 	conversationId?: string;
 	maxCompletionTokens?: number;
 	temperature?: number;
+	/**
+	 * Hint for the backend Policy-Constrained Provider Runtime. `'strict'`
+	 * requests zero-data-retention-eligible routing; the backend resolves
+	 * this against its reviewed model allowlist and fails the request rather
+	 * than silently downgrading when it can't be satisfied. Omit for the
+	 * default `'standard'` tier.
+	 */
+	privacyMode?: 'standard' | 'strict';
 	attachments?: string[];
 	onEvent: (event: ChatEvent) => void;
 };
@@ -100,6 +108,7 @@ export async function chatSend(params: ChatSendParams): Promise<void> {
 		conversationId: params.conversationId ?? null,
 		maxCompletionTokens: params.maxCompletionTokens ?? null,
 		temperature: params.temperature ?? null,
+		privacyMode: params.privacyMode ?? null,
 		attachments: params.attachments ?? null,
 		channel,
 	});

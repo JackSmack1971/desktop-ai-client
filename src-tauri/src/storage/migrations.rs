@@ -172,6 +172,102 @@ pub static MIGRATIONS: &[Migration] = &[
             ALTER TABLE messages ADD COLUMN turn_id TEXT REFERENCES turns(id);
         ",
     },
+    Migration {
+        id: "0006",
+        description: "Create Evidence-Gated Memory Engine tables (Phase 1, shadow mode)",
+        sql: "
+            -- Immutable run traces: one per turn outcome. Insert-only — the
+            -- BEFORE UPDATE trigger below blocks edits. DELETE is still
+            -- permitted so conversation retention (hard delete) can cascade;
+            -- see docs/memory-loop.md for the rollback/retention rationale.
+            CREATE TABLE IF NOT EXISTS memory_run_traces (
+              id TEXT PRIMARY KEY,
+              conversation_id TEXT NOT NULL
+                REFERENCES conversations(id) ON DELETE CASCADE,
+              turn_id TEXT REFERENCES turns(id),
+              task_summary TEXT NOT NULL,
+              outcome TEXT NOT NULL
+                CHECK (outcome IN ('success', 'failed_partial', 'failed', 'cancelled')),
+              created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            ) STRICT;
+
+            CREATE INDEX IF NOT EXISTS idx_memory_run_traces_conversation_id
+              ON memory_run_traces(conversation_id);
+
+            CREATE TRIGGER IF NOT EXISTS memory_run_traces_immutable
+            BEFORE UPDATE ON memory_run_traces
+            BEGIN
+              SELECT RAISE(ABORT, 'memory_run_traces rows are immutable; insert a new trace instead');
+            END;
+
+            -- Candidate memories. Every proposal is inserted (including
+            -- duplicates and contradictions, which land with status
+            -- 'rejected') so the decision ledger stays inspectable.
+            CREATE TABLE IF NOT EXISTS memory_candidates (
+              id TEXT PRIMARY KEY,
+              kind TEXT NOT NULL
+                CHECK (kind IN ('factual', 'episodic', 'procedural', 'caution')),
+              summary TEXT NOT NULL,
+              dedup_key TEXT NOT NULL,
+              source_run_trace_id TEXT NOT NULL
+                REFERENCES memory_run_traces(id) ON DELETE CASCADE,
+              confidence REAL NOT NULL DEFAULT 0.5
+                CHECK (confidence >= 0.0 AND confidence <= 1.0),
+              utility INTEGER NOT NULL DEFAULT 0,
+              status TEXT NOT NULL DEFAULT 'candidate'
+                CHECK (status IN ('candidate', 'promoted', 'rejected', 'expired')),
+              verification_state TEXT NOT NULL DEFAULT 'unverified'
+                CHECK (verification_state IN ('unverified', 'verified', 'refuted')),
+              contradiction_state TEXT NOT NULL DEFAULT 'none'
+                CHECK (contradiction_state IN ('none', 'contradicted')),
+              contradicts_candidate_id TEXT
+                REFERENCES memory_candidates(id) ON DELETE SET NULL,
+              expires_at TEXT,
+              created_at TEXT NOT NULL DEFAULT (datetime('now')),
+              updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+            ) STRICT;
+
+            CREATE INDEX IF NOT EXISTS idx_memory_candidates_dedup_key
+              ON memory_candidates(dedup_key);
+            CREATE INDEX IF NOT EXISTS idx_memory_candidates_status
+              ON memory_candidates(status);
+            CREATE INDEX IF NOT EXISTS idx_memory_candidates_source_run_trace_id
+              ON memory_candidates(source_run_trace_id);
+
+            -- The decision ledger: one immutable row per promotion/rejection
+            -- decision made about a candidate. Append-only — see the
+            -- BEFORE UPDATE trigger below.
+            CREATE TABLE IF NOT EXISTS memory_decisions (
+              id TEXT PRIMARY KEY,
+              candidate_id TEXT NOT NULL
+                REFERENCES memory_candidates(id) ON DELETE CASCADE,
+              action TEXT NOT NULL
+                CHECK (action IN ('proposed', 'promoted', 'rejected', 'deferred', 'expired')),
+              reason TEXT NOT NULL,
+              decided_at TEXT NOT NULL DEFAULT (datetime('now'))
+            ) STRICT;
+
+            CREATE INDEX IF NOT EXISTS idx_memory_decisions_candidate_id
+              ON memory_decisions(candidate_id);
+
+            CREATE TRIGGER IF NOT EXISTS memory_decisions_immutable
+            BEFORE UPDATE ON memory_decisions
+            BEGIN
+              SELECT RAISE(ABORT, 'memory_decisions rows are immutable; insert a new decision instead');
+            END;
+
+            -- Shadow-mode retrieval log: records what bounded retrieval would
+            -- have returned. Never read by chat_send / providers::routing —
+            -- this table exists purely so replay fixtures can measure
+            -- precision/recall without memories influencing a live prompt.
+            CREATE TABLE IF NOT EXISTS memory_retrieval_log (
+              id TEXT PRIMARY KEY,
+              kind_filter TEXT,
+              returned_candidate_ids TEXT NOT NULL,
+              requested_at TEXT NOT NULL DEFAULT (datetime('now'))
+            ) STRICT;
+        ",
+    },
 ];
 
 /// Apply any pending migrations to `conn`.
@@ -305,12 +401,167 @@ mod tests {
     }
 
     #[test]
-    fn migrations_count_is_five() {
+    fn migrations_count_is_six() {
         assert_eq!(
             MIGRATIONS.len(),
-            5,
-            "expected 5 migrations after the conversation transaction protocol addition"
+            6,
+            "expected 6 migrations after the memory engine addition"
         );
+    }
+
+    #[test]
+    fn memory_run_traces_table_exists_and_is_immutable() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-mem', 'Memory Test')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO memory_run_traces (id, conversation_id, task_summary, outcome)
+             VALUES ('trace-1', 'conv-mem', 'answered a question', 'success')",
+            [],
+        )
+        .unwrap();
+
+        let outcome: String = conn
+            .query_row(
+                "SELECT outcome FROM memory_run_traces WHERE id = 'trace-1'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(outcome, "success");
+
+        // Immutability: UPDATE must be rejected by the BEFORE UPDATE trigger.
+        let update = conn.execute(
+            "UPDATE memory_run_traces SET outcome = 'failed' WHERE id = 'trace-1'",
+            [],
+        );
+        assert!(update.is_err(), "run traces must be immutable");
+    }
+
+    #[test]
+    fn memory_run_traces_cascade_deletes_with_conversation() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-mem-del', 'Memory Delete Test')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO memory_run_traces (id, conversation_id, task_summary, outcome)
+             VALUES ('trace-del', 'conv-mem-del', 'task', 'success')",
+            [],
+        )
+        .unwrap();
+
+        conn.execute("DELETE FROM conversations WHERE id = 'conv-mem-del'", [])
+            .unwrap();
+
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM memory_run_traces WHERE id = 'trace-del'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 0, "run traces must cascade-delete with their conversation");
+    }
+
+    #[test]
+    fn memory_candidates_and_decisions_tables_exist_after_migration() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-cand', 'Candidate Test')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO memory_run_traces (id, conversation_id, task_summary, outcome)
+             VALUES ('trace-cand', 'conv-cand', 'task', 'success')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO memory_candidates (id, kind, summary, dedup_key, source_run_trace_id)
+             VALUES ('cand-1', 'factual', 'the API rate limit is 60rpm', 'factual:the api rate limit is 60rpm', 'trace-cand')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO memory_decisions (id, candidate_id, action, reason)
+             VALUES ('dec-1', 'cand-1', 'proposed', 'new_candidate')",
+            [],
+        )
+        .unwrap();
+
+        let status: String = conn
+            .query_row(
+                "SELECT status FROM memory_candidates WHERE id = 'cand-1'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(status, "candidate");
+
+        // Ledger immutability.
+        let update = conn.execute(
+            "UPDATE memory_decisions SET reason = 'edited' WHERE id = 'dec-1'",
+            [],
+        );
+        assert!(update.is_err(), "decision ledger rows must be immutable");
+    }
+
+    /// Rollback rehearsal: manually dropping the memory_* tables (the
+    /// documented recovery path, since this migration runner has no
+    /// down-migrations) must leave the core conversation transaction
+    /// protocol tables untouched.
+    #[test]
+    fn dropping_memory_tables_does_not_affect_core_tables() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-rb', 'Rollback Test')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO messages (id, conversation_id, role, content)
+             VALUES ('msg-rb', 'conv-rb', 'user', 'hello')",
+            [],
+        )
+        .unwrap();
+
+        conn.execute_batch(
+            "DROP TABLE memory_retrieval_log;
+             DROP TABLE memory_decisions;
+             DROP TABLE memory_candidates;
+             DROP TABLE memory_run_traces;",
+        )
+        .unwrap();
+
+        let title: String = conn
+            .query_row(
+                "SELECT title FROM conversations WHERE id = 'conv-rb'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(title, "Rollback Test");
+        let content: String = conn
+            .query_row("SELECT content FROM messages WHERE id = 'msg-rb'", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(content, "hello");
     }
 
     #[test]

@@ -147,7 +147,7 @@ function createChatStore() {
 				break;
 			}
 			case 'ArtifactReady': {
-				artifactsStore.receiveArtifact(event);
+				artifactsStore.receiveArtifact(event, historyStore.activeConversationId);
 				break;
 			}
 		}

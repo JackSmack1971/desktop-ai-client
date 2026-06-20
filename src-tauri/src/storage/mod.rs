@@ -12,8 +12,10 @@ pub mod artifacts;
 /// - `retention`  – Retention and deletion policy (future)
 /// - `artifacts`  – Artifact preview storage and detection
 /// - `turns`      – Conversation transaction protocol: turns/turn_attempts
+/// - `memory`     – Evidence-Gated Memory Engine (Phase 1, shadow mode)
 pub mod backup;
 pub mod fts;
+pub mod memory;
 pub mod migrations;
 pub mod retention;
 pub mod sqlite;

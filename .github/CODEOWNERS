@@ -1,0 +1,11 @@
+# CODEOWNERS
+# Generated from repository evidence. Edit ownership sources, then regenerate.
+# Rules are ordered broad to specific because the last matching rule wins.
+
+# Repository fallback
+# This is a personal repository with one verified owner, so a repo-wide fallback keeps every path reviewable without inventing teams.
+* @JackSmack1971
+
+# Repository self-protection
+# Protect the ownership file itself.
+.github/CODEOWNERS @JackSmack1971
