@@ -1,0 +1,4 @@
+interface:
+  display_name: "Document Taxonomy Corpus"
+  short_description: "Classify docs into taxonomy outputs"
+  default_prompt: "Use $document-taxonomy-corpus to turn a documentation corpus into verified ADR, PRD, and SPEC_RFC outputs."

@@ -1,0 +1,185 @@
+# managed-by: optimize-github-operations
+name: PR Contract
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-contract-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-pr-body:
+    name: Validate PR evidence contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate pull request body
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+
+          with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as handle:
+              event = json.load(handle)
+
+          body = (event.get("pull_request", {}).get("body") or "").replace("\r\n", "\n")
+          errors = []
+
+          if not body.strip():
+              errors.append("Pull request body is empty.")
+
+          cleaned = re.sub(r"<!--.*?-->", "", body, flags=re.DOTALL)
+          cleaned = cleaned.replace("\u00a0", " ")
+
+          unresolved_patterns = {
+              "instructional placeholder": r"<\s*(reason|issue|command|result|owner|version|sha)\s*>",
+              "unfinished marker": r"\b(?:TODO|TBD|FIXME)\b",
+              "empty bullet": r"(?m)^\s*[-*+]\s*$",
+          }
+          for label, pattern in unresolved_patterns.items():
+              if re.search(pattern, cleaned, flags=re.IGNORECASE):
+                  errors.append(f"Found {label} in the completed pull request body.")
+
+          heading_re = re.compile(r"(?m)^(#{2,4})\s+(.+?)\s*$")
+          headings = list(heading_re.finditer(cleaned))
+          sections = {}
+          for index, match in enumerate(headings):
+              title = re.sub(r"\s+", " ", match.group(2).strip()).lower()
+              start = match.end()
+              end = headings[index + 1].start() if index + 1 < len(headings) else len(cleaned)
+              sections[title] = cleaned[start:end].strip()
+
+          def find_section(title):
+              wanted = title.lower()
+              if wanted in sections:
+                  return sections[wanted]
+              for key, value in sections.items():
+                  if key.startswith(wanted):
+                      return value
+              return ""
+
+          def substantive(text):
+              normalized = re.sub(r"[`|:#*_\-\[\]()]+", " ", text)
+              normalized = re.sub(r"\s+", " ", normalized).strip()
+              return len(normalized) >= 12
+
+          profiles = {
+              "security": [
+                  "security objective", "change summary", "assets and trust boundaries",
+                  "attacker model and abuse cases", "authorization and validation flow",
+                  "secrets and sensitive data", "failure behavior", "security verification",
+                  "residual risk", "rollback and incident recovery", "reviewer guidance", "checklist",
+              ],
+              "release": [
+                  "release objective", "release identity", "included changes", "artifact matrix",
+                  "provenance and signing", "compatibility and migration", "risk and rollback",
+                  "release verification", "post-release validation", "reviewer guidance", "checklist",
+              ],
+              "migration": [
+                  "migration objective", "representation change", "forward migration",
+                  "mixed-version compatibility", "idempotency and interruption",
+                  "data validation and reconciliation", "backup and restore",
+                  "rollback or downgrade", "risk and observability", "verification",
+                  "reviewer guidance", "checklist",
+              ],
+              "default": [
+                  "purpose", "change summary", "scope", "classification", "design and behavior",
+                  "risk and compatibility", "verification", "reviewer guidance",
+                  "documentation, release, and follow-up", "author checklist",
+              ],
+          }
+
+          if "security objective" in sections:
+              profile = "security"
+          elif "release objective" in sections:
+              profile = "release"
+          elif "migration objective" in sections:
+              profile = "migration"
+          else:
+              profile = "default"
+
+          for required in profiles[profile]:
+              content = find_section(required)
+              if required == "scope":
+                  included = find_section("included")
+                  excluded = find_section("not included")
+                  if "scope" not in sections:
+                      errors.append("Missing required section: scope.")
+                  if not substantive(included):
+                      errors.append("Section lacks substantive content: included scope.")
+                  if not substantive(excluded):
+                      errors.append("Section lacks substantive content: not included scope.")
+                  continue
+              if required == "representation change":
+                  current = find_section("current representation")
+                  target = find_section("target representation")
+                  if "representation change" not in sections:
+                      errors.append("Missing required section: representation change.")
+                  if not substantive(current):
+                      errors.append("Section lacks substantive content: current representation.")
+                  if not substantive(target):
+                      errors.append("Section lacks substantive content: target representation.")
+                  continue
+              if required not in sections:
+                  errors.append(f"Missing required section: {required}.")
+              elif not substantive(content):
+                  errors.append(f"Section lacks substantive content: {required}.")
+
+          if profile == "default":
+              classification = find_section("classification")
+              change_type = re.search(
+                  r"(?im)^\|\s*Change type\s*\|\s*([^|]+)\|", classification
+              )
+              risk = re.search(r"(?im)^\|\s*Risk\s*\|\s*([^|]+)\|", classification)
+              allowed_types = {
+                  "bug fix", "feature", "refactor", "performance", "docs", "test", "chore", "release"
+              }
+              allowed_risks = {"low", "medium", "high"}
+              if not change_type or change_type.group(1).strip().lower() not in allowed_types:
+                  errors.append("Classification must contain one recognized Change type value.")
+              if not risk:
+                  errors.append("Classification must contain a Risk value.")
+              else:
+                  risk_value = risk.group(1).strip().lower()
+                  if not any(risk_value.startswith(value) for value in allowed_risks):
+                      errors.append("Risk must start with Low, Medium, or High and include a reason.")
+                  elif len(risk_value.split()) < 2:
+                      errors.append("Risk must include a brief reason, not only the level.")
+
+              rollback = find_section("rollback or recovery")
+              regression = find_section("regression coverage")
+              if not substantive(rollback):
+                  errors.append("Rollback or recovery must contain a concrete plan or reasoned N/A.")
+              if not substantive(regression):
+                  errors.append("Regression coverage must identify coverage or provide a reasoned N/A.")
+
+          verification_title = "security verification" if profile == "security" else "release verification" if profile == "release" else "verification"
+          verification = find_section(verification_title)
+          evidence_rows = []
+          for line in verification.splitlines():
+              if line.strip().startswith("|") and "---" not in line:
+                  cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+                  if len(cells) >= 2 and cells[0].lower() not in {"verification", "artifact or platform"}:
+                      evidence_rows.append(cells[1])
+          if evidence_rows and any(not substantive(value) for value in evidence_rows):
+              errors.append("Every verification row must contain observed evidence or a reasoned N/A.")
+          if not evidence_rows and not substantive(verification):
+              errors.append("Verification must contain reproducible evidence or a reasoned N/A.")
+
+          if errors:
+              print("PR evidence contract validation failed:", file=sys.stderr)
+              for error in errors:
+                  print(f"- {error}", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"PR evidence contract validation passed using the {profile} profile.")
+          PY

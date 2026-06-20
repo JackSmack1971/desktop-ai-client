@@ -366,9 +366,38 @@ impl TurnStore {
     /// text lived only in memory and is unrecoverable. Flip those attempts
     /// (and their parent turns/conversations) to a terminal `failed` state
     /// with reason `backend_shutdown` so the UI never shows a stream
-    /// spinning forever. Returns the number of attempts recovered.
+    /// spinning forever.
+    ///
+    /// Fail closed: if any in-progress attempt is not attached to a live
+    /// turn + conversation chain, or if the post-update verification does
+    /// not match the pre-update orphan set, the whole recovery transaction
+    /// aborts.
     pub fn recover_orphaned_attempts(&self) -> rusqlite::Result<usize> {
         self.pool.with_transaction(|tx| {
+            let orphaned_attempts: i64 = tx.query_row(
+                "SELECT COUNT(*) FROM turn_attempts WHERE status = 'in_progress'",
+                [],
+                |row| row.get(0),
+            )?;
+            if orphaned_attempts == 0 {
+                return Ok(0);
+            }
+
+            let attached_attempts: i64 = tx.query_row(
+                "SELECT COUNT(*)
+                 FROM turn_attempts ta
+                 JOIN turns t ON t.id = ta.turn_id
+                 JOIN conversations c ON c.id = t.conversation_id
+                 WHERE ta.status = 'in_progress'
+                   AND t.status = 'pending'
+                   AND c.status IN ('active', 'incomplete')",
+                [],
+                |row| row.get(0),
+            )?;
+            if attached_attempts != orphaned_attempts {
+                return Err(rusqlite::Error::InvalidQuery);
+            }
+
             let recovered = tx.execute(
                 "UPDATE turn_attempts SET status = 'failed', failure_reason = 'backend_shutdown',
                     updated_at = datetime('now')
@@ -391,6 +420,39 @@ impl TurnStore {
                    )",
                 [],
             )?;
+
+            let verified_attempts: i64 = tx.query_row(
+                "SELECT COUNT(*) FROM turn_attempts
+                 WHERE status = 'failed' AND failure_reason = 'backend_shutdown'",
+                [],
+                |row| row.get(0),
+            )?;
+            if verified_attempts != orphaned_attempts {
+                return Err(rusqlite::Error::InvalidQuery);
+            }
+
+            let verified_turns: i64 = tx.query_row(
+                "SELECT COUNT(*)
+                 FROM turns
+                 WHERE status = 'failed'
+                   AND id IN (
+                     SELECT DISTINCT turn_id FROM turn_attempts
+                     WHERE failure_reason = 'backend_shutdown'
+                   )",
+                [],
+                |row| row.get(0),
+            )?;
+            let expected_turns: i64 = tx.query_row(
+                "SELECT COUNT(DISTINCT turn_id)
+                 FROM turn_attempts
+                 WHERE failure_reason = 'backend_shutdown'",
+                [],
+                |row| row.get(0),
+            )?;
+            if verified_turns != expected_turns {
+                return Err(rusqlite::Error::InvalidQuery);
+            }
+
             Ok(recovered)
         })
     }
@@ -683,6 +745,49 @@ mod tests {
         // Recovery must be idempotent — running it again recovers nothing new.
         let recovered_again = store.recover_orphaned_attempts().unwrap();
         assert_eq!(recovered_again, 0);
+    }
+
+    #[test]
+    fn recover_orphaned_attempts_fails_closed_for_partial_recovery() {
+        let pool = migrated_pool();
+        let store = TurnStore::new(pool.clone());
+        let conversation_id = seed_conversation(&pool);
+
+        let BeginTurnOutcome::New { turn_id } = store
+            .begin_turn(&conversation_id, "idem-corrupt", "hello")
+            .unwrap()
+        else {
+            panic!("expected New");
+        };
+        let attempt_id = store.start_attempt(&turn_id, 1).unwrap();
+
+        // Simulate a corrupted recovery boundary: foreign keys are disabled
+        // so the turn row can disappear while the in-progress attempt remains.
+        pool.with_conn(|conn| {
+            conn.execute_batch("PRAGMA foreign_keys = OFF;")?;
+            conn.execute("DELETE FROM turns WHERE id = ?1", params![turn_id])?;
+            conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+            Ok(())
+        })
+        .unwrap();
+
+        let err = store.recover_orphaned_attempts().unwrap_err();
+        assert!(
+            matches!(err, rusqlite::Error::InvalidQuery),
+            "partial recovery should fail closed, got {err:?}"
+        );
+
+        // The failed recovery must not rewrite the orphaned attempt.
+        let attempt_status: String = pool
+            .with_conn(|conn| {
+                conn.query_row(
+                    "SELECT status FROM turn_attempts WHERE id = ?1",
+                    params![attempt_id],
+                    |row| row.get(0),
+                )
+            })
+            .unwrap();
+        assert_eq!(attempt_status, "in_progress");
     }
 
     /// Three sequential turns in the same conversation — the scenario behind

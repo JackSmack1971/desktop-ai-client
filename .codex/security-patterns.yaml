@@ -1,0 +1,17 @@
+patterns:
+  - name: secret-env
+    match: '(?i)\.env|api[_-]?key|secret|token|password|passphrase|private[_-]?key'
+    risk: secret exposure
+  - name: destructive-shell
+    match: '(?i)\brm\s+-rf\b|\bgit\s+reset\s+--hard\b|\bgit\s+push\s+--force\b|\bdropdb\b|\bterraform\s+destroy\b|\bkubectl\s+delete\b'
+    risk: destructive mutation
+  - name: command-exec
+    match: '(?i)\bstd::process::Command\b|\bCommand::new\b|\bchild_process\b|\bexecFile\b|\beval\b'
+    risk: unsafe command execution
+  - name: renderer-escape
+    match: '(?i)window\.__TAURI__|invoke\(|dangerouslySetInnerHTML|innerHTML|sandbox'
+    risk: renderer boundary weakening
+  - name: telemetry-leak
+    match: '(?i)audit log|telemetry|analytics|trace|screenshot|debug print'
+    risk: sensitive data leakage
+

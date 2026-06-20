@@ -1,0 +1,1022 @@
+{
+  "C:\\workspaces\\desktop-ai-client\\.planning\\config.json": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "a513baaf3bf0d72f4531ae88801fc0c7",
+    "semantic_hash": "a513baaf3bf0d72f4531ae88801fc0c7"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.prettierrc.json": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "7d7122576d3cf1b578989bc66bed8c79",
+    "semantic_hash": "7d7122576d3cf1b578989bc66bed8c79"
+  },
+  "C:\\workspaces\\desktop-ai-client\\eslint.config.js": {
+    "mtime": 1781976420.733789,
+    "ast_hash": "fd6a8422c897403d8e36ba1af3383116",
+    "semantic_hash": "fd6a8422c897403d8e36ba1af3383116"
+  },
+  "C:\\workspaces\\desktop-ai-client\\package.json": {
+    "mtime": 1781976420.734789,
+    "ast_hash": "e8e3f4c422443bd5f5274b09803db0fa",
+    "semantic_hash": "e8e3f4c422443bd5f5274b09803db0fa"
+  },
+  "C:\\workspaces\\desktop-ai-client\\scripts\\analyze_structure.sh": {
+    "mtime": 1781977241.2358947,
+    "ast_hash": "f0bfb0849e1bd2ea60edb94dffe759c5",
+    "semantic_hash": "f0bfb0849e1bd2ea60edb94dffe759c5"
+  },
+  "C:\\workspaces\\desktop-ai-client\\scripts\\detect_state.sh": {
+    "mtime": 1781977241.2368855,
+    "ast_hash": "6215d04b1139dace130f3b0d45aeef29",
+    "semantic_hash": "6215d04b1139dace130f3b0d45aeef29"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\build.rs": {
+    "mtime": 1781977241.2403252,
+    "ast_hash": "3fa84ab2cb9b6d82ab7550602f842b22",
+    "semantic_hash": "3fa84ab2cb9b6d82ab7550602f842b22"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\capabilities\\main.json": {
+    "mtime": 1781904985.0608714,
+    "ast_hash": "69b993901029a1649922a3f9f599af47",
+    "semantic_hash": "69b993901029a1649922a3f9f599af47"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\app_state.rs": {
+    "mtime": 1781891131.8966432,
+    "ast_hash": "a52ce7b06e87df7c35606ac99d1ca8a7",
+    "semantic_hash": "a52ce7b06e87df7c35606ac99d1ca8a7"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\bin\\collect-release-evidence.rs": {
+    "mtime": 1781891131.8966432,
+    "ast_hash": "3d7961a3abca52f5099943682948e29c",
+    "semantic_hash": "3d7961a3abca52f5099943682948e29c"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\bin\\memory-replay.rs": {
+    "mtime": 1781977241.2413278,
+    "ast_hash": "f6461a308be8448504ac2179a62993dc",
+    "semantic_hash": "f6461a308be8448504ac2179a62993dc"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\bin\\verify-command-inventory.rs": {
+    "mtime": 1781582026.3041244,
+    "ast_hash": "2f424a3d8cc77bd8ab44fbb9253acb35",
+    "semantic_hash": "2f424a3d8cc77bd8ab44fbb9253acb35"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\app_shell.rs": {
+    "mtime": 1781977241.2423706,
+    "ast_hash": "f2052cc82555cf2de97a506e46a98a6e",
+    "semantic_hash": "f2052cc82555cf2de97a506e46a98a6e"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\artifacts.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "a3ee98289c842b4cde0bc9659b56a10d",
+    "semantic_hash": "a3ee98289c842b4cde0bc9659b56a10d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\chat.rs": {
+    "mtime": 1781977241.2433453,
+    "ast_hash": "53896b3dadd1aaf0862f3fbd538377fd",
+    "semantic_hash": "53896b3dadd1aaf0862f3fbd538377fd"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\files.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "dd2cc84a6e9576d4eae76a11868c0f20",
+    "semantic_hash": "dd2cc84a6e9576d4eae76a11868c0f20"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\history.rs": {
+    "mtime": 1781966647.8966808,
+    "ast_hash": "76ab93ce00f3ca6ec234a00766c20a50",
+    "semantic_hash": "76ab93ce00f3ca6ec234a00766c20a50"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\inventory.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "7063198ae2131b58e9c082ebf4a709d0",
+    "semantic_hash": "7063198ae2131b58e9c082ebf4a709d0"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\mod.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "a31e64b67a39eb050cc9fefe9fc84432",
+    "semantic_hash": "a31e64b67a39eb050cc9fefe9fc84432"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\privacy.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "1ce3270247a07cac220d3baec6a26830",
+    "semantic_hash": "1ce3270247a07cac220d3baec6a26830"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\providers.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "b91acf28f94f3d2697bd4a2e72f69b31",
+    "semantic_hash": "b91acf28f94f3d2697bd4a2e72f69b31"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc_inventory_prop_tests.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "4d6e58911ed3b97a4825c6c29bd19db5",
+    "semantic_hash": "4d6e58911ed3b97a4825c6c29bd19db5"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\lib.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "aec024f0e41af254b06ddc7d6ce99dcf",
+    "semantic_hash": "aec024f0e41af254b06ddc7d6ce99dcf"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\main.rs": {
+    "mtime": 1781966125.2603488,
+    "ast_hash": "1de82f93f383ed745423ca70ac05fde2",
+    "semantic_hash": "1de82f93f383ed745423ca70ac05fde2"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\providers\\capabilities.rs": {
+    "mtime": 1781977241.2443378,
+    "ast_hash": "691e7632b279546b16464e9cedce523a",
+    "semantic_hash": "691e7632b279546b16464e9cedce523a"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\providers\\mod.rs": {
+    "mtime": 1781977241.245339,
+    "ast_hash": "3b9efdde591222e2bfed4e07c5e1bbea",
+    "semantic_hash": "3b9efdde591222e2bfed4e07c5e1bbea"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\providers\\openrouter.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "094861fa8a4de608e1b0fd383b4ca10a",
+    "semantic_hash": "094861fa8a4de608e1b0fd383b4ca10a"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\providers\\policy.rs": {
+    "mtime": 1781977241.2468517,
+    "ast_hash": "fe056040f2d556f71d9ad97c8c5dc75b",
+    "semantic_hash": "fe056040f2d556f71d9ad97c8c5dc75b"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\providers\\routing.rs": {
+    "mtime": 1781977241.2478676,
+    "ast_hash": "68ff041e27ff3200dd758ad52a61f575",
+    "semantic_hash": "68ff041e27ff3200dd758ad52a61f575"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\providers\\sse.rs": {
+    "mtime": 1781966273.2012475,
+    "ast_hash": "a7b1faaf5c9b9592f3ce743249eb0128",
+    "semantic_hash": "a7b1faaf5c9b9592f3ce743249eb0128"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\security\\artifact_sandbox.rs": {
+    "mtime": 1781579856.9670079,
+    "ast_hash": "28447aec7469d9bd62fd612ac0bcd796",
+    "semantic_hash": "28447aec7469d9bd62fd612ac0bcd796"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\security\\attachment_budget.rs": {
+    "mtime": 1781977241.2488613,
+    "ast_hash": "9443dd83f2470bd546d56e9c76ddfb56",
+    "semantic_hash": "9443dd83f2470bd546d56e9c76ddfb56"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\security\\command_policy.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "2a32fa4844188a7dab22ca18b62749ee",
+    "semantic_hash": "2a32fa4844188a7dab22ca18b62749ee"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\security\\mod.rs": {
+    "mtime": 1781977241.2498608,
+    "ast_hash": "41f038266c0acba2315ef2c5bb9bd5e2",
+    "semantic_hash": "41f038266c0acba2315ef2c5bb9bd5e2"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\artifacts.rs": {
+    "mtime": 1781965334.5839705,
+    "ast_hash": "0c159f79f153478ce687cd3a0c75cc98",
+    "semantic_hash": "0c159f79f153478ce687cd3a0c75cc98"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\backup.rs": {
+    "mtime": 1781744393.047822,
+    "ast_hash": "e5e4131df0427e96a37b701fc0078a75",
+    "semantic_hash": "e5e4131df0427e96a37b701fc0078a75"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\fts.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "9d7dff51eaa7e0f42a217915dec94042",
+    "semantic_hash": "9d7dff51eaa7e0f42a217915dec94042"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\memory.rs": {
+    "mtime": 1781977241.250143,
+    "ast_hash": "812c2d49ddac47db3722d952124207a1",
+    "semantic_hash": "812c2d49ddac47db3722d952124207a1"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\migrations.rs": {
+    "mtime": 1781977241.2511497,
+    "ast_hash": "12f976c488c01c64ffa1208a05fb6357",
+    "semantic_hash": "12f976c488c01c64ffa1208a05fb6357"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\mod.rs": {
+    "mtime": 1781977241.2521443,
+    "ast_hash": "b57b31bc19c17efe440b9d06007f96be",
+    "semantic_hash": "b57b31bc19c17efe440b9d06007f96be"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\retention.rs": {
+    "mtime": 1781891131.912274,
+    "ast_hash": "6f569e85eb99dce55efc5a1105946037",
+    "semantic_hash": "6f569e85eb99dce55efc5a1105946037"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\sqlite.rs": {
+    "mtime": 1781965529.5545728,
+    "ast_hash": "821adc7c0fdce374ec252ff07411193a",
+    "semantic_hash": "821adc7c0fdce374ec252ff07411193a"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\turns.rs": {
+    "mtime": 1781966082.2390668,
+    "ast_hash": "7edac811a8f5355994bd9119f867ea90",
+    "semantic_hash": "7edac811a8f5355994bd9119f867ea90"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\telemetry\\audit_log.rs": {
+    "mtime": 1781891131.9279163,
+    "ast_hash": "21632ae8d3ad0655fe94f7caa237d6a1",
+    "semantic_hash": "21632ae8d3ad0655fe94f7caa237d6a1"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\telemetry\\memory_replay.rs": {
+    "mtime": 1781977241.2521443,
+    "ast_hash": "1852dacf0c1f57606b8e8f52eb60f8d7",
+    "semantic_hash": "1852dacf0c1f57606b8e8f52eb60f8d7"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\telemetry\\mod.rs": {
+    "mtime": 1781977241.2532408,
+    "ast_hash": "f03f60f7011d175c804789425903995d",
+    "semantic_hash": "f03f60f7011d175c804789425903995d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\telemetry\\release_evidence.rs": {
+    "mtime": 1781891131.9279163,
+    "ast_hash": "b986db244903d1572ff7c19ebb501f2a",
+    "semantic_hash": "b986db244903d1572ff7c19ebb501f2a"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\tauri.conf.json": {
+    "mtime": 1781976420.7531376,
+    "ast_hash": "37cfe17ebba75d917647c3f209ba23ac",
+    "semantic_hash": "37cfe17ebba75d917647c3f209ba23ac"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\tests\\app_shell.rs": {
+    "mtime": 1781977241.2546985,
+    "ast_hash": "78b4843bcf591d965fb997cf90a5e807",
+    "semantic_hash": "78b4843bcf591d965fb997cf90a5e807"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\api\\artifacts.ts": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "91962abfe53d9e049a9f4eeb7f403d04",
+    "semantic_hash": "91962abfe53d9e049a9f4eeb7f403d04"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\api\\chat.ts": {
+    "mtime": 1781977241.256705,
+    "ast_hash": "91702e92ac595b652c2927e19c99e0ce",
+    "semantic_hash": "91702e92ac595b652c2927e19c99e0ce"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\api\\errors.ts": {
+    "mtime": 1781891131.9279163,
+    "ast_hash": "c42b8499e6e95afb95a9fa7ae68935a6",
+    "semantic_hash": "c42b8499e6e95afb95a9fa7ae68935a6"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\AppShell.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "ecea22bf4fd81ac1d5c588b883ede4a6",
+    "semantic_hash": "ecea22bf4fd81ac1d5c588b883ede4a6"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\StatusRegion.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "cfbf472d36bd886d700d5cab263ad05b",
+    "semantic_hash": "cfbf472d36bd886d700d5cab263ad05b"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\SurfacePanel.svelte": {
+    "mtime": 1781378038.27672,
+    "ast_hash": "6c12d7d4d015bfc862e80d331700b77d",
+    "semantic_hash": "6c12d7d4d015bfc862e80d331700b77d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\SurfaceRail.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "4dc51a054417b0f0a55f97bba8fa278d",
+    "semantic_hash": "4dc51a054417b0f0a55f97bba8fa278d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\WorkspaceShell.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "737794569dfcc32d02fd877bb465c3d7",
+    "semantic_hash": "737794569dfcc32d02fd877bb465c3d7"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\chat\\ChatInput.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "90107f32042ef8a5c1ac5c9620cabd14",
+    "semantic_hash": "90107f32042ef8a5c1ac5c9620cabd14"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\chat\\ChatMessage.svelte": {
+    "mtime": 1781975799.7150865,
+    "ast_hash": "77e373756271190445a8d541eb9ce1d3",
+    "semantic_hash": "77e373756271190445a8d541eb9ce1d3"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\chat\\StreamingBubble.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "b88b9e54af4f20923b39d3705694bdd7",
+    "semantic_hash": "b88b9e54af4f20923b39d3705694bdd7"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\history\\ConversationList.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "a80c9162bac22ae0827b2036c5e45fbf",
+    "semantic_hash": "a80c9162bac22ae0827b2036c5e45fbf"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\history\\ConversationRow.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "e750064dc4c7ae221ba8d0dd723f2fe6",
+    "semantic_hash": "e750064dc4c7ae221ba8d0dd723f2fe6"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\history\\SearchBar.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "cb5c1232d0dd2ae3c6d2248c152d006c",
+    "semantic_hash": "cb5c1232d0dd2ae3c6d2248c152d006c"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\surfaces\\ArtifactsSurface.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "e445b2c5cfac554fdfc6b3c4d9a06862",
+    "semantic_hash": "e445b2c5cfac554fdfc6b3c4d9a06862"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\surfaces\\ChatSurface.svelte": {
+    "mtime": 1781966789.1597483,
+    "ast_hash": "66fba6125a7529866a3edf2fa1065e8d",
+    "semantic_hash": "66fba6125a7529866a3edf2fa1065e8d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\surfaces\\HistorySurface.svelte": {
+    "mtime": 1781966694.2778556,
+    "ast_hash": "710bdc928e95877b610219514118322c",
+    "semantic_hash": "710bdc928e95877b610219514118322c"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\surfaces\\SettingsSurface.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "3248015ff6fe9be7fadd17bfb0aff861",
+    "semantic_hash": "3248015ff6fe9be7fadd17bfb0aff861"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\stores\\artifacts.ts": {
+    "mtime": 1781977241.261044,
+    "ast_hash": "5279848d588cd7e1f674ae8f6f7b02a9",
+    "semantic_hash": "5279848d588cd7e1f674ae8f6f7b02a9"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\stores\\chat.ts": {
+    "mtime": 1781976420.7576962,
+    "ast_hash": "99ab4b0544eef2991ffa8f0a98f61352",
+    "semantic_hash": "99ab4b0544eef2991ffa8f0a98f61352"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\stores\\history.ts": {
+    "mtime": 1781975799.7160885,
+    "ast_hash": "b7430fca78f83b2bce835d014ba80f7d",
+    "semantic_hash": "b7430fca78f83b2bce835d014ba80f7d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\stores\\settings.ts": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "934f3557b19416eadb7eae83df3e98b3",
+    "semantic_hash": "934f3557b19416eadb7eae83df3e98b3"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\stores\\surface.ts": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "6ab24527571df3acdd4e5db468857293",
+    "semantic_hash": "6ab24527571df3acdd4e5db468857293"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\routes\\+layout.svelte": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "60362b7edb83aa507f624e0ad77cd2a8",
+    "semantic_hash": "60362b7edb83aa507f624e0ad77cd2a8"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\routes\\+page.svelte": {
+    "mtime": 1781378089.33156,
+    "ast_hash": "af26dc7573cdcd6c1eb73bceeaae2fb6",
+    "semantic_hash": "af26dc7573cdcd6c1eb73bceeaae2fb6"
+  },
+  "C:\\workspaces\\desktop-ai-client\\svelte.config.js": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "06944465aef5d4b8472300f3a431e79b",
+    "semantic_hash": "06944465aef5d4b8472300f3a431e79b"
+  },
+  "C:\\workspaces\\desktop-ai-client\\tsconfig.json": {
+    "mtime": 1781377459.513945,
+    "ast_hash": "b99d0910eb5ad6a73522b4d59c668566",
+    "semantic_hash": "b99d0910eb5ad6a73522b4d59c668566"
+  },
+  "C:\\workspaces\\desktop-ai-client\\vite.config.ts": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "6accb1572aace63ff0d0de24cc0e10d2",
+    "semantic_hash": "6accb1572aace63ff0d0de24cc0e10d2"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\ISSUE_TEMPLATE\\01-bug.yml": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "74010c74237f8dbde278dde96fe1b801",
+    "semantic_hash": "74010c74237f8dbde278dde96fe1b801"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\ISSUE_TEMPLATE\\anomaly.yml": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "0944edea6f89b3ce8ac968227345873d",
+    "semantic_hash": "0944edea6f89b3ce8ac968227345873d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\ISSUE_TEMPLATE\\architecture.yml": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "011376b902388a3c269a2e1328c531fb",
+    "semantic_hash": "011376b902388a3c269a2e1328c531fb"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\ISSUE_TEMPLATE\\dead-code.yml": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "0818c439264a265e6e8200498aa16e49",
+    "semantic_hash": "0818c439264a265e6e8200498aa16e49"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\ISSUE_TEMPLATE\\security.yml": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "4a733094063683d14e600af292661343",
+    "semantic_hash": "4a733094063683d14e600af292661343"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\ISSUE_TEMPLATE\\tech-debt.yml": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "b16c04b7ce7d0b9b4af5e3963e26d063",
+    "semantic_hash": "b16c04b7ce7d0b9b4af5e3963e26d063"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\ISSUE_TEMPLATE\\test-gap.yml": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "5ba103d0930aeb452996a2c991479364",
+    "semantic_hash": "5ba103d0930aeb452996a2c991479364"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\PULL_REQUEST_TEMPLATE.md": {
+    "mtime": 1781975992.770158,
+    "ast_hash": "b0b65294b25c0d648feb88fd6cc8f18e",
+    "semantic_hash": "b0b65294b25c0d648feb88fd6cc8f18e"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\PULL_REQUEST_TEMPLATE\\release.md": {
+    "mtime": 1781975992.7711573,
+    "ast_hash": "a07ecd200c20fe67d90348c3008ab866",
+    "semantic_hash": "a07ecd200c20fe67d90348c3008ab866"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\PULL_REQUEST_TEMPLATE\\security-sensitive.md": {
+    "mtime": 1781975992.7711573,
+    "ast_hash": "eba85ebf6e7f46c6653de3a76c61382b",
+    "semantic_hash": "eba85ebf6e7f46c6653de3a76c61382b"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\workflows\\ci.yml": {
+    "mtime": 1781975772.4255917,
+    "ast_hash": "a1efd6e006f003c7d604f69c0bc2439e",
+    "semantic_hash": "a1efd6e006f003c7d604f69c0bc2439e"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.github\\workflows\\pr-contract.yml": {
+    "mtime": 1781975992.7721605,
+    "ast_hash": "1891810bed51168e2d725371a5df62ba",
+    "semantic_hash": "1891810bed51168e2d725371a5df62ba"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\PROJECT.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "f6282b2f851927ee3be5ab3059dc2283",
+    "semantic_hash": "f6282b2f851927ee3be5ab3059dc2283"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\REQUIREMENTS.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "e9d9d46918b23d44c70017b08d8d96c6",
+    "semantic_hash": "e9d9d46918b23d44c70017b08d8d96c6"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\ROADMAP.md": {
+    "mtime": 1781891131.8876166,
+    "ast_hash": "587474c2c76e5727c011e78d4837fc8d",
+    "semantic_hash": "587474c2c76e5727c011e78d4837fc8d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\STATE.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "5a51cbbd976a795922ba882f35318af7",
+    "semantic_hash": "5a51cbbd976a795922ba882f35318af7"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\codebase\\ARCHITECTURE.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "e086f8185911cd7ee5e82a8aded1cf54",
+    "semantic_hash": "e086f8185911cd7ee5e82a8aded1cf54"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\codebase\\CONCERNS.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "315611beffc607a7bfcfb28f583483b8",
+    "semantic_hash": "315611beffc607a7bfcfb28f583483b8"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\codebase\\CONVENTIONS.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "ac4c1a855c673b8b1c1350e58e11433a",
+    "semantic_hash": "ac4c1a855c673b8b1c1350e58e11433a"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\codebase\\INTEGRATIONS.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "bb0889cd01c639f2b0411e8ff39337f7",
+    "semantic_hash": "bb0889cd01c639f2b0411e8ff39337f7"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\codebase\\STACK.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "4c42acf2d78fa5232ffe0059953705ec",
+    "semantic_hash": "4c42acf2d78fa5232ffe0059953705ec"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\codebase\\STRUCTURE.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "06f230f3bf77a6d73700cf18507955a8",
+    "semantic_hash": "06f230f3bf77a6d73700cf18507955a8"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\codebase\\TESTING.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "9b57bf4e54c1d88ac738a7d91de13480",
+    "semantic_hash": "9b57bf4e54c1d88ac738a7d91de13480"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-01-PLAN.md": {
+    "mtime": 1781904984.998338,
+    "ast_hash": "b80fcc9017593a158bc5e8931b7b09f0",
+    "semantic_hash": "b80fcc9017593a158bc5e8931b7b09f0"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-01-SUMMARY.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "6d83c527f5743f3bd492071d97dba95d",
+    "semantic_hash": "6d83c527f5743f3bd492071d97dba95d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-02-PLAN.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "876bb7681bfa3684441ff002bede723c",
+    "semantic_hash": "876bb7681bfa3684441ff002bede723c"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-02-SUMMARY.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "1b9b730cee16ebc453c4f2ccc19ab2f4",
+    "semantic_hash": "1b9b730cee16ebc453c4f2ccc19ab2f4"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-03-PLAN.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "b4c47fed017182e7c1d5eb1d033514ed",
+    "semantic_hash": "b4c47fed017182e7c1d5eb1d033514ed"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-03-SUMMARY.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "1e28de64580f1065cba76dac6072eb4b",
+    "semantic_hash": "1e28de64580f1065cba76dac6072eb4b"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-HUMAN-UAT.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "5c1cb2adaa2f333007763b18419eaa17",
+    "semantic_hash": "5c1cb2adaa2f333007763b18419eaa17"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-REVIEW-FIX.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "3e2d01c937b8840784c553a3a839afa5",
+    "semantic_hash": "3e2d01c937b8840784c553a3a839afa5"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-REVIEW.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "2c65c2a37dfaca24ab01d8592c2363bf",
+    "semantic_hash": "2c65c2a37dfaca24ab01d8592c2363bf"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\01-VERIFICATION.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "cd8ad67e347fa71dfdaa219f0dfe990c",
+    "semantic_hash": "cd8ad67e347fa71dfdaa219f0dfe990c"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\01-app-shell\\SKELETON.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "454fc1c6102b4af875e8ca731bde02d2",
+    "semantic_hash": "454fc1c6102b4af875e8ca731bde02d2"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\02-routing\\02-CONTEXT.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "3b6e1f0567b81f1c16d438717785cabf",
+    "semantic_hash": "3b6e1f0567b81f1c16d438717785cabf"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\02-routing\\02-DISCUSSION-LOG.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "43e3e2a3ae8d0cdcfd4688e9e0bcdf20",
+    "semantic_hash": "43e3e2a3ae8d0cdcfd4688e9e0bcdf20"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\02-routing\\02-RESEARCH.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "c04eaadecc5a6f0c9807df99fd6d08cc",
+    "semantic_hash": "c04eaadecc5a6f0c9807df99fd6d08cc"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\02-routing\\02-SUMMARY.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "90022eb77b04a903c30574823fc441df",
+    "semantic_hash": "90022eb77b04a903c30574823fc441df"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\02-routing\\02-UAT.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "bc901296f35a823f69414c79235f7909",
+    "semantic_hash": "bc901296f35a823f69414c79235f7909"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\02-routing\\PLAN.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "ec4c07a0bc92fa360bfa77bd5b98c75e",
+    "semantic_hash": "ec4c07a0bc92fa360bfa77bd5b98c75e"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-01-PLAN.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "b0a261c3137b53bea49cf22deacb64c0",
+    "semantic_hash": "b0a261c3137b53bea49cf22deacb64c0"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-01-SUMMARY.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "ba33148ede566a1abf55f42202a3f792",
+    "semantic_hash": "ba33148ede566a1abf55f42202a3f792"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-02-PLAN.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "74f9fe1e09e84bb5508e23f875687e0f",
+    "semantic_hash": "74f9fe1e09e84bb5508e23f875687e0f"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-02-SUMMARY.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "51361caef6a9e42562bb45b0e42f28c3",
+    "semantic_hash": "51361caef6a9e42562bb45b0e42f28c3"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-03-PLAN.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "52f5ee87b64ff91a2f002995a0d276d1",
+    "semantic_hash": "52f5ee87b64ff91a2f002995a0d276d1"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-03-SUMMARY.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "3eb04b608ba9d358fcb00dc823d6398d",
+    "semantic_hash": "3eb04b608ba9d358fcb00dc823d6398d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-04-PLAN.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "0885bf2077cdca0b050191a8c2318e51",
+    "semantic_hash": "0885bf2077cdca0b050191a8c2318e51"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-04-SUMMARY.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "ac9bccfe270747893eb7a8738f1a09d2",
+    "semantic_hash": "ac9bccfe270747893eb7a8738f1a09d2"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-CONTEXT.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "989d5ad3ce2ebbec7abecd160ef354f7",
+    "semantic_hash": "989d5ad3ce2ebbec7abecd160ef354f7"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-DISCUSSION-LOG.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "5011f5ff81723707b0b836191ab5a1a5",
+    "semantic_hash": "5011f5ff81723707b0b836191ab5a1a5"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-PATTERNS.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "c2c42259ae4846baab0acf295bb7b18c",
+    "semantic_hash": "c2c42259ae4846baab0acf295bb7b18c"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\03-history\\03-UI-SPEC.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "f938f9bb230f6b884316b2806a1ef4c8",
+    "semantic_hash": "f938f9bb230f6b884316b2806a1ef4c8"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-01-PLAN.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "345a200fd40bda0a5b4a87dab26589ef",
+    "semantic_hash": "345a200fd40bda0a5b4a87dab26589ef"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-01-SUMMARY.md": {
+    "mtime": 1781904985.0139635,
+    "ast_hash": "afb0789c01851650a64920a34ebdc81b",
+    "semantic_hash": "afb0789c01851650a64920a34ebdc81b"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-02-PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "574151c019d00fa0381d2426f906fed2",
+    "semantic_hash": "574151c019d00fa0381d2426f906fed2"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-02-SUMMARY.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "9f974a204237d2cccbcac53e3dd7d4b7",
+    "semantic_hash": "9f974a204237d2cccbcac53e3dd7d4b7"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-03-PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "7bfd2902f254eeab01283d2ab326384d",
+    "semantic_hash": "7bfd2902f254eeab01283d2ab326384d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-03-SUMMARY.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "45e31d9df1fbc5074d7e491d6678b953",
+    "semantic_hash": "45e31d9df1fbc5074d7e491d6678b953"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-04-PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "dbf01b7a73c4d9f0b5c08a92242ada91",
+    "semantic_hash": "dbf01b7a73c4d9f0b5c08a92242ada91"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-04-SUMMARY.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "0fd1b1218f78831fbef67cd935f0e085",
+    "semantic_hash": "0fd1b1218f78831fbef67cd935f0e085"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-05-PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "2076969bdfe4237580da53a244ff2a81",
+    "semantic_hash": "2076969bdfe4237580da53a244ff2a81"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-05-SUMMARY.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "5ed1c669082ee10d224c2e57727e6e92",
+    "semantic_hash": "5ed1c669082ee10d224c2e57727e6e92"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-06-PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "2cf614d6e68daa79e92ae4c7a28808d3",
+    "semantic_hash": "2cf614d6e68daa79e92ae4c7a28808d3"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-06-SUMMARY.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "2543bb169fbdf6093d58654edb812d63",
+    "semantic_hash": "2543bb169fbdf6093d58654edb812d63"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-07-PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "347aec2a967860e9dc99d6e34e47d9c4",
+    "semantic_hash": "347aec2a967860e9dc99d6e34e47d9c4"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-07-SUMMARY.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "595cda9e839cc5eafaeba90110e428b1",
+    "semantic_hash": "595cda9e839cc5eafaeba90110e428b1"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-CONTEXT.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "a21fcb566846ac06d1b62a793ef6c963",
+    "semantic_hash": "a21fcb566846ac06d1b62a793ef6c963"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-DISCUSSION-LOG.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "5dca133f89c4326f1b5a43bbab5c0afb",
+    "semantic_hash": "5dca133f89c4326f1b5a43bbab5c0afb"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-RESEARCH.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "194ce11e8f13da13f4556e9725bded5a",
+    "semantic_hash": "194ce11e8f13da13f4556e9725bded5a"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-UI-SPEC.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "9f9246e7a9d66a762540b69792ab3765",
+    "semantic_hash": "9f9246e7a9d66a762540b69792ab3765"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\04-privacy\\04-VALIDATION.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "b9f850bc8b3251d6cab8e3124cc34c0e",
+    "semantic_hash": "b9f850bc8b3251d6cab8e3124cc34c0e"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-01-PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "71fca11511f8d0e05a0d80edf9dcb18c",
+    "semantic_hash": "71fca11511f8d0e05a0d80edf9dcb18c"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-01-SUMMARY.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "e0eac819c6886ee541d05331b76f148f",
+    "semantic_hash": "e0eac819c6886ee541d05331b76f148f"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-02-PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "e5f4528ca0b7eacde344e4e02f9f4d6b",
+    "semantic_hash": "e5f4528ca0b7eacde344e4e02f9f4d6b"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-02-SUMMARY.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "cdca81f5e78f3e8fd8e87ebe45d23fc1",
+    "semantic_hash": "cdca81f5e78f3e8fd8e87ebe45d23fc1"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-03-PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "be26c04c5f659e9cc84d95a015f89b81",
+    "semantic_hash": "be26c04c5f659e9cc84d95a015f89b81"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-03-SUMMARY.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "cda147ec0ba544d63fe6d258827f2b33",
+    "semantic_hash": "cda147ec0ba544d63fe6d258827f2b33"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-CONTEXT.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "0e9ee8459bda9a8783b86542137dabd1",
+    "semantic_hash": "0e9ee8459bda9a8783b86542137dabd1"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-DISCUSSION-LOG.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "480a043abc11a60a0ce87240de154c49",
+    "semantic_hash": "480a043abc11a60a0ce87240de154c49"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-HUMAN-UAT.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "bcb63f586f19d502a3e9df73fc0c2522",
+    "semantic_hash": "bcb63f586f19d502a3e9df73fc0c2522"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\05-artifacts\\05-UI-SPEC.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "1e117f6c3d605f700e474aec6b5a96fa",
+    "semantic_hash": "1e117f6c3d605f700e474aec6b5a96fa"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\06-release\\06-CONTEXT.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "34d153c96f9c1bc2e549459601b35026",
+    "semantic_hash": "34d153c96f9c1bc2e549459601b35026"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\06-release\\06-DISCUSSION-LOG.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "8b290a3e6a7eec875ea284f4c4b35a93",
+    "semantic_hash": "8b290a3e6a7eec875ea284f4c4b35a93"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\06-release\\06-SUMMARY.md": {
+    "mtime": 1781582769.3181586,
+    "ast_hash": "ada82676d4f6bc5fe6a7f69c9b6960a4",
+    "semantic_hash": "ada82676d4f6bc5fe6a7f69c9b6960a4"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\milestones\\v1.0-phases\\06-release\\PLAN.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "7bc6f84db5fcfb08120df4a4ed790a36",
+    "semantic_hash": "7bc6f84db5fcfb08120df4a4ed790a36"
+  },
+  "C:\\workspaces\\desktop-ai-client\\.planning\\v1.0-MILESTONE-AUDIT.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "1261dfc4b34aa05cb582793d12789a84",
+    "semantic_hash": "1261dfc4b34aa05cb582793d12789a84"
+  },
+  "C:\\workspaces\\desktop-ai-client\\AGENTS.md": {
+    "mtime": 1781977241.2221718,
+    "ast_hash": "f215aab416ad10f8f82da59d11ccbdad",
+    "semantic_hash": "f215aab416ad10f8f82da59d11ccbdad"
+  },
+  "C:\\workspaces\\desktop-ai-client\\CONTRIBUTING.md": {
+    "mtime": 1781975992.7728436,
+    "ast_hash": "1db44bb851a32753b20eb52f7c243846",
+    "semantic_hash": "1db44bb851a32753b20eb52f7c243846"
+  },
+  "C:\\workspaces\\desktop-ai-client\\README.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "d6e3ed50caa68c570076807043f36bb4",
+    "semantic_hash": "d6e3ed50caa68c570076807043f36bb4"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\README.md": {
+    "mtime": 1781904985.0295887,
+    "ast_hash": "647df4ba0f629c50b8ee6c8b0cd49c3d",
+    "semantic_hash": "647df4ba0f629c50b8ee6c8b0cd49c3d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\Tauri_Svelte_AI_App_Architecture_Adversarial_Hardened_v5.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "847eb5463e308717d15b2263a58d4faa",
+    "semantic_hash": "847eb5463e308717d15b2263a58d4faa"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\agent-context.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "617fb2b3e4a53ca50ff3685ab7cb2a20",
+    "semantic_hash": "617fb2b3e4a53ca50ff3685ab7cb2a20"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\architecture.md": {
+    "mtime": 1781977241.2231584,
+    "ast_hash": "fac66dc157d128f38b98e8b2a18d5031",
+    "semantic_hash": "fac66dc157d128f38b98e8b2a18d5031"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\command-inventory.md": {
+    "mtime": 1781582162.3034523,
+    "ast_hash": "5ce4cf66836bb4dfe318f755e25e31d5",
+    "semantic_hash": "5ce4cf66836bb4dfe318f755e25e31d5"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\design-blueprint.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "b7bf866637e402e2925c39f5f33657de",
+    "semantic_hash": "b7bf866637e402e2925c39f5f33657de"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\implementation-plan.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "f46ec5a1324850fe981a266a813cc6e5",
+    "semantic_hash": "f46ec5a1324850fe981a266a813cc6e5"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\memory-loop.md": {
+    "mtime": 1781977241.2241235,
+    "ast_hash": "90e857161c1864a36b67852844c49c3c",
+    "semantic_hash": "90e857161c1864a36b67852844c49c3c"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\multi-agent.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "52d29a6ddf9360497bb2f59527cba2d8",
+    "semantic_hash": "52d29a6ddf9360497bb2f59527cba2d8"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\privacy-boundaries.md": {
+    "mtime": 1781977241.22512,
+    "ast_hash": "004ff675daeb6bb2103e98e1f9998113",
+    "semantic_hash": "004ff675daeb6bb2103e98e1f9998113"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\prompt-blueprint.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "467dcac64ecb4886e16a8d146a20ff5d",
+    "semantic_hash": "467dcac64ecb4886e16a8d146a20ff5d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\README.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "a943caacf5584016d9c9798ac53edd1b",
+    "semantic_hash": "a943caacf5584016d9c9798ac53edd1b"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\coding-agent.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "fe3065c28ad1f1bcc12c57aacdf0f726",
+    "semantic_hash": "fe3065c28ad1f1bcc12c57aacdf0f726"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\coordination-agent.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "12ace0aff46b43fd44e97728ce3196d1",
+    "semantic_hash": "12ace0aff46b43fd44e97728ce3196d1"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\design-agent.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "5cf874a2947e76d83ec2cbae280d0acb",
+    "semantic_hash": "5cf874a2947e76d83ec2cbae280d0acb"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\prompt-templates\\memory-agent.md": {
+    "mtime": 1781904985.0452125,
+    "ast_hash": "e5b194db5fb52e374629ee7536170022",
+    "semantic_hash": "e5b194db5fb52e374629ee7536170022"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\provider-routing.md": {
+    "mtime": 1781977241.2256117,
+    "ast_hash": "fc9ec994722ddf1b80fe6c506f975b60",
+    "semantic_hash": "fc9ec994722ddf1b80fe6c506f975b60"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\release-evidence.md": {
+    "mtime": 1781582178.6473744,
+    "ast_hash": "e49c0622d875d284592aedd482a32929",
+    "semantic_hash": "e49c0622d875d284592aedd482a32929"
+  },
+  "C:\\workspaces\\desktop-ai-client\\docs\\threat-model.md": {
+    "mtime": 1781977241.2256117,
+    "ast_hash": "a2fdbe683a067f1008b60549ebed1170",
+    "semantic_hash": "a2fdbe683a067f1008b60549ebed1170"
+  },
+  "C:\\workspaces\\desktop-ai-client\\issue-processing-state.md": {
+    "mtime": 1781904985.0608714,
+    "ast_hash": "b17360c1416481a716e1e0df9c1f65e3",
+    "semantic_hash": "b17360c1416481a716e1e0df9c1f65e3"
+  },
+  "C:\\workspaces\\desktop-ai-client\\plans\\011-unify-shell-lock-order.md": {
+    "mtime": 1781977241.227669,
+    "ast_hash": "ac9fbc141ff77de8679aa70d301403ca",
+    "semantic_hash": "ac9fbc141ff77de8679aa70d301403ca"
+  },
+  "C:\\workspaces\\desktop-ai-client\\plans\\012-bootstrap-frontend-dist-for-rust-tests.md": {
+    "mtime": 1781977241.2286687,
+    "ast_hash": "3bf0b60ade820dc00ad38c2dbd34485a",
+    "semantic_hash": "3bf0b60ade820dc00ad38c2dbd34485a"
+  },
+  "C:\\workspaces\\desktop-ai-client\\plans\\README.md": {
+    "mtime": 1781977241.230674,
+    "ast_hash": "6db1c93e081825b02a28bb480a231a65",
+    "semantic_hash": "6db1c93e081825b02a28bb480a231a65"
+  },
+  "C:\\workspaces\\desktop-ai-client\\pnpm-workspace.yaml": {
+    "mtime": 1781421985.961787,
+    "ast_hash": "06a54e4a6922cd3ce23336eff6eae2b1",
+    "semantic_hash": "06a54e4a6922cd3ce23336eff6eae2b1"
+  },
+  "C:\\workspaces\\desktop-ai-client\\release-evidence\\README.md": {
+    "mtime": 1781977241.2316985,
+    "ast_hash": "e24a1ce01e8eb45e432ececcaf3d24ca",
+    "semantic_hash": "e24a1ce01e8eb45e432ececcaf3d24ca"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\AGENTS.md": {
+    "mtime": 1781904985.0608714,
+    "ast_hash": "af1b5291cb82b78e76d74e26313cb884",
+    "semantic_hash": "af1b5291cb82b78e76d74e26313cb884"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\proptest-regressions\\ipc_inventory_prop_tests.txt": {
+    "mtime": 1781972341.5733628,
+    "ast_hash": "b5966dbdd430e708d852995e2e179ec6",
+    "semantic_hash": "b5966dbdd430e708d852995e2e179ec6"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\AGENTS.md": {
+    "mtime": 1781904985.0608714,
+    "ast_hash": "eba3c51f6b229135c9b2b64bf74b85fc",
+    "semantic_hash": "eba3c51f6b229135c9b2b64bf74b85fc"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\ipc\\AGENTS.md": {
+    "mtime": 1781904985.0608714,
+    "ast_hash": "8bf7a8389f324d58b69d60437326a811",
+    "semantic_hash": "8bf7a8389f324d58b69d60437326a811"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\providers\\AGENTS.md": {
+    "mtime": 1781904985.0608714,
+    "ast_hash": "ca0282f5ff547bea530c3b37f11b2cad",
+    "semantic_hash": "ca0282f5ff547bea530c3b37f11b2cad"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\security\\AGENTS.md": {
+    "mtime": 1781904985.0608714,
+    "ast_hash": "53de4b494bcbf5d1943ffe06c4e35e7a",
+    "semantic_hash": "53de4b494bcbf5d1943ffe06c4e35e7a"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\storage\\AGENTS.md": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "25b0baec6d23d90d70b9351af91bfc9f",
+    "semantic_hash": "25b0baec6d23d90d70b9351af91bfc9f"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\src\\telemetry\\AGENTS.md": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "d93fb3965aafab1813f1b08203a35ad5",
+    "semantic_hash": "d93fb3965aafab1813f1b08203a35ad5"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\app.html": {
+    "mtime": 1781904985.0764663,
+    "ast_hash": "84d57fa63d5cdcd15c741667f12cd5f5",
+    "semantic_hash": "84d57fa63d5cdcd15c741667f12cd5f5"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\api\\AGENTS.md": {
+    "mtime": 1781977241.2557075,
+    "ast_hash": "0268b9397dbb1ebdd109f19d3694b8b4",
+    "semantic_hash": "0268b9397dbb1ebdd109f19d3694b8b4"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\components\\AGENTS.md": {
+    "mtime": 1781977241.2584462,
+    "ast_hash": "b3057beae7cf8d452a2e3bca55653e0d",
+    "semantic_hash": "b3057beae7cf8d452a2e3bca55653e0d"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src\\lib\\stores\\AGENTS.md": {
+    "mtime": 1781977241.2600086,
+    "ast_hash": "4a68aa0a2d844f7dd02c6c6ecd748552",
+    "semantic_hash": "4a68aa0a2d844f7dd02c6c6ecd748552"
+  },
+  "C:\\workspaces\\desktop-ai-client\\src-tauri\\icons\\icon.png": {
+    "mtime": 1781975772.4271662,
+    "ast_hash": "32f5e7b9849cc6d67e0990e142b148f4",
+    "semantic_hash": "32f5e7b9849cc6d67e0990e142b148f4"
+  }
+}

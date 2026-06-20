@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "version": 1,
+  "description": "Claude Code settings for the desktop-ai-client scaffold.",
+  "model": "sonnet",
+  "disableSkillShellExecution": true,
+  "disableBypassPermissionsMode": "disable",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff)",
+      "Bash(git log --oneline -20)",
+      "Bash(git branch --show-current)",
+      "Bash(node .claude/workflows/issue-to-pr.js:*)",
+      "Bash(node .claude/workflows/review-readiness.js:*)",
+      "Bash(node .claude/workflows/repo-audit.js:*)",
+      "Bash(node .claude/workflows/release-readiness.js:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo fmt --check:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python -m py_compile:*)"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets/**)",
+      "Bash(cat .env)",
+      "Bash(type .env)",
+      "Bash(cat .env.*)",
+      "Bash(type .env.*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -rf:*)",
+      "Bash(del /f /s /q:*)",
+      "Bash(terraform destroy:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(dropdb:*)"
+    ]
+  },
+  "confirmations": {
+    "dependencyChanges": true,
+    "databaseMigrations": true,
+    "publicApiChanges": true,
+    "deployments": true
+  },
+  "tools": {
+    "shell": {
+      "enabled": true,
+      "timeoutSeconds": 120
+    },
+    "git": {
+      "protectBranches": [
+        "main",
+        "master"
+      ],
+      "requireStatusBeforeCommit": true
+    }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/session-start.js",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pre-tool-use.js",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/post-tool-use.js",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/stop.js",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+  "claudeMdExcludes": [
+    ".claude/worktrees/**"
+  ]
+}
