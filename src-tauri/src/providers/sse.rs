@@ -45,6 +45,25 @@ struct SseChunkError {
     pub code: Option<serde_json::Value>,
 }
 
+/// Classify a mid-stream provider error's `code` into the failure-reason
+/// taxonomy `ipc::chat` persists on `turn_attempts.failure_reason`.
+///
+/// Best-effort: OpenRouter's embedded error `code` is usually the upstream
+/// HTTP status as a number or numeric string. Anything not recognized falls
+/// back to the generic `provider_protocol_error` bucket.
+pub fn classify_provider_error_code(code: Option<&serde_json::Value>) -> &'static str {
+    let numeric = code.and_then(|c| {
+        c.as_u64()
+            .or_else(|| c.as_str().and_then(|s| s.parse::<u64>().ok()))
+    });
+    match numeric {
+        Some(401) | Some(403) => "provider_auth_failed",
+        Some(429) => "provider_rate_limited",
+        Some(408) => "provider_timeout",
+        _ => "provider_protocol_error",
+    }
+}
+
 /// Parsed events produced by the SSE line parser.
 #[derive(Debug)]
 pub enum SseEvent {
@@ -56,7 +75,10 @@ pub enum SseEvent {
         model: String,
     },
     /// A provider error embedded inside the SSE stream (non-HTTP error).
-    ProviderError { message: String },
+    ProviderError {
+        message: String,
+        code: Option<serde_json::Value>,
+    },
     /// An SSE comment line (e.g., `: OPENROUTER PROCESSING`). Ignored.
     Comment,
     /// Any SSE line that is not `data: ...` and not a comment. Ignored.
@@ -97,6 +119,7 @@ pub fn parse_sse_line(line: &str) -> Option<SseEvent> {
             if let Some(err) = chunk.error {
                 return Some(SseEvent::ProviderError {
                     message: err.message,
+                    code: err.code,
                 });
             }
 
@@ -123,23 +146,46 @@ pub fn parse_sse_line(line: &str) -> Option<SseEvent> {
     }
 }
 
+/// Sentinel error string returned when the byte stream ends (EOF) without
+/// ever delivering a `data: [DONE]` line. The caller (`ipc::chat`) maps this
+/// to a `failed_partial` terminal attempt state rather than treating a quiet
+/// connection drop as a successful completion.
+pub const TRUNCATED_STREAM: &str = "TRUNCATED_STREAM";
+
 /// Drive an SSE response stream, calling `on_event` for each meaningful event.
 ///
 /// Maintains `line_buf` across chunks to handle TCP fragmentation (Pitfall 8).
 /// Integrates `cancel_token` per-chunk via `tokio::select!` so cancellation is
 /// detected promptly without waiting for the next network chunk.
 ///
-/// Returns `Ok(())` on clean stream end or cancellation.
-/// Returns `Err(message)` on network or parse failure.
+/// Returns `Ok(())` only when a `data: [DONE]` line was actually observed.
+/// Returns `Err(TRUNCATED_STREAM)` when the connection ends without `[DONE]`.
+/// Returns `Err(message)` on network or parse failure, or `Err("CANCELLED")`.
 ///
 /// Note: `drive_sse_stream` does not call `channel.send()` — that is the
 /// caller's responsibility so this module stays free of Tauri imports.
 pub async fn drive_sse_stream(
     response: reqwest::Response,
     cancel_token: tokio_util::sync::CancellationToken,
-    mut on_event: impl FnMut(SseEvent) -> Result<(), String> + Send + 'static,
+    on_event: impl FnMut(SseEvent) -> Result<(), String> + Send + 'static,
 ) -> Result<(), String> {
-    let mut stream = response.bytes_stream();
+    let stream = response
+        .bytes_stream()
+        .map(|chunk| chunk.map_err(|e| e.to_string()));
+    drive_byte_stream(stream, cancel_token, on_event).await
+}
+
+/// Pure byte-stream driver behind `drive_sse_stream`, generic over the chunk
+/// type so it can be exercised in tests without a live `reqwest::Response`.
+async fn drive_byte_stream<S, B>(
+    mut stream: S,
+    cancel_token: tokio_util::sync::CancellationToken,
+    mut on_event: impl FnMut(SseEvent) -> Result<(), String> + Send + 'static,
+) -> Result<(), String>
+where
+    S: futures_util::Stream<Item = Result<B, String>> + Unpin,
+    B: AsRef<[u8]>,
+{
     let mut line_buf = String::new();
     let mut final_model: String = String::new();
     let mut final_usage: Option<SseUsage> = None;
@@ -153,12 +199,16 @@ pub async fn drive_sse_stream(
         };
 
         let bytes = match chunk_result {
-            None => break, // Stream exhausted without [DONE] — treat as done.
-            Some(Err(e)) => return Err(e.to_string()),
+            // Stream exhausted without ever seeing `data: [DONE]` — a real
+            // provider connection (timeout, dropped TCP, proxy cutoff) that
+            // never delivered its terminal sentinel. Distinct from a clean
+            // `[DONE]`, which returns `Ok(())` below instead.
+            None => return Err(TRUNCATED_STREAM.to_string()),
+            Some(Err(e)) => return Err(e),
             Some(Ok(b)) => b,
         };
 
-        let text = String::from_utf8_lossy(&bytes);
+        let text = String::from_utf8_lossy(bytes.as_ref()).into_owned();
         line_buf.push_str(&text);
 
         // Process every complete line in the buffer.
@@ -190,15 +240,23 @@ pub async fn drive_sse_stream(
                     on_event(SseEvent::Done {
                         usage: final_usage.clone(),
                         model: final_model.clone(),
-                    })
-                    .map_err(|e| e)?;
+                    })?;
                     return Ok(());
                 }
                 Some(SseEvent::Delta { text }) => {
-                    on_event(SseEvent::Delta { text }).map_err(|e| e)?;
+                    on_event(SseEvent::Delta { text })?;
                 }
-                Some(SseEvent::ProviderError { message }) => {
-                    on_event(SseEvent::ProviderError { message }).map_err(|e| e)?;
+                Some(SseEvent::ProviderError { message, code }) => {
+                    // Stop driving the stream on a mid-stream provider error
+                    // (backend.md: "after the first delta, must not silently
+                    // continue"; on partial failure, stop the upstream
+                    // request). The caller still receives the message via
+                    // `on_event`'s side effect before this propagates.
+                    on_event(SseEvent::ProviderError {
+                        message: message.clone(),
+                        code,
+                    })?;
+                    return Err(message);
                 }
                 Some(SseEvent::Comment) | Some(SseEvent::Unknown) | None => {
                     // Skip comments, unknown lines, and empty returns.
@@ -206,8 +264,6 @@ pub async fn drive_sse_stream(
             }
         }
     }
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -272,5 +328,102 @@ mod tests {
             "expected None for empty delta content, got {:?}",
             event
         );
+    }
+
+    #[test]
+    fn classify_provider_error_code_maps_known_statuses() {
+        assert_eq!(
+            classify_provider_error_code(Some(&serde_json::json!(429))),
+            "provider_rate_limited"
+        );
+        assert_eq!(
+            classify_provider_error_code(Some(&serde_json::json!(401))),
+            "provider_auth_failed"
+        );
+        assert_eq!(
+            classify_provider_error_code(Some(&serde_json::json!("403"))),
+            "provider_auth_failed"
+        );
+        assert_eq!(
+            classify_provider_error_code(Some(&serde_json::json!(500))),
+            "provider_protocol_error"
+        );
+        assert_eq!(classify_provider_error_code(None), "provider_protocol_error");
+    }
+
+    fn byte_chunks(lines: &[&str]) -> Vec<Result<Vec<u8>, String>> {
+        lines
+            .iter()
+            .map(|l| Ok(format!("{l}\n").into_bytes()))
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn drive_byte_stream_returns_ok_when_done_sentinel_observed() {
+        let chunks = byte_chunks(&[
+            r#"data: {"choices":[{"delta":{"content":"hi"}}]}"#,
+            "data: [DONE]",
+        ]);
+        let stream = futures_util::stream::iter(chunks);
+        let events = std::sync::Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+        let events_clone = events.clone();
+        let result = drive_byte_stream(stream, tokio_util::sync::CancellationToken::new(), move |event| {
+            events_clone.lock().unwrap().push(format!("{event:?}"));
+            Ok(())
+        })
+        .await;
+        assert!(result.is_ok(), "expected Ok, got {result:?}");
+        assert!(events.lock().unwrap().iter().any(|e| e.contains("Done")));
+    }
+
+    #[tokio::test]
+    async fn drive_byte_stream_returns_truncated_stream_when_done_never_arrives() {
+        let chunks = byte_chunks(&[r#"data: {"choices":[{"delta":{"content":"partial"}}]}"#]);
+        let stream = futures_util::stream::iter(chunks);
+        let result = drive_byte_stream(stream, tokio_util::sync::CancellationToken::new(), |_| Ok(()))
+            .await;
+        assert_eq!(result, Err(TRUNCATED_STREAM.to_string()));
+    }
+
+    #[tokio::test]
+    async fn drive_byte_stream_returns_truncated_stream_for_empty_input() {
+        let stream = futures_util::stream::iter(Vec::<Result<Vec<u8>, String>>::new());
+        let result = drive_byte_stream(stream, tokio_util::sync::CancellationToken::new(), |_| Ok(()))
+            .await;
+        assert_eq!(result, Err(TRUNCATED_STREAM.to_string()));
+    }
+
+    #[tokio::test]
+    async fn drive_byte_stream_stops_on_mid_stream_provider_error() {
+        let chunks = byte_chunks(&[
+            r#"data: {"choices":[{"delta":{"content":"start"}}]}"#,
+            r#"data: {"error":{"message":"rate limited","code":429}}"#,
+            // This Delta must NOT be observed — the stream must stop at the error.
+            r#"data: {"choices":[{"delta":{"content":"should-not-appear"}}]}"#,
+            "data: [DONE]",
+        ]);
+        let stream = futures_util::stream::iter(chunks);
+        let events = std::sync::Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+        let events_clone = events.clone();
+        let result = drive_byte_stream(stream, tokio_util::sync::CancellationToken::new(), move |event| {
+            events_clone.lock().unwrap().push(format!("{event:?}"));
+            Ok(())
+        })
+        .await;
+        assert_eq!(result, Err("rate limited".to_string()));
+        let seen = events.lock().unwrap();
+        assert!(!seen.iter().any(|e| e.contains("should-not-appear")));
+    }
+
+    #[tokio::test]
+    async fn drive_byte_stream_returns_cancelled_when_token_fires() {
+        let token = tokio_util::sync::CancellationToken::new();
+        token.cancel();
+        // `stream::pending()` never resolves, so `tokio::select!` against an
+        // already-cancelled token can only take the cancellation branch —
+        // an always-ready `stream::iter` would race nondeterministically.
+        let stream = futures_util::stream::pending::<Result<Vec<u8>, String>>();
+        let result = drive_byte_stream(stream, token, |_| Ok(())).await;
+        assert_eq!(result, Err("CANCELLED".to_string()));
     }
 }

@@ -66,6 +66,40 @@ impl SqlitePool {
         });
         f(&conn)
     }
+
+    /// Execute a closure inside a single SQLite transaction, committing on
+    /// `Ok` and rolling back on `Err` (rusqlite's `Transaction::drop` rolls
+    /// back automatically if `commit()` is never called).
+    ///
+    /// Uses `Connection::unchecked_transaction()` rather than
+    /// `Connection::transaction()` because `with_conn`/this method only ever
+    /// hands out `&Connection` (the mutex guard is shared, not exclusive at
+    /// the type level) — `unchecked_transaction` is rusqlite's documented
+    /// escape hatch for exactly this "connection wrapped behind a Mutex"
+    /// shape, and the outer `Mutex<Connection>` already prevents any other
+    /// caller from interleaving statements while this transaction is open.
+    ///
+    /// Used wherever multiple tables must change together as one atomic
+    /// unit (e.g. persisting assistant output + usage + status + artifact
+    /// for a single turn attempt).
+    pub fn with_transaction<F, T>(&self, f: F) -> rusqlite::Result<T>
+    where
+        F: FnOnce(&rusqlite::Transaction) -> rusqlite::Result<T>,
+    {
+        let conn = self.conn.lock().unwrap_or_else(|poisoned| {
+            panic!("SQLite connection mutex poisoned: {}", poisoned);
+        });
+        let tx = conn.unchecked_transaction()?;
+        // Defer FK validation to COMMIT (resets automatically afterwards) so
+        // callers can write rows with forward/circular references — e.g. a
+        // `turn_attempts.assistant_message_id` update landing before the
+        // `messages` row it points to is inserted — in whichever order is
+        // most natural, instead of being forced into an FK-satisfying order.
+        tx.execute_batch("PRAGMA defer_foreign_keys = ON;")?;
+        let result = f(&tx)?;
+        tx.commit()?;
+        Ok(result)
+    }
 }
 
 /// A single row from the `conversations` table.

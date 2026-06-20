@@ -45,8 +45,10 @@ impl From<command_policy::PolicyError> for HistoryError {
 /// A single message for inclusion in a `ConversationDetail` response.
 ///
 /// Maps from `MessageRow` fields. Content stays backend-mapped — only these
-/// fields cross the Tauri IPC boundary.
+/// fields cross the Tauri IPC boundary. `camelCase` per the backend rule for
+/// DTOs read by TypeScript.
 #[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MessageSummary {
     pub id: String,
     pub role: String,
@@ -60,6 +62,7 @@ pub struct MessageSummary {
 /// The `snippet` field is populated only for search results (from FTS5
 /// `snippet()` auxiliary function). It is omitted from list responses.
 #[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ConversationSummary {
     pub id: String,
     pub title: String,
@@ -72,6 +75,7 @@ pub struct ConversationSummary {
 
 /// Full conversation record with message list, returned by `history_get`.
 #[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ConversationDetail {
     pub id: String,
     pub title: String,
@@ -231,6 +235,40 @@ mod tests {
         assert!(
             json.contains("UNAUTHORIZED_WINDOW"),
             "expected UNAUTHORIZED_WINDOW code in JSON: {json}"
+        );
+    }
+
+    #[test]
+    fn conversation_summary_serializes_camel_case_fields() {
+        let summary = ConversationSummary {
+            id: "c1".into(),
+            title: "t".into(),
+            model: "m".into(),
+            status: "active".into(),
+            updated_at: "2024-01-01T00:00:00Z".into(),
+            snippet: None,
+        };
+        let json = serde_json::to_string(&summary).unwrap();
+        assert!(
+            json.contains(r#""updatedAt":"2024-01-01T00:00:00Z""#),
+            "expected camelCase updatedAt, got: {json}"
+        );
+        assert!(!json.contains("updated_at"), "must not leak snake_case key: {json}");
+    }
+
+    #[test]
+    fn message_summary_serializes_camel_case_fields() {
+        let summary = MessageSummary {
+            id: "m1".into(),
+            role: "user".into(),
+            content: "hi".into(),
+            status: "complete".into(),
+            created_at: "2024-01-01T00:00:00Z".into(),
+        };
+        let json = serde_json::to_string(&summary).unwrap();
+        assert!(
+            json.contains(r#""createdAt":"2024-01-01T00:00:00Z""#),
+            "expected camelCase createdAt, got: {json}"
         );
     }
 

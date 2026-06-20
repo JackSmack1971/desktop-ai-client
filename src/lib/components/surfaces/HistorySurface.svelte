@@ -4,13 +4,15 @@
 	 *
 	 * Replaces the Phase 1 scaffold with a fully wired surface that composes
 	 * SearchBar and ConversationList, driven by historyStore. Loads history
-	 * on mount via historyStore.load(). Conversation clicks navigate to the
-	 * Chat surface via surfaceStore.setSurface('chat') (D-10).
+	 * on mount via historyStore.load(). Conversation clicks fetch the full
+	 * conversation, hydrate chatStore with its persisted messages, and then
+	 * navigate to the Chat surface via surfaceStore.setSurface('chat') (D-10).
 	 */
 
 	import { onMount } from 'svelte';
 	import { historyStore } from '$lib/stores/history';
 	import { surfaceStore } from '$lib/stores/surface';
+	import { chatStore } from '$lib/stores/chat';
 	import SearchBar from '$lib/components/history/SearchBar.svelte';
 	import ConversationList from '$lib/components/history/ConversationList.svelte';
 
@@ -22,8 +24,11 @@
 		void historyStore.search(q);
 	}
 
-	function handleSelect(id: string): void {
-		historyStore.loadConversation(id);
+	async function handleSelect(id: string): Promise<void> {
+		const detail = await historyStore.loadConversation(id);
+		if (detail) {
+			chatStore.hydrate(detail.messages);
+		}
 		void surfaceStore.setSurface('chat');
 	}
 

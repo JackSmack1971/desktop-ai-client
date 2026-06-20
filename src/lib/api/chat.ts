@@ -23,30 +23,52 @@ export type ArtifactContentType =
  *
  * Must match `ChatEvent` enum in `src-tauri/src/ipc/chat.rs` exactly.
  * The Rust `#[serde(tag = "type", rename_all = "PascalCase")]` attribute
- * produces the `type` discriminator used here.
+ * produces the `type` discriminator used here. Every variant carries a
+ * `sequence` — strictly increasing per attempt, starting at `Ack` — so the
+ * frontend can detect dropped/out-of-order delivery if it ever matters.
  */
 export type ChatEvent =
-	| { type: 'Ack'; request_id: string }
-	| { type: 'Delta'; text: string }
+	| {
+			type: 'Ack';
+			conversation_id: string;
+			turn_id: string;
+			attempt_id: string;
+			attempt_number: number;
+			sequence: number;
+	  }
+	| { type: 'Delta'; text: string; sequence: number }
 	| {
 			type: 'Done';
 			usage?: { prompt_tokens: number; completion_tokens: number };
 			model: string;
+			sequence: number;
 	  }
-	| { type: 'Error'; code: string; message: string }
+	| { type: 'Error'; code: string; message: string; sequence: number }
 	| {
 			type: 'ArtifactReady';
 			artifact_id: string;
 			content_type: ArtifactContentType;
 			preview: string;
+			sequence: number;
 	  };
 
 /** A message in the conversation history. Role is constrained to the two valid values. */
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
-/** Parameters for `chatSend`. The `onEvent` callback receives each streaming event. */
+/**
+ * Parameters for `chatSend`. The `onEvent` callback receives each streaming event.
+ *
+ * `history` is prior conversation context for the provider only — every
+ * message in it is already persisted and must NOT be sent again as part of
+ * `newMessage`. `idempotencyKey` must be stable across retries of the same
+ * turn: a brand-new message gets a freshly generated key; retrying a
+ * failed/cancelled turn reuses the key from that turn so the backend never
+ * inserts a duplicate user message.
+ */
 export type ChatSendParams = {
-	messages: ChatMessage[];
+	history: ChatMessage[];
+	newMessage: ChatMessage;
+	idempotencyKey: string;
 	model?: string;
 	conversationId?: string;
 	maxCompletionTokens?: number;
@@ -70,7 +92,9 @@ export async function chatSend(params: ChatSendParams): Promise<void> {
 	channel.onmessage = params.onEvent;
 
 	await invoke('chat_send', {
-		messages: params.messages,
+		history: params.history,
+		newMessage: params.newMessage,
+		idempotencyKey: params.idempotencyKey,
 		model: params.model ?? null,
 		conversationId: params.conversationId ?? null,
 		maxCompletionTokens: params.maxCompletionTokens ?? null,
@@ -87,6 +111,6 @@ export async function chatSend(params: ChatSendParams): Promise<void> {
  * with `code === 'CANCELLED'` through the channel to close the listener.
  * Cancellation is best-effort — the event may arrive slightly after calling this.
  */
-export async function chatCancel(requestId: string): Promise<void> {
-	await invoke('chat_cancel', { requestId });
+export async function chatCancel(attemptId: string): Promise<void> {
+	await invoke('chat_cancel', { attemptId });
 }

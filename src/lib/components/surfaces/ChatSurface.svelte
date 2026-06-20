@@ -37,6 +37,10 @@
 		void chatStore.sendMessage(text);
 	}
 
+	function handleRetry(id: string): void {
+		void chatStore.retryMessage(id);
+	}
+
 	function openArtifactsSurface(): void {
 		void surfaceStore.setSurface('artifacts');
 	}
@@ -63,10 +67,12 @@
 				{:else}
 					<!-- Completed, incomplete, or errored message -->
 					<ChatMessage
+						id={msg.id}
 						role={msg.role}
 						content={msg.content}
 						status={msg.status}
 						streaming={msg.streaming}
+						onRetry={handleRetry}
 					/>
 				{/if}
 			{/each}

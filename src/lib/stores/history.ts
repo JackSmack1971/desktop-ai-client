@@ -11,7 +11,8 @@ import { normalizeIpcError } from '$lib/api/errors';
 
 /**
  * Summary of a single conversation, returned by history_list and history_search.
- * Fields map 1-to-1 to the Rust ConversationSummary struct serialized over IPC.
+ * Fields map 1-to-1 to the Rust ConversationSummary struct serialized over IPC
+ * (`#[serde(rename_all = "camelCase")]` in `ipc::history`).
  */
 export interface ConversationSummary {
 	id: string;
@@ -20,6 +21,25 @@ export interface ConversationSummary {
 	status: 'active' | 'complete' | 'incomplete';
 	updatedAt: string; // ISO datetime string from Rust (camelCase per backend rule)
 	snippet?: string; // only present for search results (FTS5 snippet() output)
+}
+
+/** A single persisted message, returned as part of `ConversationDetail`. */
+export interface MessageSummary {
+	id: string;
+	role: 'user' | 'assistant';
+	content: string;
+	status: 'complete' | 'incomplete';
+	createdAt: string;
+}
+
+/** Full conversation record with its message list, returned by `history_get`. */
+export interface ConversationDetail {
+	id: string;
+	title: string;
+	model: string;
+	status: 'active' | 'complete' | 'incomplete';
+	updatedAt: string;
+	messages: MessageSummary[];
 }
 
 function createHistoryStore() {
@@ -83,11 +103,34 @@ function createHistoryStore() {
 	}
 
 	/**
-	 * Set the active conversation ID.
-	 * The HistorySurface component calls surfaceStore.setSurface('chat') after this
-	 * to complete the D-10 navigation flow.
+	 * Fetch a conversation's full message list and mark it active.
+	 *
+	 * The caller (HistorySurface) is responsible for hydrating `chatStore`
+	 * with the returned detail's `messages` and then calling
+	 * `surfaceStore.setSurface('chat')` to complete the D-10 navigation flow
+	 * — this store does not depend on `chatStore` to avoid a circular import.
+	 * Returns `null` on failure; `error` is set in that case.
 	 */
-	function loadConversation(id: string): void {
+	async function loadConversation(id: string): Promise<ConversationDetail | null> {
+		error = null;
+		try {
+			const detail = await invoke<ConversationDetail>('history_get', { id });
+			activeConversationId = id;
+			return detail;
+		} catch (e) {
+			error = normalizeIpcError(e);
+			return null;
+		}
+	}
+
+	/**
+	 * Stabilize the active conversation id once the backend assigns one.
+	 *
+	 * Called by `chatStore` after the first `chat_send` Ack for a brand-new
+	 * conversation, so every later send in this session reuses the same
+	 * `conversation_id` instead of creating a new conversation each time.
+	 */
+	function setActiveConversationId(id: string): void {
 		activeConversationId = id;
 	}
 
@@ -108,6 +151,7 @@ function createHistoryStore() {
 		search,
 		deleteConversation,
 		loadConversation,
+		setActiveConversationId,
 	};
 }
 

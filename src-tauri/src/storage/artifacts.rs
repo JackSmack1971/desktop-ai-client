@@ -137,7 +137,12 @@ impl ArtifactStore {
     }
 }
 
-fn db_content_type(content_type: &ArtifactContentType) -> (&'static str, String) {
+/// Map an `ArtifactContentType` to its `(content_type, language)` column values.
+///
+/// `pub(crate)` so `storage::turns::TurnStore` can insert an artifact row
+/// inside the same atomic transaction that persists assistant output,
+/// without duplicating this match in two places.
+pub(crate) fn db_content_type(content_type: &ArtifactContentType) -> (&'static str, String) {
     match content_type {
         ArtifactContentType::Html => ("html", String::new()),
         ArtifactContentType::Svg => ("svg", String::new()),

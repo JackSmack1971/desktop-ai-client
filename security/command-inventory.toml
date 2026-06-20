@@ -38,12 +38,15 @@ module = "ipc::chat"
 allowed_windows = ["main"]
 production = true
 debug_only = false
-argument_schema = "messages, model, conversation_id, max_completion_tokens, temperature, attachments, channel"
+argument_schema = "history, new_message, idempotency_key, model, conversation_id, max_completion_tokens, temperature, attachments, channel"
 sensitivity = "high"
 expected_capability = "allow-chat-send"
 required_negative_tests = [
   "rejects non-main window",
   "never accepts api_key",
+  "rejects new_message.role != \"user\"",
+  "rejects empty idempotency_key",
+  "rejects duplicate idempotency_key while an attempt is in flight",
   "cancellation path remains typed",
 ]
 
@@ -53,12 +56,12 @@ module = "ipc::chat"
 allowed_windows = ["main"]
 production = true
 debug_only = false
-argument_schema = "request_id: String"
+argument_schema = "attempt_id: String"
 sensitivity = "low"
 expected_capability = "allow-chat-cancel"
 required_negative_tests = [
   "rejects non-main window",
-  "rejects missing request_id",
+  "rejects missing attempt_id",
 ]
 
 [[commands]]

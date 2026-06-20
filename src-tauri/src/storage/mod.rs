@@ -11,8 +11,10 @@ pub mod artifacts;
 /// - `fts`        – FTS5 full-text search helpers (future)
 /// - `retention`  – Retention and deletion policy (future)
 /// - `artifacts`  – Artifact preview storage and detection
+/// - `turns`      – Conversation transaction protocol: turns/turn_attempts
 pub mod backup;
 pub mod fts;
 pub mod migrations;
 pub mod retention;
 pub mod sqlite;
+pub mod turns;

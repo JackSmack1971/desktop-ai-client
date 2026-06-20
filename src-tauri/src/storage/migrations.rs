@@ -125,6 +125,53 @@ pub static MIGRATIONS: &[Migration] = &[
               ON artifacts(message_id);
         ",
     },
+    Migration {
+        id: "0005",
+        description: "Create turns/turn_attempts tables for the conversation transaction protocol",
+        sql: "
+            CREATE TABLE IF NOT EXISTS turns (
+              id TEXT PRIMARY KEY,
+              conversation_id TEXT NOT NULL
+                REFERENCES conversations(id) ON DELETE CASCADE,
+              user_message_id TEXT NOT NULL
+                REFERENCES messages(id) ON DELETE CASCADE,
+              idempotency_key TEXT NOT NULL,
+              status TEXT NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'complete', 'failed_partial', 'cancelled', 'failed')),
+              created_at TEXT NOT NULL DEFAULT (datetime('now')),
+              updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+              UNIQUE (conversation_id, idempotency_key)
+            ) STRICT;
+
+            CREATE INDEX IF NOT EXISTS idx_turns_conversation_id
+              ON turns(conversation_id);
+
+            CREATE TABLE IF NOT EXISTS turn_attempts (
+              id TEXT PRIMARY KEY,
+              turn_id TEXT NOT NULL
+                REFERENCES turns(id) ON DELETE CASCADE,
+              attempt_number INTEGER NOT NULL,
+              assistant_message_id TEXT
+                REFERENCES messages(id) ON DELETE SET NULL,
+              provider_id TEXT NOT NULL DEFAULT 'openrouter',
+              model_id TEXT NOT NULL DEFAULT '',
+              status TEXT NOT NULL DEFAULT 'in_progress'
+                CHECK (status IN ('in_progress', 'complete', 'failed_partial', 'cancelled', 'failed')),
+              failure_reason TEXT,
+              prompt_tokens INTEGER,
+              completion_tokens INTEGER,
+              last_sequence INTEGER NOT NULL DEFAULT 0,
+              created_at TEXT NOT NULL DEFAULT (datetime('now')),
+              updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+              UNIQUE (turn_id, attempt_number)
+            ) STRICT;
+
+            CREATE INDEX IF NOT EXISTS idx_turn_attempts_turn_id
+              ON turn_attempts(turn_id);
+
+            ALTER TABLE messages ADD COLUMN turn_id TEXT REFERENCES turns(id);
+        ",
+    },
 ];
 
 /// Apply any pending migrations to `conn`.
@@ -258,11 +305,11 @@ mod tests {
     }
 
     #[test]
-    fn migrations_count_is_four() {
+    fn migrations_count_is_five() {
         assert_eq!(
             MIGRATIONS.len(),
-            4,
-            "expected 4 migrations after phase 5 additions"
+            5,
+            "expected 5 migrations after the conversation transaction protocol addition"
         );
     }
 
@@ -423,5 +470,90 @@ mod tests {
             )
             .unwrap();
         assert_eq!(content_type, "html");
+    }
+
+    #[test]
+    fn turns_and_turn_attempts_tables_exist_after_migration() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-turn', 'Turn Test')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO messages (id, conversation_id, role, content)
+             VALUES ('msg-turn-user', 'conv-turn', 'user', 'hello')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO turns (id, conversation_id, user_message_id, idempotency_key)
+             VALUES ('turn-1', 'conv-turn', 'msg-turn-user', 'idem-1')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO turn_attempts (id, turn_id, attempt_number) VALUES ('attempt-1', 'turn-1', 1)",
+            [],
+        )
+        .unwrap();
+
+        let status: String = conn
+            .query_row("SELECT status FROM turns WHERE id = 'turn-1'", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(status, "pending");
+
+        // Duplicate idempotency_key for the same conversation must be rejected.
+        let dup = conn.execute(
+            "INSERT INTO turns (id, conversation_id, user_message_id, idempotency_key)
+             VALUES ('turn-2', 'conv-turn', 'msg-turn-user', 'idem-1')",
+            [],
+        );
+        assert!(
+            dup.is_err(),
+            "duplicate (conversation_id, idempotency_key) should violate UNIQUE constraint"
+        );
+    }
+
+    #[test]
+    fn messages_turn_id_column_exists_after_migration() {
+        let conn = fresh_conn();
+        run_migrations(&conn, "0.1.0").unwrap();
+
+        conn.execute(
+            "INSERT INTO conversations (id, title) VALUES ('conv-mt', 'Msg Turn Test')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO messages (id, conversation_id, role, content)
+             VALUES ('msg-mt-1', 'conv-mt', 'user', 'hi')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO turns (id, conversation_id, user_message_id, idempotency_key)
+             VALUES ('turn-mt', 'conv-mt', 'msg-mt-1', 'idem-mt')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE messages SET turn_id = 'turn-mt' WHERE id = 'msg-mt-1'",
+            [],
+        )
+        .unwrap();
+
+        let turn_id: String = conn
+            .query_row(
+                "SELECT turn_id FROM messages WHERE id = 'msg-mt-1'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(turn_id, "turn-mt");
     }
 }
