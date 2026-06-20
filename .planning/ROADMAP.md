@@ -6,7 +6,7 @@ This project is being bootstrapped from synthesized docs context rather than PRD
 
 ## Phases
 
-- [ ] **Phase 1: Single-Agent Core** - Define the first workflow, success metric, task/run schemas, and durable startup recovery.
+- [x] **Phase 1: Single-Agent Core** - Define the first workflow, success metric, task/run schemas, and durable startup recovery.
 - [ ] **Phase 2: Memory Model** - Separate durable memory from raw traces and establish the memory record shape.
 - [ ] **Phase 3: Run Loop** - Record runs end-to-end, including trace events, summaries, and candidate memory emission.
 - [ ] **Phase 4: Retrieval, Promotion, and Verification** - Make bounded retrieval and trace-backed promotion decisions testable.
@@ -16,6 +16,7 @@ This project is being bootstrapped from synthesized docs context rather than PRD
 ## Phase Details
 
 ### Phase 1: Single-Agent Core
+**Status**: Complete
 **Goal**: Users can define one task/run workflow, persist it durably, and recover it on startup without losing the active context.
 **Depends on**: Nothing (first phase)
 **Requirements**: None
@@ -24,7 +25,7 @@ This project is being bootstrapped from synthesized docs context rather than PRD
   2. The project has explicit task/run schemas that distinguish the active workflow from historical traces.
   3. Startup retrieval restores the last relevant working context before any new work begins.
   4. The success metric and workflow boundary are recorded as part of project memory instead of staying implicit.
-**Plans**: TBD
+**Plans**: 1
 
 ### Phase 2: Memory Model
 **Goal**: The system can store candidate memories separately from raw traces without letting live chat depend on them.
@@ -85,7 +86,7 @@ This project is being bootstrapped from synthesized docs context rather than PRD
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Single-Agent Core | TBD | Not started | - |
+| 1. Single-Agent Core | 1/1 | Complete | 2026-06-20 |
 | 2. Memory Model | TBD | Not started | - |
 | 3. Run Loop | TBD | Not started | - |
 | 4. Retrieval, Promotion, and Verification | TBD | Not started | - |
