@@ -164,13 +164,13 @@ pnpm check
 
 ## Contributing
 
-Before large changes:
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing the repo. It is the authoritative guide for:
 
-1. Open an issue
-2. Read AGENTS.md files
-3. Read design blueprints in docs/
-4. Update docs if boundaries change
-5. Run pnpm check and verifier before PR
+- the issue-template gate for bugs, security findings, architecture changes, and other non-trivial work
+- the full quality-standards table, including the verification commands and the `cargo tauri build` requirement for security-sensitive changes
+- pull-request, security-report, and governance expectations
+
+Also read the nearest `AGENTS.md` files before editing code in a subdirectory, and update the relevant `docs/` file when behavior or boundaries change.
 
 ## Governance
 
