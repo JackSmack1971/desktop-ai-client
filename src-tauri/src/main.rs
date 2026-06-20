@@ -14,6 +14,7 @@ use storage::artifacts::ArtifactStore;
 use storage::fts::FtsStore;
 use storage::retention::RetentionStore;
 use storage::sqlite::{ConversationStore, MessageStore, ShellPreferenceStore, SqlitePool};
+use storage::turns::TurnStore;
 use tauri::Manager;
 
 fn main() {
@@ -49,7 +50,24 @@ fn main() {
             app.manage(MessageStore::new(pool.clone()));
             app.manage(ArtifactStore::new(pool.clone()));
             app.manage(FtsStore::new(pool.clone()));
-            app.manage(RetentionStore::new(pool));
+            app.manage(RetentionStore::new(pool.clone()));
+
+            // Conversation Transaction Protocol: recover any turn attempt
+            // left `in_progress` by a previous process that crashed or was
+            // force-quit mid-stream, before any IPC command can observe it.
+            let turn_store = TurnStore::new(pool);
+            match turn_store.recover_orphaned_attempts() {
+                Ok(0) => {}
+                Ok(recovered) => {
+                    log::warn!(
+                        "[chat] recovered {recovered} orphaned turn attempt(s) from a previous session"
+                    );
+                }
+                Err(e) => {
+                    log::error!("[chat] failed to recover orphaned turn attempts: {e}");
+                }
+            }
+            app.manage(turn_store);
 
             Ok(())
         })

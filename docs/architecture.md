@@ -53,7 +53,7 @@ validated commands to the renderer.
 | AppState        | In-memory runtime state (`ShellState`, active surface); `Send + Sync` singleton            | `src-tauri/src/app_state.rs`               |
 | providers       | Capability detection, provider routing, OpenRouter transport, SSE streaming                | `src-tauri/src/providers/`                 |
 | security        | Secrets store, file-access tokens, redaction, command policy, artifact sandbox             | `src-tauri/src/security/`                  |
-| storage         | SQLite pool (WAL), typed domain stores, migration runner, FTS, retention, backup           | `src-tauri/src/storage/`                   |
+| storage         | SQLite pool (WAL), typed domain stores, migration runner, FTS, retention, backup, conversation transaction protocol (`turns`) | `src-tauri/src/storage/`                   |
 | telemetry       | Audit log, release evidence capture (redaction-gated)                                      | `src-tauri/src/telemetry/`                 |
 | Svelte renderer | UI surfaces (chat, history, surfaces shell), accessibility, surface navigation             | `src/lib/components/`, `src/routes/`       |
 | Frontend stores | Typed stores bridging IPC and Svelte 5 reactive state                                      | `src/lib/stores/*.ts`                      |
@@ -133,16 +133,48 @@ Surface switch (user action):
 3. Backend persists to SQLite first (crash-safe ordering), then updates `AppState.shell` in-memory
 4. On failure: the store rolls back the optimistic update and sets `error` state for `StatusRegion`
 
-### Chat message
+### Chat message — Conversation Transaction Protocol
 
-1. Renderer calls `invoke('chat_send', { ... })` via the `chat` store
-2. `ipc::chat::chat_send` calls `command_policy::policy_check`, then validates input
-3. Builds `providers::routing::RoutableMessage` values from its own `ChatMessage` type (the IPC ↔ provider type conversion boundary) and calls `providers::routing::build_provider_messages`
-4. `providers::routing` selects a provider via capability detection (`providers::capabilities`)
-5. The provider adapter (`providers::openrouter`) sends the request over the SSE transport (`providers::sse`)
-6. `storage::sqlite` persists the conversation and message rows
-7. `telemetry::audit_log` records a redacted trace entry
-8. `chat_cancel` cancels an in-flight request; both commands are window-policy gated
+`chat_send` accepts `history` (prior context, never re-persisted), a single
+`new_message`, and a client-generated `idempotency_key` — not a full message
+array re-submitted every call. This is what makes "hydrate history, append
+only the new turn" possible and is what prevents duplicate writes on retry.
+
+Identifiers:
+
+- `conversation_id` — stable for the conversation's lifetime. Learned from
+  `ChatEvent::Ack` the first time a message is sent without one; the
+  frontend (`chatStore`/`historyStore`) must reuse it on every later send.
+- `turn_id` — one user message + its eventual assistant response, keyed
+  uniquely by `(conversation_id, idempotency_key)` (`storage::turns`,
+  migration 0005). Retrying a failed/cancelled turn reuses the same
+  `turn_id` and the same persisted user message row — it is never
+  duplicated, no matter how many attempts it takes.
+- `attempt_id` — one execution try at a turn. A turn can have many attempts;
+  each resolves to exactly one terminal state: `complete`, `failed_partial`,
+  `cancelled`, or `failed` (`turn_attempts.status`, guarded by an
+  `UPDATE ... WHERE status = 'in_progress'` clause so a duplicate terminal
+  write is a no-op, not a second write).
+- `sequence` — strictly increasing per attempt on every `ChatEvent`, starting
+  at `Ack`.
+
+Flow:
+
+1. Renderer calls `invoke('chat_send', { history, newMessage, idempotencyKey, ... })` via the `chat` store
+2. `ipc::chat::chat_send` calls `command_policy::policy_check`, validates `new_message.role == "user"` and a non-empty `idempotency_key`
+3. `storage::turns::TurnStore::begin_turn` looks up or creates the turn — the only place a user message is ever inserted; an in-flight duplicate is rejected, a previously-completed turn is replayed from storage without calling the provider again, and a previously-failed turn becomes a new attempt under the same `turn_id`
+4. Builds `providers::routing::RoutableMessage` values from `history` + `new_message` (the IPC ↔ provider type conversion boundary) and calls `providers::routing::build_provider_messages`
+5. `providers::routing` selects a provider via capability detection (`providers::capabilities`)
+6. The provider adapter (`providers::openrouter`) sends the request over the SSE transport (`providers::sse`), which returns `Ok(())` only after observing `data: [DONE]` — EOF without it is reported distinctly (`sse::TRUNCATED_STREAM`) rather than treated as success
+7. `storage::turns::TurnStore` atomically persists the terminal outcome (assistant message, usage, resolved model, turn/attempt/conversation status, and any detected artifact) in one SQLite transaction — the corresponding terminal `ChatEvent` (`Done`/`Error`) is sent only after that write commits
+8. `telemetry::audit_log` records a redacted trace entry
+9. `chat_cancel` cancels an in-flight request by `attempt_id`; both commands are window-policy gated
+
+Recovery: on startup, `TurnStore::recover_orphaned_attempts` (called from
+`main.rs`'s `setup` hook before any IPC command can run) flips any attempt
+still `in_progress` — left behind by a process that crashed or was
+force-quit mid-stream — to `failed` with reason `backend_shutdown`, so the
+UI never shows a stream spinning forever after a restart.
 
 ### History and search
 
@@ -172,8 +204,8 @@ Commands registered in `src-tauri/src/main.rs` via `tauri::generate_handler![]`:
 | ------------------------------- | ---------------- | ----------------------------------------------------------------- |
 | `get_active_surface`            | `ipc::app_shell` | Returns the `Surface` enum; window-label enforced                 |
 | `set_active_surface`            | `ipc::app_shell` | Persists to SQLite before updating in-memory state                |
-| `chat_send`                     | `ipc::chat`      | No `api_key` parameter — credentials come from backend state only |
-| `chat_cancel`                   | `ipc::chat`      | Cancels an in-flight stream                                       |
+| `chat_send`                     | `ipc::chat`      | No `api_key` parameter; takes `history`/`new_message`/`idempotency_key` (Conversation Transaction Protocol) |
+| `chat_cancel`                   | `ipc::chat`      | Cancels an in-flight stream by `attempt_id`                       |
 | `history_list`                  | `ipc::history`   | Lists conversations, most-recently-updated first                  |
 | `history_get`                   | `ipc::history`   | Full conversation + message list                                  |
 | `history_delete`                | `ipc::history`   | Hard delete; idempotent                                           |

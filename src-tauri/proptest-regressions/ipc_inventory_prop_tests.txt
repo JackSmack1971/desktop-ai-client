@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 3ca2032f629dbbf493766fe501450b2bb59ee028b8553f572e5d9ae6a873cfd0 # shrinks to (tokens, rendered) = (["h58_", "p0d1", "l___q__", "f409373l3", "skrs_", "qdjr_"], " h58_\np0d1,\nl___q__,f409373l3\nskrs_, qdjr_\n")
+cc 054cfd2c0958992190c9223b839544d51f0a4f6d70b515ed67594bd2a61f5050 # shrinks to (tokens, rendered) = (["rz26u_t2__u", "c_twco8", "oe3a_8chie5"], " rz26u_t2__u\nc_twco8, oe3a_8chie5\n")

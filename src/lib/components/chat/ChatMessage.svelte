@@ -7,22 +7,30 @@
 	 * - `status === 'incomplete'`: dimmed content + amber "(Cancelled)" badge (D-06).
 	 * - `status === 'error'`: error styling on content.
 	 *
+	 * An assistant message in `incomplete` or `error` status shows a Retry
+	 * action, calling `onRetry(id)` — wired to `chatStore.retryMessage` by
+	 * `ChatSurface`. Resubmits the turn under its original idempotency key
+	 * rather than creating a duplicate (see `chatStore.retryMessage`).
+	 *
 	 * User messages: right-aligned, accent background.
 	 * Assistant messages: left-aligned, card background.
 	 */
 
 	interface Props {
+		id: string;
 		role: 'user' | 'assistant';
 		content: string;
 		status: 'complete' | 'incomplete' | 'error';
 		streaming: boolean;
+		onRetry?: (id: string) => void;
 	}
 
-	let { role, content, status, streaming }: Props = $props();
+	let { id, role, content, status, streaming, onRetry }: Props = $props();
 
 	let isUser = $derived(role === 'user');
 	let isIncomplete = $derived(status === 'incomplete');
 	let isError = $derived(status === 'error');
+	let canRetry = $derived(!isUser && (isIncomplete || isError) && onRetry !== undefined);
 </script>
 
 <div class="message-wrapper" class:user={isUser} class:assistant={!isUser}>
@@ -42,8 +50,14 @@
 			<span
 				class="cancelled-badge"
 				role="status"
-				aria-label="Response was cancelled">(Cancelled)</span
+				aria-label="Response was interrupted">(Interrupted)</span
 			>
+		{/if}
+
+		{#if canRetry}
+			<button type="button" class="retry-button" onclick={() => onRetry?.(id)}>
+				Retry
+			</button>
 		{/if}
 	</div>
 </div>
@@ -117,7 +131,7 @@
 		}
 	}
 
-	/* Amber cancelled badge (D-06) */
+	/* Amber cancelled/interrupted badge (D-06) */
 	.cancelled-badge {
 		display: inline-block;
 		margin-left: 6px;
@@ -125,5 +139,27 @@
 		font-weight: 600;
 		color: #e0a020;
 		vertical-align: middle;
+	}
+
+	.retry-button {
+		display: inline-block;
+		margin-left: 8px;
+		border: none;
+		background: transparent;
+		color: #4a9eff;
+		padding: 0;
+		font-size: 12px;
+		font-weight: 500;
+		cursor: pointer;
+		vertical-align: middle;
+	}
+
+	.retry-button:hover {
+		text-decoration: underline;
+	}
+
+	.retry-button:focus-visible {
+		outline: 2px solid #4a9eff;
+		outline-offset: 2px;
 	}
 </style>
