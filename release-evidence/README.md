@@ -1,6 +1,6 @@
 # Release Evidence
 
-Generated at: 2026-06-18T11:31:22.520729600+00:00
+Generated at: 2026-06-19T23:40:14.378333600+00:00
 
 ## Inventory
 
@@ -25,15 +25,9 @@ Generated at: 2026-06-18T11:31:22.520729600+00:00
 
 ## Fixture Families
 
-- tests/fixtures/adversarial-sse: implemented
-  - tests/fixtures/adversarial-sse/error-stream.txt
-- tests/fixtures/provider-drift: implemented
-  - tests/fixtures/provider-drift/openrouter.json
-- tests/fixtures/fts-query-abuse: implemented
-  - tests/fixtures/fts-query-abuse/query.txt
-- tests/fixtures/srcdoc-escaping: implemented
-  - tests/fixtures/srcdoc-escaping/payload.html
-- tests/fixtures/wal-recovery: implemented
-  - tests/fixtures/wal-recovery/recovery.sql
-- tests/fixtures/capability-drift: implemented
-  - tests/fixtures/capability-drift/main-window.json
+- tests/fixtures/adversarial-sse: deferred
+- tests/fixtures/provider-drift: deferred
+- tests/fixtures/fts-query-abuse: deferred
+- tests/fixtures/srcdoc-escaping: deferred
+- tests/fixtures/wal-recovery: deferred
+- tests/fixtures/capability-drift: deferred

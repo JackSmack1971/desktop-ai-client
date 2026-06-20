@@ -38,7 +38,7 @@ module = "ipc::chat"
 allowed_windows = ["main"]
 production = true
 debug_only = false
-argument_schema = "history, new_message, idempotency_key, model, conversation_id, max_completion_tokens, temperature, attachments, channel"
+argument_schema = "history, new_message, idempotency_key, model, conversation_id, max_completion_tokens, temperature, privacy_mode, attachments, channel"
 sensitivity = "high"
 expected_capability = "allow-chat-send"
 required_negative_tests = [
@@ -48,6 +48,11 @@ required_negative_tests = [
   "rejects empty idempotency_key",
   "rejects duplicate idempotency_key while an attempt is in flight",
   "cancellation path remains typed",
+  "rejects a history message role outside user/assistant (renderer role-injection)",
+  "rejects a model not in the reviewed providers::capabilities allowlist",
+  "rejects max_completion_tokens/temperature outside the resolved model's bounds",
+  "fails closed when privacy_mode=strict cannot be satisfied by the pinned model",
+  "rejects an attachment set exceeding the file count/byte/token budget",
 ]
 
 [[commands]]

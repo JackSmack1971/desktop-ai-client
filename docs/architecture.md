@@ -51,10 +51,10 @@ validated commands to the renderer.
 | IPC surface     | Typed Tauri commands callable from the renderer; window-label and command-name enforcement | `src-tauri/src/ipc/*.rs`                   |
 | Command policy  | Single authority for "is this command callable from this window"                           | `src-tauri/src/security/command_policy.rs` |
 | AppState        | In-memory runtime state (`ShellState`, active surface); `Send + Sync` singleton            | `src-tauri/src/app_state.rs`               |
-| providers       | Capability detection, provider routing, OpenRouter transport, SSE streaming                | `src-tauri/src/providers/`                 |
+| providers       | Capability detection, the Policy-Constrained Provider Runtime (model allowlist/bounds/privacy resolution), OpenRouter transport, SSE streaming | `src-tauri/src/providers/`                 |
 | security        | Secrets store, file-access tokens, redaction, command policy, artifact sandbox             | `src-tauri/src/security/`                  |
-| storage         | SQLite pool (WAL), typed domain stores, migration runner, FTS, retention, backup, conversation transaction protocol (`turns`) | `src-tauri/src/storage/`                   |
-| telemetry       | Audit log, release evidence capture (redaction-gated)                                      | `src-tauri/src/telemetry/`                 |
+| storage         | SQLite pool (WAL), typed domain stores, migration runner, FTS, retention, backup, conversation transaction protocol (`turns`), Evidence-Gated Memory Engine (`memory`, Phase 1, shadow mode) | `src-tauri/src/storage/`                   |
+| telemetry       | Audit log, release evidence capture (redaction-gated), deterministic memory-engine replay harness (`memory_replay`) | `src-tauri/src/telemetry/`                 |
 | Svelte renderer | UI surfaces (chat, history, surfaces shell), accessibility, surface navigation             | `src/lib/components/`, `src/routes/`       |
 | Frontend stores | Typed stores bridging IPC and Svelte 5 reactive state                                      | `src/lib/stores/*.ts`                      |
 
@@ -161,13 +161,13 @@ Identifiers:
 Flow:
 
 1. Renderer calls `invoke('chat_send', { history, newMessage, idempotencyKey, ... })` via the `chat` store
-2. `ipc::chat::chat_send` calls `command_policy::policy_check`, validates `new_message.role == "user"` and a non-empty `idempotency_key`
-3. `storage::turns::TurnStore::begin_turn` looks up or creates the turn — the only place a user message is ever inserted; an in-flight duplicate is rejected, a previously-completed turn is replayed from storage without calling the provider again, and a previously-failed turn becomes a new attempt under the same `turn_id`
-4. Builds `providers::routing::RoutableMessage` values from `history` + `new_message` (the IPC ↔ provider type conversion boundary) and calls `providers::routing::build_provider_messages`
-5. `providers::routing` selects a provider via capability detection (`providers::capabilities`)
+2. `ipc::chat::chat_send` calls `command_policy::policy_check` and validates a non-empty `idempotency_key`
+3. **Policy-Constrained Provider Runtime** (`providers::policy`, `providers::capabilities`, `security::attachment_budget`) runs before any persistence or provider call — see the dedicated section below — and rejects the whole request on any violation, so a bad request never creates a conversation, turn, or attempt row
+4. `storage::turns::TurnStore::begin_turn` looks up or creates the turn — the only place a user message is ever inserted; an in-flight duplicate is rejected, a previously-completed turn is replayed from storage without calling the provider again, and a previously-failed turn becomes a new attempt under the same `turn_id`
+5. Calls `providers::routing::build_provider_messages` with the role-validated `policy::ValidatedMessage` list and the resolved `ExecutionProfile`
 6. The provider adapter (`providers::openrouter`) sends the request over the SSE transport (`providers::sse`), which returns `Ok(())` only after observing `data: [DONE]` — EOF without it is reported distinctly (`sse::TRUNCATED_STREAM`) rather than treated as success
 7. `storage::turns::TurnStore` atomically persists the terminal outcome (assistant message, usage, resolved model, turn/attempt/conversation status, and any detected artifact) in one SQLite transaction — the corresponding terminal `ChatEvent` (`Done`/`Error`) is sent only after that write commits
-8. `telemetry::audit_log` records a redacted trace entry
+8. The resolved `PolicyReceipt` (model id, fallback flag, privacy mode, capability hash — never a secret or a path) is logged for observability; full structured audit-log persistence via `telemetry::audit_log` is not yet wired into this command (see "Policy-Constrained Provider Runtime")
 9. `chat_cancel` cancels an in-flight request by `attempt_id`; both commands are window-policy gated
 
 Recovery: on startup, `TurnStore::recover_orphaned_attempts` (called from
@@ -175,6 +175,118 @@ Recovery: on startup, `TurnStore::recover_orphaned_attempts` (called from
 still `in_progress` — left behind by a process that crashed or was
 force-quit mid-stream — to `failed` with reason `backend_shutdown`, so the
 UI never shows a stream spinning forever after a restart.
+
+### Evidence-Gated Memory Engine (Phase 1, shadow mode)
+
+`storage::memory::MemoryStore` (migration 0006) is a separate, currently
+unwired pipeline that turns finished turns into candidate long-term
+memories. **Shadow-mode invariant: nothing in `ipc::chat` or
+`providers::routing` calls into this module.** It exists to be measured via
+replay fixtures, not to influence a live prompt — that wiring is explicitly
+out of scope until a later phase decides retrieval quality is good enough.
+
+Tables: `memory_run_traces` (immutable — a `BEFORE UPDATE` trigger blocks
+edits; insert a new trace instead), `memory_candidates` (one row per
+proposed memory — duplicates are still inserted, pre-rejected, so every
+proposal stays inspectable), `memory_decisions` (the append-only decision
+ledger; also trigger-protected against `UPDATE`), and `memory_retrieval_log`
+(records what bounded retrieval would have returned, for replay
+measurement only).
+
+Pipeline:
+
+1. `record_run_trace` — one immutable row per finished turn (`success`,
+   `failed_partial`, `failed`, or `cancelled`).
+2. `propose_candidate(kind, summary, source_run_trace_id, confidence)` for
+   one of the four `docs/memory-loop.md` kinds (`factual`, `episodic`,
+   `procedural`, `caution`). Duplicate detection is exact-match on
+   `(kind, normalized summary)` — a duplicate is inserted with `status =
+   'rejected'` rather than skipped, so the ledger shows every attempt.
+3. `decide_promotion(candidate_id)` applies the deterministic
+   `promotion_rule` (see `storage::memory`'s doc comment for the exact
+   thresholds per kind) and writes one `memory_decisions` row. A `Deferred`
+   decision leaves `status = 'candidate'` (not terminal) so the candidate
+   can be re-decided later once more evidence (e.g. `record_reuse`)
+   accrues; `Promoted`/`Rejected` are terminal.
+4. `mark_contradiction(a, b)` rejects both sides of a detected conflict —
+   Phase 1 has no reconciliation flow to pick a winner.
+5. `bounded_retrieve(kind_filter, limit)` only ever returns `promoted`,
+   non-expired candidates, and logs the query to `memory_retrieval_log`.
+   This is the method a later phase would call from `ipc::chat` — in Phase
+   1 it is exercised only by tests and `telemetry::memory_replay`.
+6. `memory_health()` returns aggregate counts (by status, contradicted,
+   decision actions) for diagnostics.
+
+**Replay evidence:** `telemetry::memory_replay` seeds a fresh in-memory
+database per fixture case (no shared state, no wall-clock dependency in the
+computed metrics) and micro-averages precision, useful recall,
+contradiction rate, estimated token cost, and task delta
+(`avg(success with memory) - avg(success without memory)` on a
+deterministic toy scorer) across the cases. Run it with
+`cargo run --manifest-path src-tauri/Cargo.toml --bin memory-replay`; the
+frozen expected numbers are asserted in
+`telemetry::memory_replay::tests::default_fixture_replay_matches_frozen_metrics`.
+
+**Rollback:** this migration only adds tables (no `ALTER`/`DROP` against
+existing schema), so the recovery path if the memory engine needs to be
+pulled is a manual `DROP TABLE memory_retrieval_log, memory_decisions,
+memory_candidates, memory_run_traces;` — none of the core conversation
+transaction protocol tables reference *into* the memory tables, only the
+reverse, so dropping them is safe. Exercised by
+`storage::migrations::tests::dropping_memory_tables_does_not_affect_core_tables`.
+
+### Policy-Constrained Provider Runtime
+
+`chat_send` accepts `model`, `max_completion_tokens`, `temperature`, and
+`privacy_mode` from the renderer, plus every message's `role` as a plain
+string. None of those values are trusted as-is. `providers::policy` (backed
+by the reviewed allowlist in `providers::capabilities`) turns them into
+typed, bounded contracts before `storage::turns` or `providers::routing` ever
+see them:
+
+| Contract | Defined in | Replaces |
+| --- | --- | --- |
+| `ValidatedMessage` / `Role` | `providers::policy` | a renderer-supplied `role: String` — only `"user"`/`"assistant"` survive |
+| `ExecutionProfile` | `providers::policy` | the raw `model`/`max_completion_tokens`/`temperature` passthrough |
+| `RoutingDecision` | `providers::policy` | an implicit, unrecorded model choice |
+| `PolicyReceipt` | `providers::policy` | no audit-safe record of what was decided |
+| `AttachmentBudget` | `security::attachment_budget` | an unbounded `fs::read` of attached files |
+
+Enforcement, in order, before any persistence or provider call:
+
+1. **Role validation** (`policy::validate_message`) — every message in
+   `history`, plus `new_message`, must have role `"user"` or `"assistant"`.
+   This is the fix for a renderer (hostile or merely buggy) smuggling a
+   `role: "system"` message into `history` to ride alongside the
+   backend-owned system prompt (D-12). `new_message` is additionally
+   required to resolve to `Role::User`.
+2. **Model allowlist + bounds** (`policy::resolve_execution_profile`) — an
+   explicitly-named `model` must appear in `providers::capabilities::MODEL_ALLOWLIST`
+   or the request is rejected (`ModelNotAllowed`); an unnamed model resolves
+   to the reviewed default. `max_completion_tokens` and `temperature` are
+   checked against that model's reviewed bounds and **rejected, not
+   clamped**, when out of range.
+3. **Privacy fail-closed** (`PrivacyMode::Strict`) — if the resolved model
+   doesn't support strict privacy: when the caller left the model unpinned,
+   the runtime falls back to the configured strict-capable model
+   (`RoutingDecision.used_fallback = true`); when the caller pinned an
+   incompatible model explicitly, the request is rejected
+   (`PrivacyUnsatisfied`) rather than silently switching to a model the
+   caller didn't ask for.
+4. **Attachment budget** (`security::attachment_budget::check`) — file
+   count, per-file bytes, total bytes, an estimated-token ceiling, and a
+   text-like MIME allowlist are all checked against `fs::metadata` *before*
+   any attachment content is read. A budget violation leaves the file token
+   valid (so the caller can retry with a smaller set); a token is revoked
+   only after its content is successfully read into the request, closing the
+   previously-unbounded growth of `AppState.file_tokens`.
+
+`RoutingDecision.capability_hash` is a deterministic (not cryptographic)
+fingerprint of `(provider, model, max_completion_tokens, temperature,
+privacy)`, intended for drift detection between what policy decided and what
+was actually sent — not a trust boundary by itself. `PolicyReceipt` bundles
+the routing decision with the privacy mode and is safe to log: it never
+contains a secret, a raw path, or prompt content.
 
 ### History and search
 
@@ -204,7 +316,7 @@ Commands registered in `src-tauri/src/main.rs` via `tauri::generate_handler![]`:
 | ------------------------------- | ---------------- | ----------------------------------------------------------------- |
 | `get_active_surface`            | `ipc::app_shell` | Returns the `Surface` enum; window-label enforced                 |
 | `set_active_surface`            | `ipc::app_shell` | Persists to SQLite before updating in-memory state                |
-| `chat_send`                     | `ipc::chat`      | No `api_key` parameter; takes `history`/`new_message`/`idempotency_key` (Conversation Transaction Protocol) |
+| `chat_send`                     | `ipc::chat`      | No `api_key` parameter; takes `history`/`new_message`/`idempotency_key` (Conversation Transaction Protocol); `model`/`max_completion_tokens`/`temperature`/`privacy_mode` are renderer *hints* resolved into a backend-validated `ExecutionProfile` (see "Policy-Constrained Provider Runtime" below) |
 | `chat_cancel`                   | `ipc::chat`      | Cancels an in-flight stream by `attempt_id`                       |
 | `history_list`                  | `ipc::history`   | Lists conversations, most-recently-updated first                  |
 | `history_get`                   | `ipc::history`   | Full conversation + message list                                  |
