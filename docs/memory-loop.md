@@ -118,3 +118,72 @@ Verification commands:
 cargo test --manifest-path src-tauri/Cargo.toml --lib memory
 cargo run --manifest-path src-tauri/Cargo.toml --bin memory-replay
 ```
+
+## Inspecting stored memory metadata (read-only)
+
+A human can inspect what the shadow-mode memory engine has stored by running
+read-only SQL directly against the app's SQLite database file. This is
+**not** a Rust code path, IPC command, or UI surface — it is an operator-local
+diagnostic, run by hand, that crosses no IPC boundary and adds no new
+program-reachable surface (the shadow-mode invariant above is preserved:
+`grep -rn 'memory::' src-tauri/src/ipc/` still returns nothing).
+
+Open the database file in read-only mode so inspection cannot mutate state.
+Using the `sqlite3` CLI:
+
+```sh
+sqlite3 -readonly /path/to/app.db
+```
+
+(Find the app's database file location for your platform via the Tauri app
+data directory; the path is not hardcoded here since it varies by OS and
+build.)
+
+### Candidate metadata (`memory_candidates`)
+
+```sql
+SELECT id, kind, summary, source_run_trace_id, confidence, utility, status, verification_state, contradiction_state, expires_at, created_at, updated_at, tags FROM memory_candidates
+ORDER BY created_at DESC
+LIMIT 50;
+```
+
+### Decision ledger (`memory_decisions`)
+
+```sql
+SELECT
+  candidate_id,
+  action,
+  reason,
+  decided_at
+FROM memory_decisions
+ORDER BY decided_at DESC
+LIMIT 50;
+```
+
+### Run traces (`memory_run_traces`)
+
+```sql
+SELECT
+  id,
+  conversation_id,
+  turn_id,
+  task_summary,
+  outcome,
+  created_at
+FROM memory_run_traces
+ORDER BY created_at DESC
+LIMIT 50;
+```
+
+### Why this is safe to expose
+
+Each query above names an explicit column list against a single
+`memory_*` table — never `SELECT *`, and never a join to `messages`,
+`conversations`, `turns`, `turn_attempts`, `attachments`, `artifacts`, or any
+other non-`memory_*` table. Per `docs/privacy-boundaries.md`'s "Memory engine
+storage" section, the `memory_*` tables persist only derived summaries
+(`task_summary`, `summary`, and now caller-supplied `tags`) and chain back to
+their source conversation via `conversation_id` / `source_run_trace_id` —
+they never hold a secret, credential, or raw file path. Those live entirely
+in the attachment/file-token intake path (`docs/privacy-boundaries.md`'s
+"Attachment intake" section), which none of the queries above read from.
