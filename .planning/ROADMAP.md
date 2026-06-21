@@ -36,7 +36,9 @@ This project is being bootstrapped from synthesized docs context rather than PRD
   2. Each memory candidate carries type, summary, source, tags, confidence, utility, recency, verification state, and expiry.
   3. The memory pipeline remains shadow-mode only and does not change live provider routing or chat behavior.
   4. A human can inspect stored memory metadata without exposing backend-owned secrets or raw file paths.
-**Plans**: TBD
+**Plans**: 1
+Plans:
+- [ ] 02-01-PLAN.md — Add additive tags column (migration 0007) + storage support, and document read-only memory inspection queries
 
 ### Phase 3: Run Loop
 **Goal**: Every run is captured as a traceable execution record with summary and candidate memory output.
@@ -87,7 +89,7 @@ This project is being bootstrapped from synthesized docs context rather than PRD
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Single-Agent Core | 1/1 | Complete | 2026-06-20 |
-| 2. Memory Model | TBD | Not started | - |
+| 2. Memory Model | 0/1 | Not started | - |
 | 3. Run Loop | TBD | Not started | - |
 | 4. Retrieval, Promotion, and Verification | TBD | Not started | - |
 | 5. Consolidation, Observability, and Guardrails | TBD | Not started | - |
