@@ -108,7 +108,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Single-Agent Core | 1/1 | Complete | 2026-06-20 |
-| 2. Memory Model | 1/1 | Complete   | 2026-06-21 |
+| 2. Memory Model | 1/1 | Complete    | 2026-06-21 |
 | 3. Run Loop | TBD | Not started | - |
 | 4. Retrieval, Promotion, and Verification | TBD | Not started | - |
 | 5. Consolidation, Observability, and Guardrails | TBD | Not started | - |
