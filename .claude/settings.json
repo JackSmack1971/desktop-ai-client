@@ -15,6 +15,7 @@
       "Bash(node .claude/workflows/issue-to-pr.js:*)",
       "Bash(node .claude/workflows/review-readiness.js:*)",
       "Bash(node .claude/workflows/repo-audit.js:*)",
+      "Bash(node .claude/workflows/audit-claude-context-compression.js:*)",
       "Bash(node .claude/workflows/release-readiness.js:*)",
       "Bash(cargo test:*)",
       "Bash(cargo check:*)",
@@ -43,7 +44,40 @@
       "Bash(del /f /s /q:*)",
       "Bash(terraform destroy:*)",
       "Bash(kubectl delete:*)",
-      "Bash(dropdb:*)"
+      "Bash(dropdb:*)",
+      "Read(./**/node_modules/**)",
+      "Read(./**/.pnpm-store/**)",
+      "Read(./**/.yarn/cache/**)",
+      "Read(./**/.venv/**)",
+      "Read(./**/venv/**)",
+      "Read(./**/vendor/**)",
+      "Read(./**/Pods/**)",
+      "Read(./**/.bundle/**)",
+      "Read(./**/dist/**)",
+      "Read(./**/build/**)",
+      "Read(./**/out/**)",
+      "Read(./**/target/**)",
+      "Read(./**/.next/**)",
+      "Read(./**/.nuxt/**)",
+      "Read(./**/.svelte-kit/**)",
+      "Read(./**/.astro/**)",
+      "Read(./**/.vite/**)",
+      "Read(./**/.parcel-cache/**)",
+      "Read(./**/.turbo/**)",
+      "Read(./**/coverage/**)",
+      "Read(./**/htmlcov/**)",
+      "Read(./**/.gradle/**)",
+      "Read(./**/.cache/**)",
+      "Read(./**/.pytest_cache/**)",
+      "Read(./**/.mypy_cache/**)",
+      "Read(./**/.ruff_cache/**)",
+      "Read(./**/.tox/**)",
+      "Read(./**/.nox/**)",
+      "Read(./**/__pycache__/**)",
+      "Read(./**/*.min.js)",
+      "Read(./**/*.min.css)",
+      "Read(./**/*.map)",
+      "Read(./**/*.log)"
     ]
   },
   "confirmations": {
@@ -80,7 +114,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|Edit|Write",
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
@@ -92,7 +126,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash|Edit|Write",
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
