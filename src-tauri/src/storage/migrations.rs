@@ -315,8 +315,10 @@ pub fn run_migrations(conn: &Connection, app_version: &str) -> rusqlite::Result<
         // Run the migration in a savepoint (nested transaction) so failures
         // can be rolled back without losing the tracking table state.
 
-        // Validate id is a safe SQL identifier before embedding it.
-        debug_assert!(
+        // Validate id is a safe SQL identifier before embedding it. This must
+        // hold in release builds too, since the SAVEPOINT name below cannot
+        // be bind-parameterized by the SQLite driver.
+        assert!(
             migration
                 .id
                 .chars()
