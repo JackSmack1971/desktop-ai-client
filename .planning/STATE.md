@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 1
-current_phase_name: Single-Agent Core
-status: executing
+current_phase: 02
+current_phase_name: memory-model
+status: verifying
 stopped_at: Phase 2 context gathered
-last_updated: "2026-06-21T12:21:37.379Z"
-last_activity: 2026-06-20
-last_activity_desc: Phase 1 plan executed and verified.
+last_updated: "2026-06-21T12:44:32.594Z"
+last_activity: 2026-06-21
+last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 17
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
+  percent: 33
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-20)
 
 **Core value:** A privacy-preserving, memory-first Tauri desktop client with a thin renderer and Rust-owned backend boundaries.
-**Current focus:** Phase 1: Single-Agent Core
+**Current focus:** Phase 02 — memory-model
 
 ## Current Position
 
-Phase: 1 of 6 (Single-Agent Core)
-Plan: 1 of 1 in current phase
-Status: Ready to execute
-Last activity: 2026-06-20 — Phase 1 plan executed and verified.
+Phase: 02 (memory-model) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-06-21 — Phase 02 execution started
 
 Progress: [██░░░░░░░░] 17%
 
@@ -60,6 +60,7 @@ Progress: [██░░░░░░░░] 17%
 - Trend: Stable
 
 *Updated during planning and execution*
+| Phase 02 P01 | 13min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - [Phase 2] Memory remains shadow-mode only until a later phase explicitly wires it into live behavior.
 - [Phase 5] Privacy, command policy, and release evidence remain deny-by-inventory and fail closed.
 - [Phase 1] Existing conversation/turn/attempt state is the durable boundary and restart hydration stays surface-only.
+- [Phase 02]: Tags stored as JSON array string via serde_json (already a dependency), additive migration 0007, no schema change to migration 0006
+- [Phase 02]: propose_candidate's tags parameter is a required trailing slice argument; all call sites updated explicitly
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-06-21T04:48:46.626Z
+Last session: 2026-06-21T12:42:40.434Z
 Stopped at: Phase 2 context gathered
 Resume file: .planning/phases/02-memory-model/02-CONTEXT.md
