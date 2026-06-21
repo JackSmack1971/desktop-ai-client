@@ -87,6 +87,7 @@ pub struct CandidateRow {
     pub status: String,
     pub verification_state: VerificationState,
     pub contradiction_state: String,
+    pub tags: Vec<String>,
 }
 
 /// Outcome of proposing a candidate memory.
@@ -185,6 +186,17 @@ fn dedup_key(kind: MemoryKind, summary: &str) -> String {
     format!("{}:{normalized}", kind.as_str())
 }
 
+/// Serialize caller-supplied tags into the JSON array string persisted in
+/// `memory_candidates.tags`.
+fn serialize_tags(tags: &[String]) -> String {
+    serde_json::to_string(tags).expect("Vec<String> always serializes to JSON")
+}
+
+/// Parse the `tags` column back into the caller-facing `Vec<String>`.
+fn parse_tags(raw: &str) -> Vec<String> {
+    serde_json::from_str(raw).unwrap_or_else(|_| panic!("invalid tags JSON in storage: {raw:?}"))
+}
+
 /// Typed store for the memory engine's `memory_run_traces`,
 /// `memory_candidates`, `memory_decisions`, and `memory_retrieval_log`
 /// tables. All reads and writes to those tables must go through this store.
@@ -228,8 +240,10 @@ impl MemoryStore {
         summary: &str,
         source_run_trace_id: &str,
         confidence: f64,
+        tags: &[String],
     ) -> rusqlite::Result<ProposeOutcome> {
         let key = dedup_key(kind, summary);
+        let tags_json = serialize_tags(tags);
         self.pool.with_transaction(|tx| {
             let existing: Option<String> = tx
                 .query_row(
@@ -247,9 +261,9 @@ impl MemoryStore {
             if let Some(duplicate_of) = existing {
                 tx.execute(
                     "INSERT INTO memory_candidates
-                     (id, kind, summary, dedup_key, source_run_trace_id, confidence, status)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'rejected')",
-                    params![candidate_id, kind.as_str(), summary, key, source_run_trace_id, confidence],
+                     (id, kind, summary, dedup_key, source_run_trace_id, confidence, status, tags)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'rejected', ?7)",
+                    params![candidate_id, kind.as_str(), summary, key, source_run_trace_id, confidence, tags_json],
                 )?;
                 tx.execute(
                     "INSERT INTO memory_decisions (id, candidate_id, action, reason)
@@ -263,9 +277,9 @@ impl MemoryStore {
             } else {
                 tx.execute(
                     "INSERT INTO memory_candidates
-                     (id, kind, summary, dedup_key, source_run_trace_id, confidence)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                    params![candidate_id, kind.as_str(), summary, key, source_run_trace_id, confidence],
+                     (id, kind, summary, dedup_key, source_run_trace_id, confidence, tags)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    params![candidate_id, kind.as_str(), summary, key, source_run_trace_id, confidence, tags_json],
                 )?;
                 tx.execute(
                     "INSERT INTO memory_decisions (id, candidate_id, action, reason)
@@ -442,7 +456,7 @@ impl MemoryStore {
             let rows: Vec<CandidateRow> = match kind_filter {
                 Some(kind) => {
                     let mut stmt = tx.prepare(
-                        "SELECT id, kind, summary, source_run_trace_id, confidence, utility, status, verification_state, contradiction_state
+                        "SELECT id, kind, summary, source_run_trace_id, confidence, utility, status, verification_state, contradiction_state, tags
                          FROM memory_candidates
                          WHERE status = 'promoted' AND kind = ?1
                            AND (expires_at IS NULL OR expires_at > datetime('now'))
@@ -455,7 +469,7 @@ impl MemoryStore {
                 }
                 None => {
                     let mut stmt = tx.prepare(
-                        "SELECT id, kind, summary, source_run_trace_id, confidence, utility, status, verification_state, contradiction_state
+                        "SELECT id, kind, summary, source_run_trace_id, confidence, utility, status, verification_state, contradiction_state, tags
                          FROM memory_candidates
                          WHERE status = 'promoted'
                            AND (expires_at IS NULL OR expires_at > datetime('now'))
@@ -534,6 +548,7 @@ impl MemoryStore {
 fn row_to_candidate(row: &rusqlite::Row) -> rusqlite::Result<CandidateRow> {
     let kind: String = row.get(1)?;
     let verification_state: String = row.get(7)?;
+    let tags_raw: String = row.get(9)?;
     Ok(CandidateRow {
         id: row.get(0)?,
         kind: MemoryKind::parse(&kind),
@@ -544,6 +559,7 @@ fn row_to_candidate(row: &rusqlite::Row) -> rusqlite::Result<CandidateRow> {
         status: row.get(6)?,
         verification_state: VerificationState::parse(&verification_state),
         contradiction_state: row.get(8)?,
+        tags: parse_tags(&tags_raw),
     })
 }
 
@@ -582,7 +598,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let outcome = store
-            .propose_candidate(MemoryKind::Factual, "the API rate limit is 60rpm", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Factual, "the API rate limit is 60rpm", &trace_id, 0.9, &[])
             .unwrap();
         assert!(matches!(outcome, ProposeOutcome::Proposed { .. }));
     }
@@ -594,7 +610,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let first = store
-            .propose_candidate(MemoryKind::Factual, "the API rate limit is 60rpm", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Factual, "the API rate limit is 60rpm", &trace_id, 0.9, &[])
             .unwrap();
         let ProposeOutcome::Proposed { candidate_id: first_id } = first else {
             panic!("expected Proposed");
@@ -602,7 +618,7 @@ mod tests {
 
         // Same kind + summary, different whitespace/case — still a duplicate.
         let second = store
-            .propose_candidate(MemoryKind::Factual, "  THE api RATE limit IS   60rpm  ", &trace_id, 0.5)
+            .propose_candidate(MemoryKind::Factual, "  THE api RATE limit IS   60rpm  ", &trace_id, 0.5, &[])
             .unwrap();
         match second {
             ProposeOutcome::Duplicate { duplicate_of, .. } => assert_eq!(duplicate_of, first_id),
@@ -617,10 +633,10 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         store
-            .propose_candidate(MemoryKind::Caution, "watch out for X", &trace_id, 0.5)
+            .propose_candidate(MemoryKind::Caution, "watch out for X", &trace_id, 0.5, &[])
             .unwrap();
         let ProposeOutcome::Duplicate { candidate_id, .. } = store
-            .propose_candidate(MemoryKind::Caution, "watch out for X", &trace_id, 0.5)
+            .propose_candidate(MemoryKind::Caution, "watch out for X", &trace_id, 0.5, &[])
             .unwrap()
         else {
             panic!("expected Duplicate");
@@ -656,7 +672,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let ProposeOutcome::Proposed { candidate_id } = store
-            .propose_candidate(MemoryKind::Factual, "fact A", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Factual, "fact A", &trace_id, 0.9, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -673,7 +689,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let ProposeOutcome::Proposed { candidate_id } = store
-            .propose_candidate(MemoryKind::Factual, "fact, externally checked", &trace_id, 0.3)
+            .propose_candidate(MemoryKind::Factual, "fact, externally checked", &trace_id, 0.3, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -694,7 +710,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let ProposeOutcome::Proposed { candidate_id } = store
-            .propose_candidate(MemoryKind::Factual, "fact, later debunked", &trace_id, 0.95)
+            .propose_candidate(MemoryKind::Factual, "fact, later debunked", &trace_id, 0.95, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -716,7 +732,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let ProposeOutcome::Proposed { candidate_id } = store
-            .propose_candidate(MemoryKind::Factual, "fact B", &trace_id, 0.3)
+            .propose_candidate(MemoryKind::Factual, "fact B", &trace_id, 0.3, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -733,7 +749,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let ProposeOutcome::Proposed { candidate_id } = store
-            .propose_candidate(MemoryKind::Episodic, "ran into flaky test", &trace_id, 0.6)
+            .propose_candidate(MemoryKind::Episodic, "ran into flaky test", &trace_id, 0.6, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -758,10 +774,10 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         store
-            .propose_candidate(MemoryKind::Caution, "dup", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Caution, "dup", &trace_id, 0.9, &[])
             .unwrap();
         let ProposeOutcome::Duplicate { candidate_id, .. } = store
-            .propose_candidate(MemoryKind::Caution, "dup", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Caution, "dup", &trace_id, 0.9, &[])
             .unwrap()
         else {
             panic!("expected Duplicate");
@@ -777,13 +793,13 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let ProposeOutcome::Proposed { candidate_id: a } = store
-            .propose_candidate(MemoryKind::Factual, "the limit is 60rpm", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Factual, "the limit is 60rpm", &trace_id, 0.9, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
         };
         let ProposeOutcome::Proposed { candidate_id: b } = store
-            .propose_candidate(MemoryKind::Factual, "the limit is 120rpm", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Factual, "the limit is 120rpm", &trace_id, 0.9, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -819,7 +835,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let ProposeOutcome::Proposed { candidate_id } = store
-            .propose_candidate(MemoryKind::Episodic, "stale fact", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Episodic, "stale fact", &trace_id, 0.9, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -854,7 +870,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let ProposeOutcome::Proposed { candidate_id: promoted_id } = store
-            .propose_candidate(MemoryKind::Factual, "promoted fact", &trace_id, 0.95)
+            .propose_candidate(MemoryKind::Factual, "promoted fact", &trace_id, 0.95, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -862,7 +878,7 @@ mod tests {
         store.decide_promotion(&promoted_id).unwrap();
 
         let ProposeOutcome::Proposed { candidate_id: deferred_id } = store
-            .propose_candidate(MemoryKind::Factual, "deferred fact", &trace_id, 0.1)
+            .propose_candidate(MemoryKind::Factual, "deferred fact", &trace_id, 0.1, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -875,6 +891,48 @@ mod tests {
     }
 
     #[test]
+    fn tags_round_trip_through_propose_and_retrieve() {
+        let pool = migrated_pool();
+        let store = MemoryStore::new(pool.clone());
+        let trace_id = seed_trace(&pool, &store);
+
+        let tags = vec!["a".to_string(), "b".to_string()];
+        let ProposeOutcome::Proposed { candidate_id: tagged_id } = store
+            .propose_candidate(MemoryKind::Factual, "tagged fact", &trace_id, 0.95, &tags)
+            .unwrap()
+        else {
+            panic!("expected Proposed");
+        };
+        store.decide_promotion(&tagged_id).unwrap();
+
+        let ProposeOutcome::Proposed { candidate_id: untagged_id } = store
+            .propose_candidate(MemoryKind::Factual, "untagged fact", &trace_id, 0.95, &[])
+            .unwrap()
+        else {
+            panic!("expected Proposed");
+        };
+        store.decide_promotion(&untagged_id).unwrap();
+
+        let results = store.bounded_retrieve(Some(MemoryKind::Factual), 10).unwrap();
+
+        let tagged_row = results
+            .iter()
+            .find(|row| row.id == tagged_id)
+            .expect("tagged candidate should be retrieved");
+        assert_eq!(tagged_row.tags, tags, "non-empty tags must round-trip in order");
+
+        let untagged_row = results
+            .iter()
+            .find(|row| row.id == untagged_id)
+            .expect("untagged candidate should be retrieved");
+        assert_eq!(
+            untagged_row.tags,
+            Vec::<String>::new(),
+            "an empty tags slice must round-trip to an empty Vec<String>"
+        );
+    }
+
+    #[test]
     fn bounded_retrieve_respects_limit_and_logs_query() {
         let pool = migrated_pool();
         let store = MemoryStore::new(pool.clone());
@@ -882,7 +940,7 @@ mod tests {
 
         for i in 0..3 {
             let ProposeOutcome::Proposed { candidate_id } = store
-                .propose_candidate(MemoryKind::Caution, &format!("caution {i}"), &trace_id, 0.9)
+                .propose_candidate(MemoryKind::Caution, &format!("caution {i}"), &trace_id, 0.9, &[])
                 .unwrap()
             else {
                 panic!("expected Proposed");
@@ -906,7 +964,7 @@ mod tests {
         let trace_id = seed_trace(&pool, &store);
 
         let ProposeOutcome::Proposed { candidate_id: promoted_id } = store
-            .propose_candidate(MemoryKind::Factual, "fact one", &trace_id, 0.95)
+            .propose_candidate(MemoryKind::Factual, "fact one", &trace_id, 0.95, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -914,7 +972,7 @@ mod tests {
         store.decide_promotion(&promoted_id).unwrap();
 
         let ProposeOutcome::Proposed { candidate_id: deferred_id } = store
-            .propose_candidate(MemoryKind::Procedural, "method one", &trace_id, 0.2)
+            .propose_candidate(MemoryKind::Procedural, "method one", &trace_id, 0.2, &[])
             .unwrap()
         else {
             panic!("expected Proposed");
@@ -922,10 +980,10 @@ mod tests {
         store.decide_promotion(&deferred_id).unwrap();
 
         store
-            .propose_candidate(MemoryKind::Caution, "watch out", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Caution, "watch out", &trace_id, 0.9, &[])
             .unwrap();
         store
-            .propose_candidate(MemoryKind::Caution, "watch out", &trace_id, 0.9)
+            .propose_candidate(MemoryKind::Caution, "watch out", &trace_id, 0.9, &[])
             .unwrap(); // duplicate -> rejected
 
         let health = store.memory_health().unwrap();

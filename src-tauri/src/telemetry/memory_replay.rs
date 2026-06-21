@@ -176,7 +176,7 @@ pub fn run_replay(fixture: &[FixtureCase]) -> ReplayReport {
         let mut name_to_id: HashMap<&'static str, String> = HashMap::new();
         for candidate in &case.candidates {
             let outcome = store
-                .propose_candidate(candidate.kind, candidate.summary, &trace_id, candidate.confidence)
+                .propose_candidate(candidate.kind, candidate.summary, &trace_id, candidate.confidence, &[])
                 .expect("propose candidate");
             let id = match outcome {
                 ProposeOutcome::Proposed { candidate_id } => candidate_id,

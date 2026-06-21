@@ -268,6 +268,13 @@ pub static MIGRATIONS: &[Migration] = &[
             ) STRICT;
         ",
     },
+    Migration {
+        id: "0007",
+        description: "Add caller-supplied tags column to memory_candidates",
+        sql: "
+            ALTER TABLE memory_candidates ADD COLUMN tags TEXT NOT NULL DEFAULT '[]';
+        ",
+    },
 ];
 
 /// Apply any pending migrations to `conn`.
@@ -401,11 +408,11 @@ mod tests {
     }
 
     #[test]
-    fn migrations_count_is_six() {
+    fn migrations_count_is_seven() {
         assert_eq!(
             MIGRATIONS.len(),
-            6,
-            "expected 6 migrations after the memory engine addition"
+            7,
+            "expected 7 migrations after the memory_candidates tags column addition"
         );
     }
 
