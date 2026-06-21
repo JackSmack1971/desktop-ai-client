@@ -25,8 +25,20 @@ function emitJson(value) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
+function emitHookError(hookEventName, error, extras = {}) {
+  const message = error instanceof Error ? error.message : String(error);
+  emitJson({
+    hookSpecificOutput: {
+      hookEventName,
+      additionalContext: `Error: ${message}`,
+      ...extras,
+    }
+  });
+}
+
 export {
   emitJson,
+  emitHookError,
   readStdin,
   safeJsonParse,
 };

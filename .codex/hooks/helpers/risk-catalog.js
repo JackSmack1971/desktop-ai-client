@@ -1,4 +1,4 @@
-const dangerousPatterns = [
+const dangerousCommandPatterns = [
   /rm\s+-rf/i,
   /git\s+reset\s+--hard/i,
   /git\s+push\s+--force/i,
@@ -6,14 +6,17 @@ const dangerousPatterns = [
   /terraform\s+destroy/i,
   /kubectl\s+delete/i,
   /del\s+\/f\s+\/s\s+\/q/i,
-  /\.env(\.|$)/i,
   /secrets?/i
 ];
 
-function detectRisk(text) {
+const dangerousPathPatterns = [
+  /(?:^|[\\/])\.env(?:$|[\\/]|\.local$|\.production$|\.staging$|\.development$)/i
+];
+
+function detectRisk(text, patterns = dangerousCommandPatterns) {
   const hits = [];
   const source = String(text || "");
-  for (const pattern of dangerousPatterns) {
+  for (const pattern of patterns) {
     if (pattern.test(source)) {
       hits.push(pattern.source);
     }
@@ -23,6 +26,6 @@ function detectRisk(text) {
 
 export {
   detectRisk,
-  dangerousPatterns,
+  dangerousCommandPatterns,
+  dangerousPathPatterns,
 };
-

@@ -1,22 +1,23 @@
-import { emitJson, readStdin, safeJsonParse } from "./helpers/io.js";
+import { emitHookError, emitJson, readStdin, safeJsonParse } from "./helpers/io.js";
 
 async function main() {
   const input = await readStdin();
   const event = safeJsonParse(input) || {};
   emitJson({
-    status: "ok",
-    hook: "stop",
-    session: event.session || null,
-    summary: "Return a findings-first result with explicit evidence and remaining risk."
+    hookSpecificOutput: {
+      hookEventName: "Stop",
+      additionalContext: [
+        "Return a findings-first result with explicit evidence and remaining risk.",
+        event.session_id ? `Session: ${event.session_id}` : null
+      ]
+        .filter(Boolean)
+        .join(" ")
+    }
   });
 }
 
 main().catch((error) => {
-  emitJson({
-    status: "error",
-    hook: "stop",
-    message: error.message
-  });
-  process.exit(1);
+  emitHookError("Stop", error);
+  console.error(error.stack || error.message);
+  process.exit(2);
 });
-

@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/security-policy-plan.schema.json",
+  "title": "Repository Security Policy Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "target_path",
+    "repository_facts",
+    "policy_decisions",
+    "unresolved_todos"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "mode": {
+      "enum": ["create", "update", "audit"]
+    },
+    "target_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repository_facts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/evidenceItem"
+      }
+    },
+    "policy_decisions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "support",
+        "intake",
+        "scope",
+        "out_of_scope",
+        "report_requirements",
+        "response",
+        "safe_harbor",
+        "attribution",
+        "supply_chain",
+        "omitted_modules"
+      ],
+      "properties": {
+        "support": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model", "statement", "classification", "sources"],
+          "properties": {
+            "model": {
+              "enum": [
+                "rolling",
+                "latest_release",
+                "maintained_lines",
+                "external_lifecycle",
+                "unknown"
+              ]
+            },
+            "statement": {"type": "string"},
+            "classification": {"$ref": "#/$defs/classification"},
+            "sources": {"$ref": "#/$defs/sources"}
+          }
+        },
+        "intake": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["preferred_type", "preferred_value", "verified", "sources"],
+          "properties": {
+            "preferred_type": {
+              "enum": ["github_pvr", "email", "portal", "other_private", "unknown"]
+            },
+            "preferred_value": {"type": "string"},
+            "verified": {"type": "boolean"},
+            "fallback_type": {
+              "enum": ["email", "portal", "other_private", "none"]
+            },
+            "fallback_value": {"type": "string"},
+            "sources": {"$ref": "#/$defs/sources"}
+          }
+        },
+        "scope": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/evidenceItem"}
+        },
+        "out_of_scope": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/evidenceItem"}
+        },
+        "report_requirements": {
+          "type": "array",
+          "minItems": 4,
+          "items": {"type": "string", "minLength": 3}
+        },
+        "response": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model", "statement", "classification", "sources"],
+          "properties": {
+            "model": {"enum": ["best_effort", "approved_targets", "formal_sla"]},
+            "statement": {"type": "string"},
+            "classification": {"$ref": "#/$defs/classification"},
+            "sources": {"$ref": "#/$defs/sources"}
+          }
+        },
+        "safe_harbor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "approved", "sources"],
+          "properties": {
+            "mode": {"enum": ["research_guidelines", "approved_safe_harbor", "preserve_existing"]},
+            "approved": {"type": "boolean"},
+            "sources": {"$ref": "#/$defs/sources"}
+          }
+        },
+        "attribution": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supply_chain": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/evidenceItem"}
+        },
+        "omitted_modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["module", "reason"],
+            "properties": {
+              "module": {"type": "string", "minLength": 1},
+              "reason": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "unresolved_todos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["item", "severity", "blocking"],
+        "properties": {
+          "item": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["low", "medium", "high"]},
+          "blocking": {"type": "boolean"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "classification": {
+      "enum": ["verified", "inferred", "unknown", "not-applicable"]
+    },
+    "sources": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statement", "classification", "sources"],
+      "properties": {
+        "statement": {"type": "string", "minLength": 1},
+        "classification": {"$ref": "#/$defs/classification"},
+        "sources": {"$ref": "#/$defs/sources"}
+      }
+    }
+  }
+}
