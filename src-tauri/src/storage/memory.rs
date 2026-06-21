@@ -15,7 +15,7 @@
 /// `promoted`/`rejected`/`deferred`. `bounded_retrieve` only ever returns
 /// `promoted`, non-expired rows, and itself only writes to
 /// `memory_retrieval_log` — never to a chat request.
-use crate::storage::sqlite::SqlitePool;
+use crate::storage::sqlite::{SqlitePool, StorageError};
 use rusqlite::{params, OptionalExtension};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -217,7 +217,7 @@ impl MemoryStore {
         turn_id: Option<&str>,
         task_summary: &str,
         outcome: &str,
-    ) -> rusqlite::Result<String> {
+    ) -> Result<String, StorageError> {
         let id = Uuid::new_v4().to_string();
         self.pool.with_conn(|conn| {
             conn.execute(
@@ -241,7 +241,7 @@ impl MemoryStore {
         source_run_trace_id: &str,
         confidence: f64,
         tags: &[String],
-    ) -> rusqlite::Result<ProposeOutcome> {
+    ) -> Result<ProposeOutcome, StorageError> {
         let key = dedup_key(kind, summary);
         let tags_json = serialize_tags(tags);
         self.pool.with_transaction(|tx| {
@@ -294,7 +294,7 @@ impl MemoryStore {
     /// Apply the deterministic promotion policy to a candidate currently in
     /// `status = 'candidate'`. No-ops (returns `Decision::Skipped`) for a
     /// candidate already decided (e.g. rejected at proposal time).
-    pub fn decide_promotion(&self, candidate_id: &str) -> rusqlite::Result<Decision> {
+    pub fn decide_promotion(&self, candidate_id: &str) -> Result<Decision, StorageError> {
         self.pool.with_transaction(|tx| {
             let row: Option<(String, f64, i64, String, String, String)> = tx
                 .query_row(
@@ -356,7 +356,7 @@ impl MemoryStore {
     /// automatic reconciliation.
     /// ponytail: no reconciliation flow yet — add one when a human/judge
     /// review step exists to pick a winner instead of rejecting both.
-    pub fn mark_contradiction(&self, candidate_a: &str, candidate_b: &str) -> rusqlite::Result<()> {
+    pub fn mark_contradiction(&self, candidate_a: &str, candidate_b: &str) -> Result<(), StorageError> {
         self.pool.with_transaction(|tx| {
             for (this, other) in [(candidate_a, candidate_b), (candidate_b, candidate_a)] {
                 tx.execute(
@@ -389,7 +389,7 @@ impl MemoryStore {
         &self,
         candidate_id: &str,
         state: VerificationState,
-    ) -> rusqlite::Result<()> {
+    ) -> Result<(), StorageError> {
         self.pool.with_conn(|conn| {
             conn.execute(
                 "UPDATE memory_candidates SET verification_state = ?2, updated_at = datetime('now') WHERE id = ?1",
@@ -402,7 +402,7 @@ impl MemoryStore {
     /// Record that a promoted candidate was usefully reused (a replay
     /// fixture hit, or — once a later phase wires it in — a live retrieval
     /// that helped). Increments `utility` by 1.
-    pub fn record_reuse(&self, candidate_id: &str) -> rusqlite::Result<()> {
+    pub fn record_reuse(&self, candidate_id: &str) -> Result<(), StorageError> {
         self.pool.with_conn(|conn| {
             conn.execute(
                 "UPDATE memory_candidates SET utility = utility + 1, updated_at = datetime('now') WHERE id = ?1",
@@ -414,7 +414,7 @@ impl MemoryStore {
 
     /// Sweep candidates past `expires_at` into `status = 'expired'`. Returns
     /// the number of rows expired.
-    pub fn expire_stale(&self) -> rusqlite::Result<usize> {
+    pub fn expire_stale(&self) -> Result<usize, StorageError> {
         self.pool.with_transaction(|tx| {
             let mut stmt = tx.prepare(
                 "SELECT id FROM memory_candidates
@@ -451,7 +451,7 @@ impl MemoryStore {
         &self,
         kind_filter: Option<MemoryKind>,
         limit: usize,
-    ) -> rusqlite::Result<Vec<CandidateRow>> {
+    ) -> Result<Vec<CandidateRow>, StorageError> {
         self.pool.with_transaction(|tx| {
             let rows: Vec<CandidateRow> = match kind_filter {
                 Some(kind) => {
@@ -503,7 +503,7 @@ impl MemoryStore {
     /// Memory-health diagnostics: aggregate counts across all memory engine
     /// tables, for inspection (e.g. a future `memory_health` IPC command or
     /// CLI diagnostic — not wired up in Phase 1).
-    pub fn memory_health(&self) -> rusqlite::Result<MemoryHealth> {
+    pub fn memory_health(&self) -> Result<MemoryHealth, StorageError> {
         self.pool.with_conn(|conn| {
             let mut health = MemoryHealth::default();
             health.run_trace_count = conn.query_row("SELECT COUNT(*) FROM memory_run_traces", [], |r| r.get(0))?;
@@ -644,22 +644,22 @@ mod tests {
 
         let status: String = pool
             .with_conn(|conn| {
-                conn.query_row(
+                Ok(conn.query_row(
                     "SELECT status FROM memory_candidates WHERE id = ?1",
                     params![candidate_id],
                     |row| row.get(0),
-                )
+                )?)
             })
             .unwrap();
         assert_eq!(status, "rejected");
 
         let reason: String = pool
             .with_conn(|conn| {
-                conn.query_row(
+                Ok(conn.query_row(
                     "SELECT reason FROM memory_decisions WHERE candidate_id = ?1",
                     params![candidate_id],
                     |row| row.get(0),
-                )
+                )?)
             })
             .unwrap();
         assert!(reason.starts_with("duplicate_of:"));
@@ -810,11 +810,11 @@ mod tests {
         for id in [&a, &b] {
             let (status, contradiction_state): (String, String) = pool
                 .with_conn(|conn| {
-                    conn.query_row(
+                    Ok(conn.query_row(
                         "SELECT status, contradiction_state FROM memory_candidates WHERE id = ?1",
                         params![id],
                         |row| Ok((row.get(0)?, row.get(1)?)),
-                    )
+                    )?)
                 })
                 .unwrap();
             assert_eq!(status, "rejected");
@@ -841,10 +841,10 @@ mod tests {
             panic!("expected Proposed");
         };
         pool.with_conn(|conn| {
-            conn.execute(
+            Ok(conn.execute(
                 "UPDATE memory_candidates SET expires_at = '2000-01-01T00:00:00Z' WHERE id = ?1",
                 params![candidate_id],
-            )
+            )?)
         })
         .unwrap();
 
@@ -853,11 +853,11 @@ mod tests {
 
         let status: String = pool
             .with_conn(|conn| {
-                conn.query_row(
+                Ok(conn.query_row(
                     "SELECT status FROM memory_candidates WHERE id = ?1",
                     params![candidate_id],
                     |row| row.get(0),
-                )
+                )?)
             })
             .unwrap();
         assert_eq!(status, "expired");
@@ -952,7 +952,9 @@ mod tests {
         assert_eq!(results.len(), 2, "bounded retrieval must respect the limit");
 
         let log_count: i64 = pool
-            .with_conn(|conn| conn.query_row("SELECT COUNT(*) FROM memory_retrieval_log", [], |r| r.get(0)))
+            .with_conn(|conn| {
+                Ok(conn.query_row("SELECT COUNT(*) FROM memory_retrieval_log", [], |r| r.get(0))?)
+            })
             .unwrap();
         assert_eq!(log_count, 1, "bounded_retrieve must log its query exactly once");
     }

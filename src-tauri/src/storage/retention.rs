@@ -7,7 +7,7 @@
 /// The `messages` table carries `ON DELETE CASCADE` from `conversations`,
 /// so deleting a conversation row removes all associated messages and
 /// automatically keeps `messages_fts` in sync via the `messages_ad` trigger.
-use crate::storage::sqlite::SqlitePool;
+use crate::storage::sqlite::{SqlitePool, StorageError};
 
 /// Typed store for conversation hard-delete and WAL checkpoint.
 ///
@@ -35,7 +35,7 @@ impl RetentionStore {
     /// are removed. The `messages_ad` FTS5 trigger keeps the FTS index in sync.
     ///
     /// If `id` does not exist the operation is a no-op and returns `Ok(())`.
-    pub fn delete_conversation(&self, id: &str) -> rusqlite::Result<()> {
+    pub fn delete_conversation(&self, id: &str) -> Result<(), StorageError> {
         self.pool.with_conn(|conn| {
             conn.execute(
                 "DELETE FROM conversations WHERE id = ?1",
@@ -93,11 +93,11 @@ mod tests {
         // Verify pre-condition.
         let msg_count_before: i64 = pool
             .with_conn(|conn| {
-                conn.query_row(
+                Ok(conn.query_row(
                     "SELECT COUNT(*) FROM messages WHERE conversation_id = 'conv-del'",
                     [],
                     |r| r.get(0),
-                )
+                )?)
             })
             .unwrap();
         assert_eq!(msg_count_before, 2);
@@ -108,11 +108,11 @@ mod tests {
         // Conversation should be gone.
         let conv_count: i64 = pool
             .with_conn(|conn| {
-                conn.query_row(
+                Ok(conn.query_row(
                     "SELECT COUNT(*) FROM conversations WHERE id = 'conv-del'",
                     [],
                     |r| r.get(0),
-                )
+                )?)
             })
             .unwrap();
         assert_eq!(conv_count, 0, "conversation should be hard-deleted");
@@ -120,11 +120,11 @@ mod tests {
         // Messages should be cascade-deleted.
         let msg_count_after: i64 = pool
             .with_conn(|conn| {
-                conn.query_row(
+                Ok(conn.query_row(
                     "SELECT COUNT(*) FROM messages WHERE conversation_id = 'conv-del'",
                     [],
                     |r| r.get(0),
-                )
+                )?)
             })
             .unwrap();
         assert_eq!(msg_count_after, 0, "messages should be cascade-deleted");

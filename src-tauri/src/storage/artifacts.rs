@@ -1,5 +1,5 @@
 use crate::security::artifact_sandbox::{self, ArtifactSandboxError};
-use crate::storage::sqlite::SqlitePool;
+use crate::storage::sqlite::{SqlitePool, StorageError};
 use rusqlite::params;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -114,7 +114,7 @@ impl ArtifactStore {
                 match result {
                     Ok(row) => Ok(Some(row)),
                     Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-                    Err(e) => Err(e),
+                    Err(e) => Err(StorageError(e)),
                 }
             })
             .map_err(|e| ArtifactStoreError::StorageError(e.to_string()))

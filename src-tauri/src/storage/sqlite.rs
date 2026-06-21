@@ -11,6 +11,11 @@ use std::sync::Mutex;
 
 use crate::app_state::Surface;
 
+/// Storage-layer error contract shared by typed backend stores.
+#[derive(Debug, thiserror::Error)]
+#[error("storage error: {0}")]
+pub struct StorageError(#[from] pub rusqlite::Error);
+
 /// Wrapper that holds a `Mutex`-guarded SQLite connection.
 /// Tauri manages this as shared state via `tauri::State<'_, SqlitePool>`.
 pub struct SqlitePool {
@@ -54,9 +59,9 @@ impl SqlitePool {
     }
 
     /// Execute a closure with exclusive access to the connection.
-    pub fn with_conn<F, T>(&self, f: F) -> rusqlite::Result<T>
+    pub fn with_conn<F, T>(&self, f: F) -> Result<T, StorageError>
     where
-        F: FnOnce(&Connection) -> rusqlite::Result<T>,
+        F: FnOnce(&Connection) -> Result<T, StorageError>,
     {
         let conn = self.conn.lock().unwrap_or_else(|poisoned| {
             // A prior thread panicked while holding the connection lock.
@@ -82,9 +87,9 @@ impl SqlitePool {
     /// Used wherever multiple tables must change together as one atomic
     /// unit (e.g. persisting assistant output + usage + status + artifact
     /// for a single turn attempt).
-    pub fn with_transaction<F, T>(&self, f: F) -> rusqlite::Result<T>
+    pub fn with_transaction<F, T>(&self, f: F) -> Result<T, StorageError>
     where
-        F: FnOnce(&rusqlite::Transaction) -> rusqlite::Result<T>,
+        F: FnOnce(&rusqlite::Transaction) -> Result<T, StorageError>,
     {
         let conn = self.conn.lock().unwrap_or_else(|poisoned| {
             panic!("SQLite connection mutex poisoned: {}", poisoned);
@@ -132,7 +137,7 @@ impl ConversationStore {
     }
 
     /// Insert a new conversation row with `status = 'active'`.
-    pub fn create_conversation(&self, id: &str, title: &str) -> rusqlite::Result<()> {
+    pub fn create_conversation(&self, id: &str, title: &str) -> Result<(), StorageError> {
         self.pool.with_conn(|conn| {
             conn.execute(
                 "INSERT INTO conversations (id, title) VALUES (?1, ?2)",
@@ -143,7 +148,7 @@ impl ConversationStore {
     }
 
     /// Return all conversations ordered by `updated_at DESC`.
-    pub fn list_conversations(&self) -> rusqlite::Result<Vec<ConversationRow>> {
+    pub fn list_conversations(&self) -> Result<Vec<ConversationRow>, StorageError> {
         self.pool.with_conn(|conn| {
             let mut stmt = conn.prepare(
                 "SELECT id, title, model, status, created_at, updated_at
@@ -171,7 +176,7 @@ impl ConversationStore {
     /// Fetch a single conversation by primary key.
     ///
     /// Returns `None` when the conversation does not exist.
-    pub fn get_conversation(&self, id: &str) -> rusqlite::Result<Option<ConversationRow>> {
+    pub fn get_conversation(&self, id: &str) -> Result<Option<ConversationRow>, StorageError> {
         self.pool.with_conn(|conn| {
             match conn.query_row(
                 "SELECT id, title, model, status, created_at, updated_at
@@ -190,7 +195,7 @@ impl ConversationStore {
             ) {
                 Ok(row) => Ok(Some(row)),
                 Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-                Err(e) => Err(e),
+                Err(e) => Err(StorageError(e)),
             }
         })
     }
@@ -198,7 +203,7 @@ impl ConversationStore {
     /// Mark a conversation complete and record the final model identifier.
     ///
     /// Called when `ChatEvent::Done { model }` is received for this conversation.
-    pub fn mark_complete(&self, id: &str, model: &str) -> rusqlite::Result<()> {
+    pub fn mark_complete(&self, id: &str, model: &str) -> Result<(), StorageError> {
         self.pool.with_conn(|conn| {
             conn.execute(
                 "UPDATE conversations
@@ -211,7 +216,7 @@ impl ConversationStore {
     }
 
     /// Mark a conversation incomplete (cancelled stream).
-    pub fn mark_incomplete(&self, id: &str) -> rusqlite::Result<()> {
+    pub fn mark_incomplete(&self, id: &str) -> Result<(), StorageError> {
         self.pool.with_conn(|conn| {
             conn.execute(
                 "UPDATE conversations
@@ -258,7 +263,7 @@ impl MessageStore {
         conversation_id: &str,
         role: &str,
         content: &str,
-    ) -> rusqlite::Result<()> {
+    ) -> Result<(), StorageError> {
         self.pool.with_conn(|conn| {
             conn.execute(
                 "INSERT INTO messages (id, conversation_id, role, content, status)
@@ -278,7 +283,7 @@ impl MessageStore {
         conversation_id: &str,
         role: &str,
         content: &str,
-    ) -> rusqlite::Result<()> {
+    ) -> Result<(), StorageError> {
         self.pool.with_conn(|conn| {
             conn.execute(
                 "INSERT INTO messages (id, conversation_id, role, content, status)
@@ -290,7 +295,7 @@ impl MessageStore {
     }
 
     /// Return all messages for a conversation ordered by `created_at ASC`.
-    pub fn get_messages(&self, conversation_id: &str) -> rusqlite::Result<Vec<MessageRow>> {
+    pub fn get_messages(&self, conversation_id: &str) -> Result<Vec<MessageRow>, StorageError> {
         self.pool.with_conn(|conn| {
             let mut stmt = conn.prepare(
                 "SELECT id, conversation_id, role, content, status, created_at
@@ -332,7 +337,7 @@ impl ShellPreferenceStore {
     }
 
     /// Persist the active surface. Creates or replaces the singleton row.
-    pub fn save_active_surface(&self, surface: &Surface) -> rusqlite::Result<()> {
+    pub fn save_active_surface(&self, surface: &Surface) -> Result<(), StorageError> {
         self.pool.with_conn(|conn| {
             conn.execute(
                 "INSERT INTO shell_preferences (id, active_surface, updated_at)
@@ -347,7 +352,7 @@ impl ShellPreferenceStore {
     }
 
     /// Load the persisted active surface, if any.
-    pub fn load_active_surface(&self) -> rusqlite::Result<Option<Surface>> {
+    pub fn load_active_surface(&self) -> Result<Option<Surface>, StorageError> {
         self.pool.with_conn(|conn| {
             let result = conn.query_row(
                 "SELECT active_surface FROM shell_preferences WHERE id = 1",
@@ -365,7 +370,7 @@ impl ShellPreferenceStore {
                     Ok(Some(surface))
                 }
                 Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-                Err(e) => Err(e),
+                Err(e) => Err(StorageError(e)),
             }
         })
     }
@@ -406,13 +411,13 @@ mod tests {
 
         // Apply the shell_preferences schema inline for the test.
         pool.with_conn(|conn| {
-            conn.execute_batch(
+            Ok(conn.execute_batch(
                 "CREATE TABLE IF NOT EXISTS shell_preferences (
                    id INTEGER PRIMARY KEY CHECK (id = 1),
                    active_surface TEXT NOT NULL,
                    updated_at TEXT NOT NULL
                  );",
-            )
+            )?)
         })
         .unwrap();
 

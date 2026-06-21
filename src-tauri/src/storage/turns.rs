@@ -16,7 +16,7 @@
 /// exactly one terminal state even if called twice (e.g. a duplicate
 /// cancellation racing the stream's own terminal event).
 use crate::storage::artifacts::{db_content_type, ArtifactContentType};
-use crate::storage::sqlite::SqlitePool;
+use crate::storage::sqlite::{SqlitePool, StorageError};
 use rusqlite::params;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -81,7 +81,7 @@ impl TurnStore {
         conversation_id: &str,
         idempotency_key: &str,
         new_message_content: &str,
-    ) -> rusqlite::Result<BeginTurnOutcome> {
+    ) -> Result<BeginTurnOutcome, StorageError> {
         use rusqlite::OptionalExtension;
 
         self.pool.with_transaction(|tx| {
@@ -160,7 +160,7 @@ impl TurnStore {
         &self,
         turn_id: &str,
         attempt_number: i64,
-    ) -> rusqlite::Result<String> {
+    ) -> Result<String, StorageError> {
         self.pool.with_transaction(|tx| {
             let attempt_id = Uuid::new_v4().to_string();
             tx.execute(
@@ -193,7 +193,7 @@ impl TurnStore {
         prompt_tokens: Option<u32>,
         completion_tokens: Option<u32>,
         artifact: Option<NewArtifact>,
-    ) -> rusqlite::Result<bool> {
+    ) -> Result<bool, StorageError> {
         self.pool.with_transaction(|tx| {
             let updated = tx.execute(
                 "UPDATE turn_attempts
@@ -259,7 +259,7 @@ impl TurnStore {
         assistant_message_id: &str,
         partial_content: &str,
         reason: &str,
-    ) -> rusqlite::Result<bool> {
+    ) -> Result<bool, StorageError> {
         self.pool.with_transaction(|tx| {
             let updated = tx.execute(
                 "UPDATE turn_attempts
@@ -298,7 +298,7 @@ impl TurnStore {
         conversation_id: &str,
         assistant_message_id: &str,
         partial_content: &str,
-    ) -> rusqlite::Result<bool> {
+    ) -> Result<bool, StorageError> {
         self.pool.with_transaction(|tx| {
             let updated = tx.execute(
                 "UPDATE turn_attempts
@@ -337,7 +337,7 @@ impl TurnStore {
         attempt_id: &str,
         conversation_id: &str,
         reason: &str,
-    ) -> rusqlite::Result<bool> {
+    ) -> Result<bool, StorageError> {
         self.pool.with_transaction(|tx| {
             let updated = tx.execute(
                 "UPDATE turn_attempts
@@ -372,7 +372,7 @@ impl TurnStore {
     /// turn + conversation chain, or if the post-update verification does
     /// not match the pre-update orphan set, the whole recovery transaction
     /// aborts.
-    pub fn recover_orphaned_attempts(&self) -> rusqlite::Result<usize> {
+    pub fn recover_orphaned_attempts(&self) -> Result<usize, StorageError> {
         self.pool.with_transaction(|tx| {
             let orphaned_attempts: i64 = tx.query_row(
                 "SELECT COUNT(*) FROM turn_attempts WHERE status = 'in_progress'",
@@ -395,7 +395,7 @@ impl TurnStore {
                 |row| row.get(0),
             )?;
             if attached_attempts != orphaned_attempts {
-                return Err(rusqlite::Error::InvalidQuery);
+                return Err(StorageError(rusqlite::Error::InvalidQuery));
             }
 
             let recovered = tx.execute(
@@ -428,7 +428,7 @@ impl TurnStore {
                 |row| row.get(0),
             )?;
             if verified_attempts != orphaned_attempts {
-                return Err(rusqlite::Error::InvalidQuery);
+                return Err(StorageError(rusqlite::Error::InvalidQuery));
             }
 
             let verified_turns: i64 = tx.query_row(
@@ -450,7 +450,7 @@ impl TurnStore {
                 |row| row.get(0),
             )?;
             if verified_turns != expected_turns {
-                return Err(rusqlite::Error::InvalidQuery);
+                return Err(StorageError(rusqlite::Error::InvalidQuery));
             }
 
             Ok(recovered)
@@ -773,18 +773,18 @@ mod tests {
 
         let err = store.recover_orphaned_attempts().unwrap_err();
         assert!(
-            matches!(err, rusqlite::Error::InvalidQuery),
+            matches!(err.0, rusqlite::Error::InvalidQuery),
             "partial recovery should fail closed, got {err:?}"
         );
 
         // The failed recovery must not rewrite the orphaned attempt.
         let attempt_status: String = pool
             .with_conn(|conn| {
-                conn.query_row(
+                Ok(conn.query_row(
                     "SELECT status FROM turn_attempts WHERE id = ?1",
                     params![attempt_id],
                     |row| row.get(0),
-                )
+                )?)
             })
             .unwrap();
         assert_eq!(attempt_status, "in_progress");
