@@ -22,9 +22,6 @@ pub struct AppState {
     /// Keyed by `request_id` (UUID string). Cleaned up unconditionally after
     /// each request completes (success, error, or cancellation).
     pub active_requests: Mutex<HashMap<String, CancellationToken>>,
-    /// Provider credentials held in-process behind a Mutex.
-    /// Populated from environment variables at startup; never crosses IPC.
-    pub secrets: Mutex<SecretsState>,
     /// Session-scoped file tokens mapped to backend-owned paths.
     ///
     /// This map is in-memory only, never persisted, and dropped on app quit.
@@ -33,32 +30,11 @@ pub struct AppState {
     pub file_tokens: Mutex<HashMap<Uuid, PathBuf>>,
 }
 
-/// Provider credential state, backend-owned and never exposed via IPC.
-///
-/// Phase 2: backed by OPENROUTER_API_KEY environment variable.
-/// Phase 4: internals replaced with Stronghold/OS keychain; callers unchanged.
-#[derive(Debug)]
-pub struct SecretsState {
-    pub openrouter_key: Option<secrecy::SecretString>,
-}
-
-impl Default for SecretsState {
-    fn default() -> Self {
-        let key = std::env::var("OPENROUTER_API_KEY")
-            .ok()
-            .map(|v| secrecy::SecretString::new(v.into()));
-        Self {
-            openrouter_key: key,
-        }
-    }
-}
-
 impl Default for AppState {
     fn default() -> Self {
         Self {
             shell: Mutex::new(ShellState::default()),
             active_requests: Mutex::new(HashMap::new()),
-            secrets: Mutex::new(SecretsState::default()),
             file_tokens: Mutex::new(HashMap::new()),
         }
     }
