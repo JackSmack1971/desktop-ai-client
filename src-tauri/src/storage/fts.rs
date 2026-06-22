@@ -7,7 +7,7 @@
 ///
 /// Security invariant: all FTS5 MATCH queries use SQLite bind parameters (?1).
 /// User query strings are never interpolated into SQL text (T-03-04).
-use crate::storage::sqlite::SqlitePool;
+use crate::storage::sqlite::{SqlitePool, StorageError};
 
 /// A single search result returned by `FtsStore::search`.
 ///
@@ -61,7 +61,7 @@ impl FtsStore {
     ///
     /// The `query` string is bound via SQLite parameters — it is never
     /// interpolated into the SQL text (T-03-04).
-    pub fn search(&self, query: &str) -> rusqlite::Result<Vec<SearchResult>> {
+    pub fn search(&self, query: &str) -> Result<Vec<SearchResult>, StorageError> {
         let escaped_query = escape_fts5_phrase(query);
         self.pool.with_conn(|conn| {
             let mut stmt = conn.prepare(
