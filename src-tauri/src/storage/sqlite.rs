@@ -301,7 +301,7 @@ impl MessageStore {
                 "SELECT id, conversation_id, role, content, status, created_at
                  FROM messages
                  WHERE conversation_id = ?1
-                 ORDER BY created_at ASC",
+                 ORDER BY created_at ASC, rowid ASC",
             )?;
             let rows = stmt.query_map(params![conversation_id], |row| {
                 Ok(MessageRow {
@@ -509,5 +509,37 @@ mod tests {
         assert_eq!(messages[1].content, "Hi there");
         assert_eq!(messages[1].status, "complete");
         assert_eq!(messages[2].status, "incomplete");
+    }
+
+    #[test]
+    fn message_store_preserves_insert_order_for_same_timestamp_rows() {
+        let pool = migrated_pool();
+        let conv_store = ConversationStore::new(pool.clone());
+        let msg_store = MessageStore::new(pool.clone());
+
+        conv_store
+            .create_conversation("conv-d", "Order Chat")
+            .unwrap();
+
+        msg_store
+            .insert_message("msg-user", "conv-d", "user", "First")
+            .unwrap();
+        msg_store
+            .insert_message("msg-assistant", "conv-d", "assistant", "Second")
+            .unwrap();
+
+        pool.with_conn(|conn| {
+            conn.execute(
+                "UPDATE messages SET created_at = '2026-06-21 12:00:00' WHERE conversation_id = 'conv-d'",
+                [],
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        let messages = msg_store.get_messages("conv-d").unwrap();
+        assert_eq!(messages.len(), 2);
+        assert_eq!(messages[0].role, "user");
+        assert_eq!(messages[1].role, "assistant");
     }
 }
