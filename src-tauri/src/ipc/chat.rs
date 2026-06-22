@@ -28,7 +28,7 @@
 /// Security model:
 /// - Both commands assert the caller is the main window (backend enforcement).
 /// - `chat_send` NEVER accepts an api_key parameter (D-10 hard invariant).
-/// - Credentials are retrieved internally from AppState::secrets.
+/// - Credentials are retrieved internally from `security::secrets`.
 /// - System prompt is backend-owned and prepended in providers::routing (D-12).
 /// - CancellationToken registry is cleaned up unconditionally after each request
 ///   to prevent HashMap growth (STRIDE T-02-04, Pitfall 5 from RESEARCH.md).
@@ -228,7 +228,7 @@ fn usage_from_parts(prompt_tokens: Option<u32>, completion_tokens: Option<u32>) 
 /// Submit a prompt and stream the response back through a Tauri channel.
 ///
 /// CRITICAL: This command does NOT accept an `api_key` parameter (D-10).
-/// Credentials are retrieved from AppState::secrets internally.
+/// Credentials are retrieved from `security::secrets` internally.
 ///
 /// `history` is prior conversation context for the provider only — every
 /// message in it is already persisted and must NOT be re-inserted.
