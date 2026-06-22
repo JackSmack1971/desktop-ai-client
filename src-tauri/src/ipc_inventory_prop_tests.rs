@@ -1,11 +1,9 @@
 use crate::ipc::inventory::{compiled_command_allowlist, registered_commands_from_main_rs};
+use crate::ipc::inventory::tests::temp_env_guard;
 use proptest::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::{
-    atomic::{AtomicU64, Ordering},
-    Mutex, MutexGuard, OnceLock,
-};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -81,11 +79,6 @@ fn render_generate_handler(commands: &[String], indent: &str) -> String {
 
     rendered.push_str("    ]);\n}\n");
     rendered
-}
-
-fn temp_env_guard() -> MutexGuard<'static, ()> {
-    static GUARD: OnceLock<Mutex<()>> = OnceLock::new();
-    GUARD.get_or_init(|| Mutex::new(())).lock().unwrap()
 }
 
 struct AllowlistEnvSnapshot {

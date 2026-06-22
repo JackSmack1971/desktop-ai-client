@@ -496,7 +496,7 @@ pub fn command_permission_name(command: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use std::sync::{Mutex, MutexGuard, OnceLock};
 
@@ -514,7 +514,8 @@ mod tests {
         fs::write(path, text).unwrap();
     }
 
-    fn temp_env_guard() -> MutexGuard<'static, ()> {
+    /// Serialize tests that mutate the process-wide allowlist env vars.
+    pub(crate) fn temp_env_guard() -> MutexGuard<'static, ()> {
         static GUARD: OnceLock<Mutex<()>> = OnceLock::new();
         GUARD.get_or_init(|| Mutex::new(())).lock().unwrap()
     }
