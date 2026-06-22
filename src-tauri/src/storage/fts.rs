@@ -67,10 +67,19 @@ impl FtsStore {
             let mut stmt = conn.prepare(
                 "SELECT c.id, c.title, c.model, c.status, c.updated_at,
                         (
+                            SELECT bm25(messages_fts)
+                            FROM messages_fts
+                            WHERE messages_fts.conversation_id = c.id
+                              AND messages_fts MATCH ?1
+                            ORDER BY bm25(messages_fts) ASC
+                            LIMIT 1
+                        ) AS score,
+                        (
                             SELECT snippet(messages_fts, 0, '<b>', '</b>', '\u{2026}', 15)
                             FROM messages_fts
                             WHERE messages_fts.conversation_id = c.id
                               AND messages_fts MATCH ?1
+                            ORDER BY bm25(messages_fts) ASC
                             LIMIT 1
                         ) AS snippet
                  FROM conversations c
@@ -80,7 +89,7 @@ impl FtsStore {
                      WHERE messages_fts.conversation_id = c.id
                        AND messages_fts MATCH ?1
                  )
-                 ORDER BY c.updated_at DESC
+                 ORDER BY score ASC, c.updated_at DESC
                  LIMIT 50",
             )?;
 
@@ -91,7 +100,7 @@ impl FtsStore {
                     model: row.get(2)?,
                     status: row.get(3)?,
                     updated_at: row.get(4)?,
-                    snippet: row.get(5)?,
+                    snippet: row.get(6)?,
                 })
             })?;
 
@@ -150,6 +159,34 @@ mod tests {
         assert_eq!(r.id, "conv-fts");
         assert_eq!(r.title, "FTS Test Conv");
         assert!(!r.snippet.is_empty(), "snippet should not be empty");
+    }
+
+    #[test]
+    fn fts_search_orders_best_match_before_newer_weaker_match() {
+        let pool = in_memory_pool();
+        let store = FtsStore::new(pool.clone());
+
+        pool.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO conversations (id, title, updated_at) VALUES
+                 ('conv-best', 'Best Match', '2026-06-21 10:00:00'),
+                 ('conv-weaker', 'Weaker Match', '2026-06-21 11:00:00')",
+                [],
+            )?;
+            conn.execute(
+                "INSERT INTO messages (id, conversation_id, role, content)
+                 VALUES ('msg-best', 'conv-best', 'user', 'rust rust rust rust'),
+                        ('msg-weaker', 'conv-weaker', 'user', 'rust once')",
+                [],
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        let results = store.search("rust").unwrap();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].id, "conv-best");
+        assert_eq!(results[1].id, "conv-weaker");
     }
 
     #[test]
